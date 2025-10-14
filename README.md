@@ -1,4 +1,4 @@
-# Chan Mary 333 Stock Management Platform
+# Stock Management Platform
 
 Full-stack inventory, sales, and warehouse management system for radiator products. The project combines a React 19 Vite frontend with a .NET 8 Web API backend to deliver dashboards, authentication, stock tracking, invoicing, and reporting.
 
