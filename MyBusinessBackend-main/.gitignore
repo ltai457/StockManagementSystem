@@ -331,9 +331,10 @@ MigrationBackup/
 .env.production
 
 # Secrets (never commit sensitive data)
-appsettings.*.json
-!appsettings.json
-!appsettings.Development.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.*.Local.json
 
 # Database files
 *.db
