@@ -354,14 +354,7 @@ const CustomerForm = ({
       </div>
 
       {/* Contact Tips */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm">
-        <p className="font-medium text-yellow-800 mb-1">💡 Contact Information Tips:</p>
-        <ul className="text-yellow-700 space-y-1">
-          <li>• Email and phone are optional but help with customer communication</li>
-          <li>• Phone numbers are auto-formatted for New Zealand</li>
-          <li>• All contact information can be updated anytime</li>
-        </ul>
-      </div>
+
     </div>
   );
 };

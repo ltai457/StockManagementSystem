@@ -41,7 +41,7 @@ public class CustomerService : ICustomerService
     {
         var customers = await _context.Customers
             .Include(c => c.Sales)
-            .Where(c => c.IsActive)
+            // Removed .Where(c => c.IsActive) to show ALL customers (active and inactive)
             .OrderBy(c => c.LastName)
             .ThenBy(c => c.FirstName)
             .ToListAsync();
@@ -96,7 +96,8 @@ public class CustomerService : ICustomerService
         return await GetCustomerResponseAsync(customer);
     }
 
-    public async Task<bool> DeleteCustomerAsync(Guid id)
+    // Deactivate customer (soft delete - keeps in database but marks as inactive)
+    public async Task<bool> DeactivateCustomerAsync(Guid id)
     {
         var customer = await _context.Customers.FindAsync(id);
         if (customer == null)
@@ -104,6 +105,40 @@ public class CustomerService : ICustomerService
 
         customer.IsActive = false;
         customer.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    // Reactivate customer (sets back to active)
+    public async Task<bool> ReactivateCustomerAsync(Guid id)
+    {
+        var customer = await _context.Customers.FindAsync(id);
+        if (customer == null)
+            return false;
+
+        customer.IsActive = true;
+        customer.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    // Hard delete - permanently removes customer from database
+    public async Task<bool> DeleteCustomerAsync(Guid id)
+    {
+        var customer = await _context.Customers
+            .Include(c => c.Sales)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (customer == null)
+            return false;
+
+        // Check if customer has any sales - prevent deletion if they do
+        if (customer.Sales.Any())
+        {
+            throw new InvalidOperationException("Cannot delete customer with existing sales. Deactivate instead.");
+        }
+
+        _context.Customers.Remove(customer);
         await _context.SaveChangesAsync();
         return true;
     }

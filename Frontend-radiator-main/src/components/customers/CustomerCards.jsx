@@ -1,13 +1,15 @@
 import React from 'react';
-import { Eye, Edit, Trash2, Mail, Phone, User, Calendar } from 'lucide-react';
+import { Eye, Edit, Trash2, Ban, RotateCcw, Mail, Phone, User, Calendar } from 'lucide-react';
 import { Button } from '../common/ui/Button';
 import { formatDate } from '../../utils/formatters';
 
-const CustomerCards = ({ 
-  customers, 
-  onEdit, 
-  onDelete, 
-  onViewDetails, 
+const CustomerCards = ({
+  customers,
+  onEdit,
+  onDelete,
+  onDeactivate,
+  onReactivate,
+  onViewDetails,
   userRole
 }) => {
   // ✅ FIXED: Use comprehensive admin role check
@@ -152,15 +154,42 @@ const CustomerCards = ({
                       Edit
                     </Button>
                   )}
-                  
-                  {/* Delete Button - Admin only */}
+
+                  {/* Activate/Deactivate Toggle - Admin only */}
                   {canEdit && (
+                    customer.isActive ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onDeactivate(customer)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs border-orange-200 text-orange-700 hover:bg-orange-50"
+                        title="Deactivate customer (keeps in database)"
+                      >
+                        <Ban className="w-3 h-3" />
+                        Deactivate
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onReactivate(customer)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs border-green-200 text-green-700 hover:bg-green-50"
+                        title="Reactivate customer"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Reactivate
+                      </Button>
+                    )
+                  )}
+
+                  {/* Permanent Delete Button - Admin only, only for inactive customers */}
+                  {canEdit && !customer.isActive && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => onDelete(customer)}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs border-red-200 text-red-700 hover:bg-red-50"
-                      title="Delete customer"
+                      title="Permanently delete customer (cannot be undone)"
                     >
                       <Trash2 className="w-3 h-3" />
                       Delete

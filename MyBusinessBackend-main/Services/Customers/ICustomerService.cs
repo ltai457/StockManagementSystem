@@ -9,6 +9,8 @@ public interface ICustomerService
     Task<IEnumerable<CustomerListDto>> GetAllCustomersAsync();
     Task<CustomerResponseDto?> GetCustomerByIdAsync(Guid id);
     Task<CustomerResponseDto?> UpdateCustomerAsync(Guid id, UpdateCustomerDto dto);
+    Task<bool> DeactivateCustomerAsync(Guid id);
+    Task<bool> ReactivateCustomerAsync(Guid id);
     Task<bool> DeleteCustomerAsync(Guid id);
     Task<bool> CustomerExistsAsync(Guid id);
     Task<IEnumerable<SaleListDto>> GetCustomerSalesHistoryAsync(Guid customerId);

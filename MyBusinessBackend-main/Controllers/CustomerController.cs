@@ -65,18 +65,44 @@ namespace RadiatorStockAPI.Controllers
            return Ok(updated);
        }
 
-       [HttpDelete("{id:guid}")]
-       [Authorize(Roles = "Admin")] // Only Admin can delete customers
-       public async Task<IActionResult> DeleteCustomer(Guid id)
+       [HttpPatch("{id:guid}/deactivate")]
+       [Authorize(Roles = "Admin,Staff")] // Admin or Staff can deactivate customers
+       public async Task<IActionResult> DeactivateCustomer(Guid id)
        {
-           if (!await _customerService.CustomerExistsAsync(id))
+           var deactivated = await _customerService.DeactivateCustomerAsync(id);
+           if (!deactivated)
                return NotFound(new { message = $"Customer with ID {id} not found." });
 
-           var deleted = await _customerService.DeleteCustomerAsync(id);
-           if (!deleted)
-               return BadRequest(new { message = "Failed to delete customer." });
+           return Ok(new { message = "Customer deactivated successfully." });
+       }
 
-           return NoContent();
+       [HttpPatch("{id:guid}/reactivate")]
+       [Authorize(Roles = "Admin,Staff")] // Admin or Staff can reactivate customers
+       public async Task<IActionResult> ReactivateCustomer(Guid id)
+       {
+           var reactivated = await _customerService.ReactivateCustomerAsync(id);
+           if (!reactivated)
+               return NotFound(new { message = $"Customer with ID {id} not found." });
+
+           return Ok(new { message = "Customer reactivated successfully." });
+       }
+
+       [HttpDelete("{id:guid}")]
+       [Authorize(Roles = "Admin")] // Only Admin can permanently delete customers
+       public async Task<IActionResult> DeleteCustomer(Guid id)
+       {
+           try
+           {
+               var deleted = await _customerService.DeleteCustomerAsync(id);
+               if (!deleted)
+                   return NotFound(new { message = $"Customer with ID {id} not found." });
+
+               return NoContent();
+           }
+           catch (InvalidOperationException ex)
+           {
+               return BadRequest(new { message = ex.Message });
+           }
        }
 
        [HttpGet("{id:guid}/sales")]

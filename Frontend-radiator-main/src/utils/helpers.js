@@ -87,6 +87,12 @@ export const filterArray = (array, filters) => {
       
       // Special handling for status filters
       if (key === 'status' && value !== 'all') {
+        // For customers: check isActive field
+        if (item.hasOwnProperty('isActive')) {
+          if (value === 'active') return item.isActive === true;
+          if (value === 'inactive') return item.isActive === false;
+        }
+        // For other entities: check status field
         return item.status === value;
       }
       

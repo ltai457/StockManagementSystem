@@ -35,6 +35,24 @@ const customerService = {
     return customerCrud.remove(id);
   },
 
+  async deactivate(id) {
+    return handleRequest(
+      () => httpClient.patch(`/customers/${id}/deactivate`),
+      {
+        fallbackMessage: "Failed to deactivate customer",
+      }
+    );
+  },
+
+  async reactivate(id) {
+    return handleRequest(
+      () => httpClient.patch(`/customers/${id}/reactivate`),
+      {
+        fallbackMessage: "Failed to reactivate customer",
+      }
+    );
+  },
+
   async getSalesHistory(customerId) {
     return handleRequest(
       () => httpClient.get(`/customers/${customerId}/sales`),

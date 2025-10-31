@@ -17,7 +17,7 @@ import CustomerDetailsModal from './modals/CustomerDetailsModal';
 
 const CustomerList = () => {
   const { user } = useAuth();
-  const { customers, loading, error, createCustomer, updateCustomer, deleteCustomer, getCustomerById } = useCustomers();
+  const { customers, loading, error, createCustomer, updateCustomer, deleteCustomer, deactivateCustomer, reactivateCustomer, getCustomerById } = useCustomers();
   
   // Normalize admin across number/string/array cases - COPIED FROM RADIATORLIST
   const isAdmin =
@@ -68,11 +68,33 @@ const CustomerList = () => {
     return false;
   };
 
-  const handleDeleteCustomer = async (customer) => {
-    if (!window.confirm(`Are you sure you want to deactivate ${customer.firstName} ${customer.lastName}?`)) {
+  const handleDeactivateCustomer = async (customer) => {
+    if (!window.confirm(`Are you sure you want to deactivate ${customer.firstName} ${customer.lastName}?\n\nThey will be marked as inactive but remain in the system.`)) {
       return;
     }
-    
+
+    const result = await deactivateCustomer(customer.id);
+    if (!result.success) {
+      alert('Failed to deactivate customer: ' + result.error);
+    }
+  };
+
+  const handleReactivateCustomer = async (customer) => {
+    if (!window.confirm(`Reactivate ${customer.firstName} ${customer.lastName}?\n\nThey will be marked as active and appear in all listings.`)) {
+      return;
+    }
+
+    const result = await reactivateCustomer(customer.id);
+    if (!result.success) {
+      alert('Failed to reactivate customer: ' + result.error);
+    }
+  };
+
+  const handleDeleteCustomer = async (customer) => {
+    if (!window.confirm(`⚠️ PERMANENTLY DELETE ${customer.firstName} ${customer.lastName}?\n\nThis action CANNOT be undone!\n\nThe customer will be completely removed from the database.\n\nNote: Customers with sales history cannot be deleted.`)) {
+      return;
+    }
+
     const result = await deleteCustomer(customer.id);
     if (!result.success) {
       alert('Failed to delete customer: ' + result.error);
@@ -148,6 +170,8 @@ const CustomerList = () => {
           customers={filteredCustomers}
           onEdit={editModal.openModal}
           onDelete={handleDeleteCustomer}
+          onDeactivate={handleDeactivateCustomer}
+          onReactivate={handleReactivateCustomer}
           onViewDetails={handleViewDetails}
           userRole={user?.role}
         />

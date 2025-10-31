@@ -1,8 +1,27 @@
 // src/api/httpClient.js
 import axios from "axios";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE || "http://localhost:5128/api/v1";
+// Smart API Base URL Detection
+// Priority: VITE_API_BASE > VITE_NGROK_URL > localhost
+const getApiBaseUrl = () => {
+  // 1. Check if explicit API base is set
+  if (import.meta.env.VITE_API_BASE) {
+    return import.meta.env.VITE_API_BASE;
+  }
+
+  // 2. Check if Ngrok URL is set
+  if (import.meta.env.VITE_NGROK_URL) {
+    return `${import.meta.env.VITE_NGROK_URL}/api/v1`;
+  }
+
+  // 3. Default to localhost
+  return "http://localhost:5128/api/v1";
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Log which backend we're connecting to
+console.log(`🔗 Connecting to API: ${API_BASE_URL}`);
 
 const httpClient = axios.create({
   baseURL: API_BASE_URL,

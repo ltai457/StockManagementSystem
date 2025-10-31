@@ -59,6 +59,42 @@ export const useCustomers = () => {
     }
   };
 
+  const deactivateCustomer = async (id) => {
+    try {
+      const result = await customerService.deactivate(id);
+      if (result.success) {
+        setCustomers(prev =>
+          prev.map(customer =>
+            customer.id === id ? { ...customer, isActive: false } : customer
+          )
+        );
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (err) {
+      return { success: false, error: getErrorMessage(err) };
+    }
+  };
+
+  const reactivateCustomer = async (id) => {
+    try {
+      const result = await customerService.reactivate(id);
+      if (result.success) {
+        setCustomers(prev =>
+          prev.map(customer =>
+            customer.id === id ? { ...customer, isActive: true } : customer
+          )
+        );
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (err) {
+      return { success: false, error: getErrorMessage(err) };
+    }
+  };
+
   const deleteCustomer = async (id) => {
     try {
       const result = await customerService.delete(id);
@@ -97,6 +133,8 @@ export const useCustomers = () => {
     fetchCustomers,
     createCustomer,
     updateCustomer,
+    deactivateCustomer,
+    reactivateCustomer,
     deleteCustomer,
     getCustomerById
   };
