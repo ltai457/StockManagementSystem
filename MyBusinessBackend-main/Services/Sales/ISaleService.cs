@@ -1,5 +1,6 @@
 using System;
 using RadiatorStockAPI.DTOs.Sales;
+using RadiatorStockAPI.DTOs.Common;
 
 namespace RadiatorStockAPI.Services.Sales;
 
@@ -7,6 +8,7 @@ public interface ISalesService
 {
     Task<SaleResponseDto?> CreateSaleAsync(CreateSaleDto dto, Guid userId);
     Task<IEnumerable<SaleListDto>> GetAllSalesAsync();
+    Task<PagedResult<SaleListDto>> GetSalesPagedAsync(PaginationParams paginationParams);
     Task<SaleResponseDto?> GetSaleByIdAsync(Guid id);
     Task<ReceiptDto?> GetReceiptAsync(Guid saleId);
     Task<bool> CancelSaleAsync(Guid id);

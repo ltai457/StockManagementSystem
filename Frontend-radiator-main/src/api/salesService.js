@@ -23,6 +23,20 @@ const salesService = {
     return salesCrud.list(params);
   },
 
+  getPaginated(pageNumber = 1, pageSize = 20) {
+    const params = {
+      pageNumber,
+      pageSize
+    };
+
+    return handleRequest(
+      () => httpClient.get("/sales", { params }),
+      {
+        fallbackMessage: "Failed to fetch sales",
+      }
+    );
+  },
+
   getById(id) {
     return salesCrud.get(id);
   },

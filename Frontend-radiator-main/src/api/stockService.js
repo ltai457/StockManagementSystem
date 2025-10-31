@@ -210,6 +210,38 @@ const stockService = {
 
     return result;
   },
+
+  // Paginated version for infinite scroll
+  async getAllRadiatorsWithStockPaginated(pageNumber = 1, pageSize = 21, search = null, lowStockOnly = false, warehouseCode = null) {
+    const params = {
+      pageNumber,
+      pageSize
+    };
+    if (search) params.search = search;
+    if (lowStockOnly) params.lowStockOnly = "true";
+    if (warehouseCode) params.warehouseCode = warehouseCode;
+
+    return handleRequest(
+      () => httpClient.get("/stock/all-radiators", { params }),
+      {
+        fallbackMessage: "Failed to fetch radiators with stock",
+      }
+    );
+  },
+
+  // Paginated stock movements for infinite scroll
+  async getStockMovementsPaginated(pageNumber = 1, pageSize = 21, params = {}) {
+    const query = buildStockMovementParams(params);
+    query.pageNumber = pageNumber;
+    query.pageSize = pageSize;
+
+    return handleRequest(
+      () => httpClient.get("/stock/movements", { params: query }),
+      {
+        fallbackMessage: "Failed to fetch stock movements",
+      }
+    );
+  },
 };
 
 export default stockService;

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
-import { ShoppingCart, Plus, Zap } from "lucide-react";
+import { ShoppingCart, Plus, Zap, Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useSales } from "../../hooks/useSales";
+import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
 import { useModal } from "../../hooks/useModal";
 import { PageHeader } from "../common/layout/PageHeader";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
@@ -15,19 +15,71 @@ import SaleDetailsModal from "./modals/SaleDetailsModal";
 import ReceiptModal from "./modals/ReceiptModal";
 import FastCreateSaleModal from "./modals/FastCreateSaleModal";
 import QuickInvoiceModal from "./modals/QuickInvoiceModal";
+import salesService from "../../api/salesService";
 
 const SalesManagement = ({ onQuickInvoice }) => {
   const { user } = useAuth();
+
+  // Use infinite scroll hook with auto-scroll enabled
   const {
-    sales,
+    items: sales,
     loading,
     error,
-    createSale,
-    getSaleById,
-    getReceipt,
-    cancelSale,
-    refundSale,
-  } = useSales();
+    hasMore,
+    loadMore,
+    refetch,
+    observerRef,
+  } = useInfiniteScroll(
+    (pageNumber, pageSize) => salesService.getPaginated(pageNumber, pageSize),
+    21, // page size (divisible by 3 for consistent loading)
+    true // enable auto-scroll
+  );
+
+  // Sales operations without the hook (to avoid auto-fetching)
+  const createSale = async (saleData) => {
+    try {
+      const result = await salesService.create(saleData);
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const getSaleById = async (id) => {
+    try {
+      const result = await salesService.getById(id);
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const getReceipt = async (saleId) => {
+    try {
+      const result = await salesService.getReceipt(saleId);
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const cancelSale = async (id) => {
+    try {
+      const result = await salesService.cancel(id);
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const refundSale = async (id) => {
+    try {
+      const result = await salesService.refund(id);
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
 
   const createModal = useModal();
   const detailsModal = useModal();
@@ -96,6 +148,8 @@ const SalesManagement = ({ onQuickInvoice }) => {
     const result = await createSale(saleData);
     if (result.success) {
       createModal.closeModal();
+      // Refetch to get the new sale
+      refetch();
       return true;
     }
     return false;
@@ -131,6 +185,9 @@ const SalesManagement = ({ onQuickInvoice }) => {
     const result = await cancelSale(sale.id);
     if (!result.success) {
       alert("Failed to cancel sale: " + result.error);
+    } else {
+      // Refetch after canceling
+      refetch();
     }
   };
 
@@ -146,6 +203,9 @@ const SalesManagement = ({ onQuickInvoice }) => {
     const result = await refundSale(sale.id);
     if (!result.success) {
       alert("Failed to refund sale: " + result.error);
+    } else {
+      // Refetch after refunding
+      refetch();
     }
   };
 
@@ -155,11 +215,12 @@ const SalesManagement = ({ onQuickInvoice }) => {
     if (invoiceData && invoiceData.invoiceNumber) {
       receiptModal.openModal(invoiceData);
     }
-    // The useSales hook will automatically refresh the sales list
+    // Refetch to get new sale
+    refetch();
     quickInvoiceModal.closeModal();
   };
 
-  if (loading) {
+  if (loading && sales.length === 0) {
     return <LoadingSpinner size="lg" text="Loading sales..." />;
   }
 
@@ -200,7 +261,7 @@ const SalesManagement = ({ onQuickInvoice }) => {
         </div>
       )}
 
-      {filteredSales.length === 0 ? (
+      {filteredSales.length === 0 && !loading ? (
         <EmptyState
           icon={ShoppingCart}
           title={hasActiveFilters ? "No sales found" : "No sales yet"}
@@ -214,14 +275,37 @@ const SalesManagement = ({ onQuickInvoice }) => {
           onAction={clearFilters}
         />
       ) : (
-        <SalesTable
-          sales={filteredSales}
-          onViewDetails={handleViewDetails}
-          onViewReceipt={handleViewReceipt}
-          onCancel={handleCancelSale}
-          onRefund={handleRefundSale}
-          userRole={user?.role}
-        />
+        <>
+          <SalesTable
+            sales={filteredSales}
+            onViewDetails={handleViewDetails}
+            onViewReceipt={handleViewReceipt}
+            onCancel={handleCancelSale}
+            onRefund={handleRefundSale}
+            userRole={user?.role}
+          />
+
+          {/* Infinite scroll trigger (invisible observer element) */}
+          {hasMore && (
+            <div
+              ref={observerRef}
+              className="flex justify-center py-8"
+            >
+              {loading ? (
+                <LoadingSpinner size="md" text="Loading more sales..." />
+              ) : (
+                <div className="h-10" /> // Invisible trigger element
+              )}
+            </div>
+          )}
+
+          {/* End of list indicator */}
+          {!hasMore && filteredSales.length > 0 && (
+            <div className="text-center py-6 text-gray-500 text-sm">
+              All sales loaded ({filteredSales.length} total)
+            </div>
+          )}
+        </>
       )}
 
       {/* Modals */}

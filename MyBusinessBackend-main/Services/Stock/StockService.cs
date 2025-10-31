@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 using RadiatorStockAPI.Data;
 using RadiatorStockAPI.DTOs.Stock;
+using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Models;
 using RadiatorStockAPI.Services.Radiators;
 using RadiatorStockAPI.Services.Warehouses;
@@ -170,6 +171,104 @@ namespace RadiatorStockAPI.Services.Stock
 
             _logger.LogInformation("✅ Mapping completed, returning {Count} DTOs", result.Count);
             return result;
+        }
+
+        // Paginated version of GetAllRadiatorsWithStockAsync
+        public async Task<PagedResult<RadiatorWithStockDto>> GetAllRadiatorsWithStockPagedAsync(
+            PaginationParams paginationParams,
+            string? search = null,
+            bool lowStockOnly = false,
+            string? warehouseCode = null)
+        {
+            _logger.LogInformation("📊 GetAllRadiatorsWithStockPagedAsync - Page {PageNumber}, Size {PageSize}",
+                paginationParams.PageNumber, paginationParams.PageSize);
+
+            // Build query with filters
+            var query = _context.Radiators
+                .Include(r => r.StockLevels)
+                    .ThenInclude(sl => sl.Warehouse)
+                .AsQueryable();
+
+            // Apply search filter
+            if (!string.IsNullOrEmpty(search))
+            {
+                var searchLower = search.ToLower();
+                query = query.Where(r =>
+                    r.Name.ToLower().Contains(searchLower) ||
+                    r.Code.ToLower().Contains(searchLower) ||
+                    r.Brand.ToLower().Contains(searchLower));
+            }
+
+            // Apply warehouse filter
+            if (!string.IsNullOrEmpty(warehouseCode))
+            {
+                var warehouseUpper = warehouseCode.ToUpper();
+                query = query.Where(r =>
+                    r.StockLevels.Any(sl => sl.Warehouse.Code == warehouseUpper));
+            }
+
+            // Apply low stock filter
+            if (lowStockOnly)
+            {
+                query = query.Where(r =>
+                    r.StockLevels.Any(sl => sl.Quantity >= 0 && sl.Quantity <= 5));
+            }
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination
+            var radiators = await query
+                .OrderByDescending(r => r.UpdatedAt)
+                .ThenByDescending(r => r.CreatedAt)
+                .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
+                .Take(paginationParams.PageSize)
+                .ToListAsync();
+
+            // Map to DTOs
+            var items = radiators.Select(radiator =>
+            {
+                var stockDict = radiator.StockLevels.ToDictionary(
+                    sl => sl.Warehouse.Code,
+                    sl => sl.Quantity
+                );
+
+                var totalStock = stockDict.Values.Sum();
+                var hasLowStock = stockDict.Values.Any(q => q > 0 && q <= 5);
+                var hasOutOfStock = stockDict.Values.Any(q => q == 0);
+
+                return new RadiatorWithStockDto
+                {
+                    Id = radiator.Id,
+                    Name = radiator.Name,
+                    Code = radiator.Code,
+                    Brand = radiator.Brand,
+                    Year = radiator.Year,
+                    RetailPrice = radiator.RetailPrice,
+                    TradePrice = radiator.TradePrice,
+                    CostPrice = radiator.CostPrice,
+                    IsPriceOverridable = radiator.IsPriceOverridable,
+                    MaxDiscountPercent = radiator.MaxDiscountPercent,
+                    Stock = stockDict,
+                    TotalStock = totalStock,
+                    HasLowStock = hasLowStock,
+                    HasOutOfStock = hasOutOfStock,
+                    CreatedAt = radiator.CreatedAt,
+                    UpdatedAt = radiator.UpdatedAt
+                };
+            }).ToList();
+
+            _logger.LogInformation("✅ Returned page {PageNumber} with {Count} items out of {Total} total",
+                paginationParams.PageNumber, items.Count, totalCount);
+
+            return new PagedResult<RadiatorWithStockDto>
+            {
+                Items = items,
+                PageNumber = paginationParams.PageNumber,
+                PageSize = paginationParams.PageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)paginationParams.PageSize)
+            };
         }
 
         // Get stock summary for dashboard
@@ -520,6 +619,93 @@ namespace RadiatorStockAPI.Services.Stock
                     ? $"{sh.Sale.Customer.FirstName} {sh.Sale.Customer.LastName}".Trim()
                     : null
             }).ToList();
+        }
+
+        // Paginated version of GetStockMovementsAsync
+        public async Task<PagedResult<StockMovementDto>> GetStockMovementsPagedAsync(
+            PaginationParams paginationParams,
+            Guid? radiatorId = null,
+            string? warehouseCode = null,
+            DateTime? fromDate = null,
+            DateTime? toDate = null,
+            string? movementType = null)
+        {
+            _logger.LogInformation("📊 GetStockMovementsPagedAsync - Page {PageNumber}, Size {PageSize}",
+                paginationParams.PageNumber, paginationParams.PageSize);
+
+            var query = _context.StockHistories
+                .Include(sh => sh.Radiator)
+                .Include(sh => sh.Warehouse)
+                .Include(sh => sh.Sale)
+                    .ThenInclude(s => s.Customer)
+                .AsQueryable();
+
+            // Apply filters
+            if (radiatorId.HasValue)
+                query = query.Where(sh => sh.RadiatorId == radiatorId.Value);
+
+            if (!string.IsNullOrEmpty(warehouseCode))
+            {
+                var warehouse = await _warehouseService.GetWarehouseByCodeAsync(warehouseCode);
+                if (warehouse != null)
+                    query = query.Where(sh => sh.WarehouseId == warehouse.Id);
+            }
+
+            if (fromDate.HasValue)
+                query = query.Where(sh => sh.CreatedAt >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(sh => sh.CreatedAt <= toDate.Value);
+
+            if (!string.IsNullOrEmpty(movementType))
+                query = query.Where(sh => sh.MovementType == movementType.ToUpper());
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination
+            var histories = await query
+                .OrderByDescending(sh => sh.CreatedAt)
+                .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
+                .Take(paginationParams.PageSize)
+                .ToListAsync();
+
+            // Map to DTOs
+            var items = histories.Select(sh => new StockMovementDto
+            {
+                Id = sh.Id,
+                Date = sh.CreatedAt,
+                RadiatorId = sh.RadiatorId,
+                ProductName = sh.Radiator.Name,
+                ProductCode = sh.Radiator.Code,
+                Brand = sh.Radiator.Brand,
+                WarehouseId = sh.WarehouseId,
+                WarehouseCode = sh.Warehouse.Code,
+                WarehouseName = sh.Warehouse.Name,
+                MovementType = sh.MovementType,
+                Quantity = Math.Abs(sh.QuantityChange),
+                OldQuantity = sh.OldQuantity,
+                NewQuantity = sh.NewQuantity,
+                ChangeType = sh.ChangeType,
+                Notes = sh.Notes,
+                SaleId = sh.SaleId,
+                SaleNumber = sh.Sale?.SaleNumber,
+                CustomerName = sh.Sale?.Customer != null
+                    ? $"{sh.Sale.Customer.FirstName} {sh.Sale.Customer.LastName}".Trim()
+                    : null
+            }).ToList();
+
+            _logger.LogInformation("✅ Returned page {PageNumber} with {Count} items out of {Total} total",
+                paginationParams.PageNumber, items.Count, totalCount);
+
+            return new PagedResult<StockMovementDto>
+            {
+                Items = items,
+                PageNumber = paginationParams.PageNumber,
+                PageSize = paginationParams.PageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)paginationParams.PageSize)
+            };
         }
     }
 }

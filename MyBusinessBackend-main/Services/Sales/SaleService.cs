@@ -6,6 +6,7 @@ using RadiatorStockAPI.DTOs.Customers;
 using RadiatorStockAPI.DTOs.Users;
 using RadiatorStockAPI.DTOs.Warehouses;
 using RadiatorStockAPI.DTOs.Radiators;
+using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Models;
 using RadiatorStockAPI.Services.Customers;
 using RadiatorStockAPI.Services.Stock;
@@ -162,6 +163,44 @@ namespace RadiatorStockAPI.Services.Sales
                 SaleDate = s.SaleDate,
                 ItemCount = s.SaleItems.Count
             });
+        }
+
+        public async Task<PagedResult<SaleListDto>> GetSalesPagedAsync(PaginationParams paginationParams)
+        {
+            var query = _context.Sales
+                .Include(s => s.Customer)
+                .Include(s => s.ProcessedBy)
+                .Include(s => s.SaleItems)
+                .OrderByDescending(s => s.SaleDate);
+
+            var totalCount = await query.CountAsync();
+
+            var sales = await query
+                .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
+                .Take(paginationParams.PageSize)
+                .ToListAsync();
+
+            var items = sales.Select(s => new SaleListDto
+            {
+                Id = s.Id,
+                SaleNumber = s.SaleNumber,
+                CustomerName = $"{s.Customer.FirstName} {s.Customer.LastName}",
+                ProcessedByName = s.ProcessedBy.Username,
+                TotalAmount = s.TotalAmount,
+                PaymentMethod = s.PaymentMethod,
+                Status = s.Status,
+                SaleDate = s.SaleDate,
+                ItemCount = s.SaleItems.Count
+            }).ToList();
+
+            return new PagedResult<SaleListDto>
+            {
+                Items = items,
+                PageNumber = paginationParams.PageNumber,
+                PageSize = paginationParams.PageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)paginationParams.PageSize)
+            };
         }
 
         public async Task<SaleResponseDto?> GetSaleByIdAsync(Guid id)

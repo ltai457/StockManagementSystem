@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using RadiatorStockAPI.Data;
 using RadiatorStockAPI.DTOs.Radiators;
+using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Models;
 using RadiatorStockAPI.Services.S3;
 using RadiatorStockAPI.Services.Stock;
@@ -244,6 +245,32 @@ namespace RadiatorStockAPI.Services.Radiators
                 .ToListAsync();
 
             return entities.Select(ToListDto).ToList();
+        }
+
+        public async Task<PagedResult<RadiatorListDto>> GetRadiatorsPagedAsync(PaginationParams paginationParams)
+        {
+            var query = _context.Radiators
+                .AsNoTracking()
+                .Include(r => r.StockLevels).ThenInclude(sl => sl.Warehouse)
+                .Include(r => r.Images)
+                .OrderByDescending(r => r.UpdatedAt)
+                .ThenByDescending(r => r.CreatedAt);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
+                .Take(paginationParams.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<RadiatorListDto>
+            {
+                Items = items.Select(ToListDto).ToList(),
+                PageNumber = paginationParams.PageNumber,
+                PageSize = paginationParams.PageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)paginationParams.PageSize)
+            };
         }
 
         public async Task<RadiatorResponseDto?> GetRadiatorByIdAsync(Guid id)

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RadiatorStockAPI.DTOs.Radiators;
+using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Services.Radiators;
 
 namespace RadiatorStockAPI.Controllers
@@ -19,8 +20,22 @@ namespace RadiatorStockAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RadiatorListDto>>> GetAllRadiators()
+        public async Task<ActionResult<IEnumerable<RadiatorListDto>>> GetAllRadiators([FromQuery] int? pageNumber, [FromQuery] int? pageSize)
         {
+            // If pagination parameters are provided, use paginated endpoint
+            if (pageNumber.HasValue || pageSize.HasValue)
+            {
+                var paginationParams = new PaginationParams
+                {
+                    PageNumber = pageNumber ?? 1,
+                    PageSize = pageSize ?? 20
+                };
+
+                var pagedResult = await _radiatorService.GetRadiatorsPagedAsync(paginationParams);
+                return Ok(pagedResult);
+            }
+
+            // Otherwise return all radiators (backward compatibility)
             var radiators = await _radiatorService.GetAllRadiatorsAsync();
             return Ok(radiators);
         }

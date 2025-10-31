@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RadiatorStockAPI.DTOs.Stock;
+using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Services.Radiators;
 using RadiatorStockAPI.Services.Stock;
 
@@ -70,8 +71,24 @@ namespace RadiatorStockAPI.Controllers
         public async Task<ActionResult<IEnumerable<RadiatorWithStockDto>>> GetAllRadiatorsWithStock(
             [FromQuery] string? search = null,
             [FromQuery] bool lowStockOnly = false,
-            [FromQuery] string? warehouseCode = null)
+            [FromQuery] string? warehouseCode = null,
+            [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null)
         {
+            // If pagination parameters provided, use paginated endpoint
+            if (pageNumber.HasValue || pageSize.HasValue)
+            {
+                var paginationParams = new PaginationParams
+                {
+                    PageNumber = pageNumber ?? 1,
+                    PageSize = pageSize ?? 20
+                };
+                var pagedResult = await _stockService.GetAllRadiatorsWithStockPagedAsync(
+                    paginationParams, search, lowStockOnly, warehouseCode);
+                return Ok(pagedResult);
+            }
+
+            // Otherwise use non-paginated endpoint
             var radiators = await _stockService.GetAllRadiatorsWithStockAsync(search, lowStockOnly, warehouseCode);
             return Ok(radiators);
         }
@@ -161,15 +178,37 @@ namespace RadiatorStockAPI.Controllers
 
         [HttpGet("stock/movements")]
         public async Task<ActionResult<IEnumerable<StockMovementDto>>> GetStockMovements(
-     [FromQuery] Guid? radiatorId = null,
-     [FromQuery] string? warehouseCode = null,
-     [FromQuery] DateTime? fromDate = null,
-     [FromQuery] DateTime? toDate = null,
-     [FromQuery] string? movementType = null,
-     [FromQuery] int? limit = 100)
+            [FromQuery] Guid? radiatorId = null,
+            [FromQuery] string? warehouseCode = null,
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null,
+            [FromQuery] string? movementType = null,
+            [FromQuery] int? limit = 100,
+            [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null)
         {
             try
             {
+                // If pagination parameters provided, use paginated endpoint
+                if (pageNumber.HasValue || pageSize.HasValue)
+                {
+                    var paginationParams = new PaginationParams
+                    {
+                        PageNumber = pageNumber ?? 1,
+                        PageSize = pageSize ?? 20
+                    };
+                    var pagedResult = await _stockService.GetStockMovementsPagedAsync(
+                        paginationParams,
+                        radiatorId,
+                        warehouseCode,
+                        fromDate,
+                        toDate,
+                        movementType
+                    );
+                    return Ok(pagedResult);
+                }
+
+                // Otherwise use non-paginated endpoint
                 var movements = await _stockService.GetStockMovementsAsync(
                     radiatorId,
                     warehouseCode,

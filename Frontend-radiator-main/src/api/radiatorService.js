@@ -99,6 +99,21 @@ const radiatorService = {
     );
   },
 
+  getPaginated(pageNumber = 1, pageSize = 20) {
+    const params = {
+      pageNumber,
+      pageSize
+    };
+
+    return handleRequest(
+      () => httpClient.get("/radiators", { params }),
+      {
+        fallbackMessage:
+          "Failed to fetch radiators - check API connection",
+      }
+    );
+  },
+
   getById(id) {
     return handleRequest(
       () => httpClient.get(`/radiators/${id}`),

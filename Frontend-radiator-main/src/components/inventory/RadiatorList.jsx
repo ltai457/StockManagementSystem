@@ -1,13 +1,14 @@
 // src/components/inventory/RadiatorList.jsx
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import {
   Package,
   Plus,
   List as ListIcon,
   Grid as GridIcon,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useRadiators } from "../../hooks/useRadiators";
+import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
 import { useWarehouses } from "../../hooks/useWarehouses";
 import { useModal } from "../../hooks/useModal";
 import { useFilters } from "../../hooks/useFilters";
@@ -20,18 +21,53 @@ import RadiatorCards from "./RadiatorCards";
 import RadiatorStats from "./RadiatorStats";
 import AddRadiatorModal from "./modals/AddRadiatorModal";
 import EditRadiatorModal from "./modals/EditRadiatorModal";
+import radiatorService from "../../api/radiatorService";
 
 const RadiatorList = () => {
   const { user } = useAuth();
+
+  // Use infinite scroll hook with auto-scroll enabled
   const {
-    radiators,
+    items: radiators,
     loading,
     error,
-    createRadiator,
-    updateRadiator,
-    deleteRadiator,
+    hasMore,
+    loadMore,
     refetch,
-  } = useRadiators();
+    observerRef,
+  } = useInfiniteScroll(
+    (pageNumber, pageSize) => radiatorService.getPaginated(pageNumber, pageSize),
+    21, // page size (divisible by 3 for grid layout - prevents incomplete rows)
+    true // enable auto-scroll
+  );
+
+  // CRUD operations without the hook (to avoid auto-fetching)
+  const createRadiator = async (radiatorData, imageFile = null) => {
+    try {
+      const result = await radiatorService.create(radiatorData, imageFile);
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const updateRadiator = async (id, radiatorData) => {
+    try {
+      const result = await radiatorService.update(id, radiatorData);
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const deleteRadiator = async (id) => {
+    try {
+      const result = await radiatorService.delete(id);
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
 
   const { warehouses } = useWarehouses();
 
@@ -106,9 +142,11 @@ const RadiatorList = () => {
 
   const handleAddRadiator = async (radiatorData, imageFile) => {
     const result = await createRadiator(radiatorData, imageFile);
-    
+
     if (result.success) {
       addModal.closeModal();
+      // Refetch to get the new radiator
+      refetch();
       return true;
     }
     return false;
@@ -118,6 +156,8 @@ const RadiatorList = () => {
     const result = await updateRadiator(editModal.data.id, radiatorData);
     if (result.success) {
       editModal.closeModal();
+      // Refetch to get updated data
+      refetch();
       return true;
     }
     return false;
@@ -135,10 +175,13 @@ const RadiatorList = () => {
     const result = await deleteRadiator(radiator.id);
     if (!result.success) {
       alert("Failed to delete radiator: " + result.error);
+    } else {
+      // Refetch after deletion
+      refetch();
     }
   };
 
-  if (loading) {
+  if (loading && radiators.length === 0) {
     return <LoadingSpinner size="lg" text="Loading radiators..." />;
   }
 
@@ -205,7 +248,7 @@ const RadiatorList = () => {
         </div>
       )}
 
-      {sortedRadiators.length === 0 ? (
+      {sortedRadiators.length === 0 && !loading ? (
         <EmptyState
           icon={Package}
           title={hasActiveFilters ? "No radiators found" : "No radiators yet"}
@@ -236,6 +279,27 @@ const RadiatorList = () => {
               onEditStock={stockModal.openModal}
               isAdmin={isAdmin}
             />
+          )}
+
+          {/* Infinite scroll trigger (invisible observer element) */}
+          {hasMore && (
+            <div
+              ref={observerRef}
+              className="flex justify-center py-8"
+            >
+              {loading ? (
+                <LoadingSpinner size="md" text="Loading more radiators..." />
+              ) : (
+                <div className="h-10" /> // Invisible trigger element
+              )}
+            </div>
+          )}
+
+          {/* End of list indicator */}
+          {!hasMore && sortedRadiators.length > 0 && (
+            <div className="text-center py-6 text-gray-500 text-sm">
+              All radiators loaded ({sortedRadiators.length} total)
+            </div>
           )}
         </>
       )}

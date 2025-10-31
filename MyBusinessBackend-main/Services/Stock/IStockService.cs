@@ -1,5 +1,6 @@
 using System;
 using RadiatorStockAPI.DTOs.Stock;
+using RadiatorStockAPI.DTOs.Common;
 
 namespace RadiatorStockAPI.Services.Stock;
 
@@ -11,6 +12,7 @@ public interface IStockService
 
     Task<StockSummaryDto> GetStockSummaryAsync();
     Task<IEnumerable<RadiatorWithStockDto>> GetAllRadiatorsWithStockAsync(string? search = null, bool lowStockOnly = false, string? warehouseCode = null);
+    Task<PagedResult<RadiatorWithStockDto>> GetAllRadiatorsWithStockPagedAsync(PaginationParams paginationParams, string? search = null, bool lowStockOnly = false, string? warehouseCode = null);
     Task<IEnumerable<LowStockItemDto>> GetLowStockItemsAsync(int threshold = 5);
     Task<IEnumerable<OutOfStockItemDto>> GetOutOfStockItemsAsync();
     Task<BulkUpdateResultDto> BulkUpdateStockAsync(BulkUpdateStockDto dto);
@@ -25,4 +27,12 @@ public interface IStockService
         DateTime? toDate = null,
         string? movementType = null,
         int? limit = null);
+
+    Task<PagedResult<StockMovementDto>> GetStockMovementsPagedAsync(
+        PaginationParams paginationParams,
+        Guid? radiatorId = null,
+        string? warehouseCode = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        string? movementType = null);
 }

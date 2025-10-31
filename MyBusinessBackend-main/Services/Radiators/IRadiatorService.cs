@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using RadiatorStockAPI.DTOs.Radiators;
+using RadiatorStockAPI.DTOs.Common;
 
 namespace RadiatorStockAPI.Services.Radiators;
 
@@ -9,6 +10,7 @@ public interface IRadiatorService
     Task<RadiatorResponseDto?> CreateRadiatorWithImageAsync(CreateRadiatorWithImageDto dto);
 
     Task<List<RadiatorListDto>> GetAllRadiatorsAsync();
+    Task<PagedResult<RadiatorListDto>> GetRadiatorsPagedAsync(PaginationParams paginationParams);
     Task<RadiatorResponseDto?> GetRadiatorByIdAsync(Guid id);
     Task<RadiatorResponseDto?> UpdateRadiatorAsync(Guid id, UpdateRadiatorDto dto);
     Task<bool> DeleteRadiatorAsync(Guid id);
