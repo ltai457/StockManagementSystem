@@ -14,8 +14,9 @@ namespace RadiatorStockAPI.Services.S3
         {
             _s3Client = s3Client;
             _configuration = configuration;
-            _bucketName = _configuration["AWS:S3:BucketName"] ??
-                throw new InvalidOperationException("S3 bucket name not configured");
+            _bucketName = _configuration["DigitalOcean:Spaces:BucketName"]
+                ?? Environment.GetEnvironmentVariable("DO_SPACES_BUCKET_NAME")
+                ?? throw new InvalidOperationException("Digital Ocean Spaces bucket name not configured");
         }
 
         public async Task<string> UploadImageAsync(IFormFile file)
@@ -35,9 +36,21 @@ namespace RadiatorStockAPI.Services.S3
 
             await _s3Client.PutObjectAsync(request);
 
-            // ✅ CHANGED - Return direct public URL (never expires)
-            var region = _configuration["AWS:S3:Region"] ?? "us-east-2";
-            return $"https://{_bucketName}.s3.{region}.amazonaws.com/{key}";
+            // Return Digital Ocean Spaces CDN URL (faster delivery)
+            var region = _configuration["DigitalOcean:Spaces:Region"]
+                ?? Environment.GetEnvironmentVariable("DO_SPACES_REGION")
+                ?? "sgp1";
+            var useCdn = _configuration.GetValue<bool>("DigitalOcean:Spaces:UseCDN", true);
+
+            // Use CDN endpoint if enabled, otherwise use direct endpoint
+            if (useCdn)
+            {
+                return $"https://{_bucketName}.{region}.cdn.digitaloceanspaces.com/{key}";
+            }
+            else
+            {
+                return $"https://{_bucketName}.{region}.digitaloceanspaces.com/{key}";
+            }
         }
 
         public async Task<bool> DeleteImageAsync(string key)
