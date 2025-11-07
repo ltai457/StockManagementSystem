@@ -36,7 +36,10 @@ if (string.IsNullOrEmpty(connectionString))
 
 // Add services to the container
 builder.Services.AddDbContext<RadiatorDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    options.UseNpgsql(connectionString)
+           .UseSnakeCaseNamingConvention(); // Use snake_case for PostgreSQL
+});
 
 // Configure Digital Ocean Spaces (S3-compatible)
 var spacesAccessKey = builder.Configuration["DigitalOcean:Spaces:AccessKey"]

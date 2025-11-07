@@ -25,7 +25,7 @@ const RadiatorCards = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) =>
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {radiators.map((r) => {
         const totalStock = getTotalStock(r.stock);
         const stockColorClass = getStockColor(totalStock);
@@ -33,7 +33,7 @@ const RadiatorCards = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) =>
         return (
           <div
             key={r.id}
-            className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition p-4 flex flex-col"
+            className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition p-3 sm:p-4 flex flex-col"
           >
             {/* Image Section */}
             <div 

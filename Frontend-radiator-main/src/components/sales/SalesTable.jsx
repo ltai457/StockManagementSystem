@@ -23,7 +23,75 @@ const SalesTable = ({ sales, onViewDetails, onViewReceipt }) => {
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="relative overflow-x-auto">
+      {/* Mobile Card View */}
+      <div className="md:hidden divide-y divide-gray-200">
+        {sales.map((sale) => (
+          <div key={sale.id} className="p-4 hover:bg-gray-50 transition-colors space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="font-mono text-sm font-medium text-gray-900 truncate">
+                  {sale.saleNumber}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {formatDateTime(sale.saleDate)}
+                </div>
+              </div>
+              <button
+                onClick={() => copy(sale.saleNumber)}
+                className="p-2 rounded hover:bg-gray-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                title="Copy sale number"
+              >
+                <Copy className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Customer:</span>
+                <span className="font-medium text-gray-900">
+                  {sale.customer
+                    ? `${sale.customer.firstName} ${sale.customer.lastName}`
+                    : sale.customerName}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Payment:</span>
+                <span className="text-gray-900">{sale.paymentMethod}</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                <span className="text-gray-600 font-medium">Total:</span>
+                <span className="text-lg font-semibold text-gray-900">
+                  {formatCurrency(sale.totalAmount)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                icon={Eye}
+                onClick={() => onViewDetails(sale)}
+              >
+                Details
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                icon={FileText}
+                onClick={() => onViewReceipt(sale)}
+              >
+                Receipt
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block relative overflow-x-auto">
         <Table className="w-full">
           <TableHeader className="sticky top-0 z-10 bg-gray-50">
             <TableRow>
@@ -42,7 +110,6 @@ const SalesTable = ({ sales, onViewDetails, onViewReceipt }) => {
               <TableHead className="text-right text-xs tracking-wider uppercase text-gray-500">
                 Total
               </TableHead>
-              {/* Action header stays centered to align with buttons */}
               <TableHead className="w-48 text-center text-xs tracking-wider uppercase text-gray-500">
                 Action
               </TableHead>

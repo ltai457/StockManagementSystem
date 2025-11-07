@@ -122,7 +122,10 @@ namespace RadiatorStockAPI.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                // Get the inner exception message for database errors
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                var fullError = $"{ex.Message} | Inner: {errorMessage}";
+                return BadRequest(new { message = fullError, details = ex.ToString() });
             }
         }
         [HttpPost("{id:guid}/images")]

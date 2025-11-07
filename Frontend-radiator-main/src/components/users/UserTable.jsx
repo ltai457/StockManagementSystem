@@ -31,7 +31,88 @@ const UserTable = ({ users, currentUser, onEdit, onDelete }) => {
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto">
+      {/* Mobile Card View */}
+      <div className="md:hidden divide-y divide-gray-200">
+        {users.map((user) => {
+          const isCurrentUser = currentUser.id === user.id;
+
+          return (
+            <div key={user.id} className={`p-4 space-y-3 ${isCurrentUser ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center flex-1 min-w-0">
+                  <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-gray-600 font-medium text-sm">
+                      {user.firstName?.[0] || user.username?.[0]?.toUpperCase()}
+                      {user.lastName?.[0] || user.username?.[1]?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="ml-3 flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {user.firstName && user.lastName
+                        ? `${user.firstName} ${user.lastName}`
+                        : user.username}
+                      {isCurrentUser && (
+                        <span className="ml-2 text-xs text-blue-600">(You)</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                  </div>
+                </div>
+                {getRoleBadge(user.role)}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-600">Username:</span>
+                  <div className="font-medium text-gray-900">{user.username}</div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Status:</span>
+                  <div>
+                    {user.isActive ? (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-gray-600">Created:</span>
+                  <div className="text-gray-900">{formatDate(user.createdAt)}</div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEdit(user)}
+                  icon={Edit}
+                  className="text-yellow-600 hover:text-yellow-800 min-w-[44px] min-h-[44px]"
+                  title="Edit user"
+                  disabled={isCurrentUser}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDelete(user)}
+                  icon={Trash2}
+                  className="text-red-600 hover:text-red-800 min-w-[44px] min-h-[44px]"
+                  title="Deactivate user"
+                  disabled={isCurrentUser}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

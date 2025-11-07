@@ -72,7 +72,10 @@ export const filterArray = (array, filters) => {
           item.name?.toLowerCase().includes(searchTerm) ||
           item.code?.toLowerCase().includes(searchTerm) ||
           item.brand?.toLowerCase().includes(searchTerm) ||
-          item.year?.toString().includes(searchTerm)
+          item.year?.toString().includes(searchTerm) ||
+          item.productType?.toLowerCase().includes(searchTerm) ||
+          item.dimensions?.toLowerCase().includes(searchTerm) ||
+          item.notes?.toLowerCase().includes(searchTerm)
         );
       }
       

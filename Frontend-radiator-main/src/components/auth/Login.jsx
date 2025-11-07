@@ -109,8 +109,8 @@ const Login = () => {
       </div>
 
       {/* Login Card */}
-      <div className="relative z-10 w-full max-w-md mx-4">
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+      <div className="relative z-10 w-full max-w-md mx-4 sm:mx-auto">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 sm:p-8">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -118,8 +118,8 @@ const Login = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-            <p className="text-gray-600">Sign in to your account</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+            <p className="text-sm sm:text-base text-gray-600">Sign in to your account</p>
           </div>
 
           {/* Form */}

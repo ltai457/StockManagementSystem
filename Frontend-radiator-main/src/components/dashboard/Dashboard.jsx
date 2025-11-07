@@ -52,7 +52,8 @@ const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Default sidebar state: closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
   
   // Quick Invoice Modal States
   const [showQuickInvoice, setShowQuickInvoice] = useState(false);
@@ -140,22 +141,34 @@ const Dashboard = () => {
     : 'U';
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}>
+      <aside className={`${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-64 ${
+        !sidebarOpen && 'lg:w-20'
+      } bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}>
         {/* Logo & Toggle */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          {sidebarOpen && (
+          {(sidebarOpen || window.innerWidth >= 1024) && (
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-gray-900">Chan Mary 333</span>
+              <span className={`font-bold text-gray-900 ${!sidebarOpen && 'lg:hidden'}`}>Chan Mary 333</span>
             </div>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -169,16 +182,22 @@ const Dashboard = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                onClick={() => {
+                  setActiveTab(item.id);
+                  // Close sidebar on mobile after selection
+                  if (window.innerWidth < 1024) {
+                    setSidebarOpen(false);
+                  }
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
                   isActive ? 'border-l-4' : 'border-l-4 border-transparent'
                 } ${getColorClasses(item.color, isActive)}`}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
-                {sidebarOpen && (
+                {(sidebarOpen || window.innerWidth >= 1024) && (
                   <>
-                    <span className="flex-1 text-left font-medium">{item.label}</span>
-                    {isActive && <ChevronRight className="w-4 h-4" />}
+                    <span className={`flex-1 text-left font-medium ${!sidebarOpen && 'lg:hidden'}`}>{item.label}</span>
+                    {isActive && sidebarOpen && <ChevronRight className="w-4 h-4" />}
                   </>
                 )}
               </button>
@@ -188,21 +207,21 @@ const Dashboard = () => {
 
         {/* User Profile */}
         <div className="p-3 border-t border-gray-200">
-          <div className={`flex items-center gap-3 px-3 py-2 ${sidebarOpen ? '' : 'justify-center'}`}>
+          <div className={`flex items-center gap-3 px-3 py-2 ${!sidebarOpen && 'lg:justify-center'}`}>
             <div className="w-9 h-9 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
               {userInitials}
             </div>
-            {sidebarOpen && (
-              <div className="flex-1">
+            {(sidebarOpen || window.innerWidth >= 1024) && (
+              <div className={`flex-1 ${!sidebarOpen && 'lg:hidden'}`}>
                 <p className="text-sm font-medium text-gray-900">{user?.username || 'User'}</p>
                 <p className="text-xs text-gray-500">{isAdmin ? 'Admin' : (user?.role || 'User')}</p>
               </div>
             )}
           </div>
-          {sidebarOpen && (
+          {(sidebarOpen || window.innerWidth >= 1024) && (
             <button
               onClick={handleLogout}
-              className="w-full mt-2 flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className={`w-full mt-2 flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] ${!sidebarOpen && 'lg:hidden'}`}
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
@@ -212,25 +231,33 @@ const Dashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto w-full">
         {/* Top Bar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+        <header className="min-h-[64px] bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 py-3">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+
+          <div className="flex-1">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
               {navItems.find(item => item.id === activeTab)?.label || 'Overview'}
             </h1>
-            <p className="text-sm text-gray-500">Manage your radiator inventory and sales</p>
+            <p className="text-xs md:text-sm text-gray-500 hidden sm:block">Manage your radiator inventory and sales</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-              System Online
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="px-2 md:px-3 py-1 md:py-1.5 bg-green-100 text-green-700 rounded-full text-xs md:text-sm font-medium">
+              <span className="hidden sm:inline">System </span>Online
             </div>
           </div>
         </header>
 
         {/* Real Content Area */}
-        <div className="p-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-8">
+        <div className="p-3 sm:p-4 md:p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 lg:p-8">
             {renderContent()}
           </div>
         </div>
