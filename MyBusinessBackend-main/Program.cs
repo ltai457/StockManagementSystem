@@ -36,15 +36,37 @@ if (string.IsNullOrEmpty(connectionString))
 
 // Add services to the container
 builder.Services.AddDbContext<RadiatorDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    options.UseNpgsql(connectionString)
+           .UseSnakeCaseNamingConvention(); // Use snake_case for PostgreSQL
+});
 
-var awsOptions = builder.Configuration.GetAWSOptions();
-awsOptions.Region = Amazon.RegionEndpoint.GetBySystemName(
-    builder.Configuration["AWS:Region"] ?? "us-east-2"
+// Configure Digital Ocean Spaces (S3-compatible)
+var spacesAccessKey = builder.Configuration["DigitalOcean:Spaces:AccessKey"]
+    ?? Environment.GetEnvironmentVariable("DO_SPACES_ACCESS_KEY");
+var spacesSecretKey = builder.Configuration["DigitalOcean:Spaces:SecretKey"]
+    ?? Environment.GetEnvironmentVariable("DO_SPACES_SECRET_KEY");
+var spacesRegion = builder.Configuration["DigitalOcean:Spaces:Region"] ?? "sgp1";
+
+if (string.IsNullOrEmpty(spacesAccessKey) || string.IsNullOrEmpty(spacesSecretKey))
+{
+    throw new InvalidOperationException("Digital Ocean Spaces credentials not configured");
+}
+
+// Configure S3 client for Digital Ocean Spaces
+var spacesConfig = new Amazon.S3.AmazonS3Config
+{
+    ServiceURL = $"https://{spacesRegion}.digitaloceanspaces.com",
+    ForcePathStyle = false
+};
+
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+    new Amazon.S3.AmazonS3Client(
+        spacesAccessKey,
+        spacesSecretKey,
+        spacesConfig
+    )
 );
-
-builder.Services.AddDefaultAWSOptions(awsOptions);
-builder.Services.AddAWSService<IAmazonS3>();
 
 // Register services
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();

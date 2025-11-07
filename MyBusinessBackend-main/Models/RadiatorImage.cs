@@ -19,9 +19,9 @@ namespace RadiatorStockAPI.Models
         public string Url { get; set; } = string.Empty;
         
         public bool IsPrimary { get; set; } = false;
-        
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        
+
+        public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
         // Navigation property
         public virtual Radiator Radiator { get; set; } = null!;
     }

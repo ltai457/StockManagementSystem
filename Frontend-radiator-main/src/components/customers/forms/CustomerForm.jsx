@@ -170,8 +170,8 @@ const CustomerForm = ({
     <div className="space-y-6">
       {/* Personal Information */}
       <div className="space-y-4">
-        <h4 className="font-medium text-gray-900 border-b pb-2">Personal Information</h4>
-        <div className="grid grid-cols-2 gap-4">
+        <h4 className="text-sm sm:text-base font-medium text-gray-900 border-b pb-2">Personal Information</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               First Name *
@@ -335,12 +335,13 @@ const CustomerForm = ({
       )}
 
       {/* Form Actions */}
-      <div className="flex justify-end space-x-3 pt-4 border-t">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
           disabled={loading}
+          className="w-full sm:w-auto"
         >
           Cancel
         </Button>
@@ -348,6 +349,7 @@ const CustomerForm = ({
           onClick={handleSubmit}
           loading={loading}
           disabled={loading}
+          className="w-full sm:w-auto"
         >
           {submitLabel}
         </Button>

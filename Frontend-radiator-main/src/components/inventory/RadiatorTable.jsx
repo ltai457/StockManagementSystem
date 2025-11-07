@@ -161,13 +161,13 @@ const RadiatorTable = ({
 
               {/* Actions */}
               <TableCell className="text-center align-middle">
-                <div className="inline-flex items-center justify-center gap-2">
+                <div className="inline-flex items-center justify-center gap-1 sm:gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onEditStock(radiator)}
                     icon={Package}
-                    className="p-1 text-blue-600 hover:text-blue-800"
+                    className="p-2 text-blue-600 hover:text-blue-800 min-w-[44px] min-h-[44px] flex items-center justify-center"
                     title="Edit Stock"
                   />
 
@@ -178,7 +178,7 @@ const RadiatorTable = ({
                         size="sm"
                         onClick={() => onEdit(radiator)}
                         icon={Edit}
-                        className="p-1 text-yellow-600 hover:text-yellow-800"
+                        className="p-2 text-yellow-600 hover:text-yellow-800 min-w-[44px] min-h-[44px] flex items-center justify-center"
                         title="Edit Radiator"
                       />
                       <Button
@@ -186,7 +186,7 @@ const RadiatorTable = ({
                         size="sm"
                         onClick={() => onDelete(radiator)}
                         icon={Trash2}
-                        className="p-1 text-red-600 hover:text-red-800"
+                        className="p-2 text-red-600 hover:text-red-800 min-w-[44px] min-h-[44px] flex items-center justify-center"
                         title="Delete Radiator"
                       />
                     </>

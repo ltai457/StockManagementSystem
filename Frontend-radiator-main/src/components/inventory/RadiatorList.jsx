@@ -6,6 +6,7 @@ import {
   List as ListIcon,
   Grid as GridIcon,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
@@ -15,6 +16,7 @@ import { useFilters } from "../../hooks/useFilters";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
 import { Button } from "../common/ui/Button";
 import { EmptyState } from "../common/layout/EmptyState";
+import ProductTypeCards from "./ProductTypeCards";
 import RadiatorFilters from "./RadiatorFilters";
 import RadiatorTable from "./RadiatorTable";
 import RadiatorCards from "./RadiatorCards";
@@ -85,6 +87,7 @@ const RadiatorList = () => {
     search: "",
     brand: "all",
     year: "all",
+    productType: "all",
   });
 
   // Sort order state
@@ -127,10 +130,25 @@ const RadiatorList = () => {
   const [viewMode, setViewMode] = useState(
     () => localStorage.getItem("radiatorViewMode") || "list"
   );
-  
+
+  // Category view state - start with category view
+  const [showCategoryView, setShowCategoryView] = useState(true);
+
   useEffect(() => {
     localStorage.setItem("radiatorViewMode", viewMode);
   }, [viewMode]);
+
+  // Handle product type selection from category cards
+  const handleSelectProductType = (type) => {
+    setFilter('productType', type);
+    setShowCategoryView(false);
+  };
+
+  // Handle back to categories
+  const handleBackToCategories = () => {
+    clearFilters();
+    setShowCategoryView(true);
+  };
 
   const isAdmin =
     user?.role === 1 ||
@@ -188,118 +206,149 @@ const RadiatorList = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage your radiator products and stock levels
-          </p>
-        </div>
-
-        <div className="flex gap-2 items-center">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="name">Name (A-Z)</option>
-            <option value="brand">Brand (A-Z)</option>
-          </select>
-
-          <Button
-            variant={viewMode === "list" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("list")}
-            icon={ListIcon}
-          >
-            List
-          </Button>
-          <Button
-            variant={viewMode === "card" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("card")}
-            icon={GridIcon}
-          >
-            Card
-          </Button>
-
-          {isAdmin && (
-            <Button onClick={() => addModal.openModal()} icon={Plus}>
-              Add Radiator
+        <div className="flex items-center gap-4">
+          {!showCategoryView && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackToCategories}
+              icon={ArrowLeft}
+            >
+              Categories
             </Button>
           )}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {showCategoryView ? "Product Categories" : "Inventory Management"}
+            </h1>
+            <p className="text-sm text-gray-600 mt-1">
+              {showCategoryView
+                ? "Browse products by category"
+                : filters.productType && filters.productType !== 'all'
+                ? `Showing ${filters.productType} products`
+                : "Manage your radiator products and stock levels"
+              }
+            </p>
+          </div>
         </div>
+
+        {!showCategoryView && (
+          <div className="flex gap-2 items-center">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name">Name (A-Z)</option>
+              <option value="brand">Brand (A-Z)</option>
+            </select>
+
+            <Button
+              variant={viewMode === "list" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              icon={ListIcon}
+            >
+              List
+            </Button>
+            <Button
+              variant={viewMode === "card" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("card")}
+              icon={GridIcon}
+            >
+              Card
+            </Button>
+
+            {isAdmin && (
+              <Button onClick={() => addModal.openModal()} icon={Plus}>
+                Add Radiator
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      <RadiatorStats radiators={radiators} />
-
-      <RadiatorFilters
-        filters={filters}
-        onFilterChange={setFilter}
-        onClearFilters={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-        radiators={radiators}
-      />
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {sortedRadiators.length === 0 && !loading ? (
-        <EmptyState
-          icon={Package}
-          title={hasActiveFilters ? "No radiators found" : "No radiators yet"}
-          description={
-            hasActiveFilters
-              ? "No radiators match your current filters"
-              : "Start by adding your first radiator"
-          }
-          action={hasActiveFilters}
-          actionLabel="Clear filters"
-          onAction={clearFilters}
+      {/* Show Category Cards or Product List */}
+      {showCategoryView ? (
+        <ProductTypeCards
+          radiators={radiators}
+          onSelectType={handleSelectProductType}
         />
       ) : (
         <>
-          {viewMode === "list" ? (
-            <RadiatorTable
-              radiators={sortedRadiators}
-              onEdit={editModal.openModal}
-              onDelete={handleDeleteRadiator}
-              onEditStock={stockModal.openModal}
-              isAdmin={isAdmin}
+          <RadiatorStats radiators={radiators} />
+
+          <RadiatorFilters
+            filters={filters}
+            onFilterChange={setFilter}
+            onClearFilters={clearFilters}
+            hasActiveFilters={hasActiveFilters}
+            radiators={radiators}
+          />
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          {sortedRadiators.length === 0 && !loading ? (
+            <EmptyState
+              icon={Package}
+              title={hasActiveFilters ? "No radiators found" : "No radiators yet"}
+              description={
+                hasActiveFilters
+                  ? "No radiators match your current filters"
+                  : "Start by adding your first radiator"
+              }
+              action={hasActiveFilters}
+              actionLabel="Clear filters"
+              onAction={clearFilters}
             />
           ) : (
-            <RadiatorCards
-              radiators={sortedRadiators}
-              onEdit={editModal.openModal}
-              onDelete={handleDeleteRadiator}
-              onEditStock={stockModal.openModal}
-              isAdmin={isAdmin}
-            />
-          )}
-
-          {/* Infinite scroll trigger (invisible observer element) */}
-          {hasMore && (
-            <div
-              ref={observerRef}
-              className="flex justify-center py-8"
-            >
-              {loading ? (
-                <LoadingSpinner size="md" text="Loading more radiators..." />
+            <>
+              {viewMode === "list" ? (
+                <RadiatorTable
+                  radiators={sortedRadiators}
+                  onEdit={editModal.openModal}
+                  onDelete={handleDeleteRadiator}
+                  onEditStock={stockModal.openModal}
+                  isAdmin={isAdmin}
+                />
               ) : (
-                <div className="h-10" /> // Invisible trigger element
+                <RadiatorCards
+                  radiators={sortedRadiators}
+                  onEdit={editModal.openModal}
+                  onDelete={handleDeleteRadiator}
+                  onEditStock={stockModal.openModal}
+                  isAdmin={isAdmin}
+                />
               )}
-            </div>
-          )}
 
-          {/* End of list indicator */}
-          {!hasMore && sortedRadiators.length > 0 && (
-            <div className="text-center py-6 text-gray-500 text-sm">
-              All radiators loaded ({sortedRadiators.length} total)
-            </div>
+              {/* Infinite scroll trigger (invisible observer element) */}
+              {hasMore && (
+                <div
+                  ref={observerRef}
+                  className="flex justify-center py-8"
+                >
+                  {loading ? (
+                    <LoadingSpinner size="md" text="Loading more radiators..." />
+                  ) : (
+                    <div className="h-10" />
+                  )}
+                </div>
+              )}
+
+              {/* End of list indicator */}
+              {!hasMore && sortedRadiators.length > 0 && (
+                <div className="text-center py-6 text-gray-500 text-sm">
+                  All radiators loaded ({sortedRadiators.length} total)
+                </div>
+              )}
+            </>
           )}
         </>
       )}

@@ -42,8 +42,8 @@ const CustomerTable = ({
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      {/* Header */}
-      <div className="grid gap-4 p-4 bg-gray-50 border-b font-medium text-sm text-gray-600" style={{gridTemplateColumns: '240px 200px 80px 120px 120px 80px 100px'}}>
+      {/* Desktop Header - Hidden on Mobile */}
+      <div className="hidden md:grid gap-4 p-4 bg-gray-50 border-b font-medium text-sm text-gray-600" style={{gridTemplateColumns: '240px 200px 80px 120px 120px 80px 100px'}}>
         <div>
           <SortButton column="firstName">Customer</SortButton>
         </div>
@@ -76,141 +76,232 @@ const CustomerTable = ({
           </div>
         ) : (
           customers.map((customer) => (
-            <div 
-              key={customer.id} 
-              className="grid gap-4 p-4 hover:bg-gray-50 transition-colors items-center" 
-              style={{gridTemplateColumns: '240px 200px 80px 120px 120px 80px 100px'}}
-            >
-              {/* Customer Name & Company - 240px */}
-              <div>
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-900 truncate">
-                    {customer.firstName} {customer.lastName}
-                  </div>
-                  {customer.company && (
-                    <div className="text-sm text-gray-500 truncate">
-                      {customer.company}
+            <div key={customer.id}>
+              {/* Mobile Card Layout */}
+              <div className="md:hidden p-4 hover:bg-gray-50 transition-colors space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900">
+                      {customer.firstName} {customer.lastName}
                     </div>
-                  )}
-                  <div className="text-xs text-gray-400 truncate">
-                    ID: {customer.id?.substring(0, 8)}...
+                    {customer.company && (
+                      <div className="text-sm text-gray-500 truncate">
+                        {customer.company}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    {customer.isActive ? (
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                        Inactive
+                      </span>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              {/* Contact Information - 200px */}
-              <div>
-                <div className="min-w-0 space-y-1">
+                {/* Contact Info */}
+                <div className="space-y-1 text-sm">
                   {customer.email && (
-                    <div className="text-sm text-gray-900 truncate">
+                    <div className="text-gray-900 truncate">
                       📧 {customer.email}
                     </div>
                   )}
                   {customer.phone && (
-                    <div className="text-sm text-gray-600 truncate">
+                    <div className="text-gray-600 truncate">
                       📞 {customer.phone}
                     </div>
                   )}
-                  {!customer.email && !customer.phone && (
-                    <div className="text-sm text-gray-400">
-                      No contact info
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-3 text-center py-3 border-t border-gray-100">
+                  <div>
+                    <div className="text-lg font-semibold text-blue-600">
+                      {customer.totalPurchases || 0}
                     </div>
+                    <div className="text-xs text-gray-500">Orders</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">
+                      {formatCurrency(customer.totalSpent || 0)}
+                    </div>
+                    <div className="text-xs text-gray-500">Total Spent</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-900">
+                      {customer.lastPurchaseDate ? formatDate(customer.lastPurchaseDate) : '-'}
+                    </div>
+                    <div className="text-xs text-gray-500">Last Order</div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onViewDetails(customer)}
+                    className="p-2 hover:bg-blue-50 transition-colors"
+                    title="View customer details"
+                  >
+                    <Eye className="w-4 h-4 text-blue-600" />
+                  </Button>
+                  {canEdit && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(customer)}
+                        className="p-2 hover:bg-yellow-50 transition-colors"
+                        title="Edit customer"
+                      >
+                        <Edit className="w-4 h-4 text-yellow-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(customer)}
+                        className="p-2 hover:bg-red-50 transition-colors"
+                        title="Delete customer"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
 
-              {/* Orders Count - 80px */}
-              <div className="text-center">
-                <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">
-                  {customer.totalPurchases || 0}
-                </span>
-              </div>
-
-              {/* Total Spent - 120px */}
-              <div className="text-center">
-                <div className="font-semibold text-gray-900">
-                  {formatCurrency(customer.totalSpent || 0)}
-                </div>
-                {customer.totalSpent > 0 && (
-                  <div className="text-xs text-gray-500">
-                    Avg: {formatCurrency((customer.totalSpent || 0) / Math.max(1, customer.totalPurchases || 1))}
+              {/* Desktop Grid Layout */}
+              <div
+                className="hidden md:grid gap-4 p-4 hover:bg-gray-50 transition-colors items-center"
+                style={{gridTemplateColumns: '240px 200px 80px 120px 120px 80px 100px'}}
+              >
+                {/* Customer Name & Company - 240px */}
+                <div>
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900 truncate">
+                      {customer.firstName} {customer.lastName}
+                    </div>
+                    {customer.company && (
+                      <div className="text-sm text-gray-500 truncate">
+                        {customer.company}
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-400 truncate">
+                      ID: {customer.id?.substring(0, 8)}...
+                    </div>
                   </div>
-                )}
-              </div>
-
-              {/* Last Order Date - 120px */}
-              <div className="text-center">
-                <div className="text-sm text-gray-900">
-                  {customer.lastPurchaseDate ? formatDate(customer.lastPurchaseDate) : '-'}
                 </div>
-                {customer.lastPurchaseDate && (
-                  <div className="text-xs text-gray-500">
-                    {Math.floor((Date.now() - new Date(customer.lastPurchaseDate).getTime()) / (1000 * 60 * 60 * 24))} days ago
+
+                {/* Contact Information - 200px */}
+                <div>
+                  <div className="min-w-0 space-y-1">
+                    {customer.email && (
+                      <div className="text-sm text-gray-900 truncate">
+                        📧 {customer.email}
+                      </div>
+                    )}
+                    {customer.phone && (
+                      <div className="text-sm text-gray-600 truncate">
+                        📞 {customer.phone}
+                      </div>
+                    )}
+                    {!customer.email && !customer.phone && (
+                      <div className="text-sm text-gray-400">
+                        No contact info
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Status - 80px */}
-              <div className="text-center">
-                {customer.isActive ? (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                    Active
+                {/* Orders Count - 80px */}
+                <div className="text-center">
+                  <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">
+                    {customer.totalPurchases || 0}
                   </span>
-                ) : (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
-                    Inactive
-                  </span>
-                )}
-              </div>
+                </div>
 
-              {/* Actions - 100px */}
-              <div className="flex items-center justify-center gap-1">
-                {/* View Details Button - Always visible */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onViewDetails(customer)}
-                  className="p-1 hover:bg-blue-50 transition-colors"
-                  title="View customer details"
-                >
-                  <Eye className="w-4 h-4 text-blue-600" />
-                </Button>
-                
-                {/* Edit & Delete Buttons - Only for admins */}
-                {canEdit && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(customer)}
-                      className="p-1 hover:bg-yellow-50 transition-colors"
-                      title="Edit customer"
-                    >
-                      <Edit className="w-4 h-4 text-yellow-600" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(customer)}
-                      className="p-1 hover:bg-red-50 transition-colors"
-                      title="Delete customer"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </Button>
-                  </>
-                )}
+                {/* Total Spent - 120px */}
+                <div className="text-center">
+                  <div className="font-semibold text-gray-900">
+                    {formatCurrency(customer.totalSpent || 0)}
+                  </div>
+                  {customer.totalSpent > 0 && (
+                    <div className="text-xs text-gray-500">
+                      Avg: {formatCurrency((customer.totalSpent || 0) / Math.max(1, customer.totalPurchases || 1))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Last Order Date - 120px */}
+                <div className="text-center">
+                  <div className="text-sm text-gray-900">
+                    {customer.lastPurchaseDate ? formatDate(customer.lastPurchaseDate) : '-'}
+                  </div>
+                  {customer.lastPurchaseDate && (
+                    <div className="text-xs text-gray-500">
+                      {Math.floor((Date.now() - new Date(customer.lastPurchaseDate).getTime()) / (1000 * 60 * 60 * 24))} days ago
+                    </div>
+                  )}
+                </div>
+
+                {/* Status - 80px */}
+                <div className="text-center">
+                  {customer.isActive ? (
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                      Inactive
+                    </span>
+                  )}
+                </div>
+
+                {/* Actions - 100px */}
+                <div className="flex items-center justify-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onViewDetails(customer)}
+                    className="p-1 hover:bg-blue-50 transition-colors"
+                    title="View customer details"
+                  >
+                    <Eye className="w-4 h-4 text-blue-600" />
+                  </Button>
+                  {canEdit && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(customer)}
+                        className="p-1 hover:bg-yellow-50 transition-colors"
+                        title="Edit customer"
+                      >
+                        <Edit className="w-4 h-4 text-yellow-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(customer)}
+                        className="p-1 hover:bg-red-50 transition-colors"
+                        title="Delete customer"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Debug Panel - Remove this in production */}
-      <div className="border-t bg-yellow-50 p-2 text-xs text-gray-600">
-        <strong>🔍 Debug Info:</strong> userRole = <code>{JSON.stringify(userRole)}</code>, canEdit = <code>{canEdit.toString()}</code>
-        {canEdit && <span className="text-green-600 ml-2">✅ Edit buttons should be visible</span>}
-        {!canEdit && <span className="text-red-600 ml-2">❌ Edit buttons hidden - check role</span>}
-      </div>
     </div>
   );
 };

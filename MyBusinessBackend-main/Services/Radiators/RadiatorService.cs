@@ -217,7 +217,7 @@ namespace RadiatorStockAPI.Services.Radiators
                         S3Key = imageUrl.Split('/').Last(),
                         Url = imageUrl,
                         IsPrimary = true,
-                        CreatedAt = now
+                        UploadedAt = now
                     };
 
                     _context.RadiatorImages.Add(radiatorImage);
@@ -248,30 +248,29 @@ namespace RadiatorStockAPI.Services.Radiators
         }
 
         public async Task<PagedResult<RadiatorListDto>> GetRadiatorsPagedAsync(PaginationParams paginationParams)
-        {
-            var query = _context.Radiators
-                .AsNoTracking()
-                .Include(r => r.StockLevels).ThenInclude(sl => sl.Warehouse)
-                .Include(r => r.Images)
-                .OrderByDescending(r => r.UpdatedAt)
-                .ThenByDescending(r => r.CreatedAt);
+{
+    var query = _context.Radiators
+        .AsNoTracking()
+        .OrderByDescending(r => r.UpdatedAt)  // ✅ OrderBy FIRST
+        .Include(r => r.StockLevels).ThenInclude(sl => sl.Warehouse)
+        .Include(r => r.Images);
 
-            var totalCount = await query.CountAsync();
+    var totalCount = await query.CountAsync();
 
-            var items = await query
-                .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
-                .Take(paginationParams.PageSize)
-                .ToListAsync();
+    var items = await query
+        .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
+        .Take(paginationParams.PageSize)
+        .ToListAsync();
 
-            return new PagedResult<RadiatorListDto>
-            {
-                Items = items.Select(ToListDto).ToList(),
-                PageNumber = paginationParams.PageNumber,
-                PageSize = paginationParams.PageSize,
-                TotalCount = totalCount,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)paginationParams.PageSize)
-            };
-        }
+    return new PagedResult<RadiatorListDto>
+    {
+        Items = items.Select(ToListDto).ToList(),
+        PageNumber = paginationParams.PageNumber,
+        PageSize = paginationParams.PageSize,
+        TotalCount = totalCount,
+        TotalPages = (int)Math.Ceiling(totalCount / (double)paginationParams.PageSize)
+    };
+}
 
         public async Task<RadiatorResponseDto?> GetRadiatorByIdAsync(Guid id)
         {
@@ -364,7 +363,7 @@ namespace RadiatorStockAPI.Services.Radiators
                 S3Key = uploadResult.Split('/').Last(),
                 Url = uploadResult,
                 IsPrimary = dto.IsPrimary,
-                CreatedAt = now
+                UploadedAt = now
             };
 
             // If this is set as primary, update other images
@@ -384,7 +383,7 @@ namespace RadiatorStockAPI.Services.Radiators
                 S3Key = radiatorImage.S3Key,
                 Url = radiatorImage.Url,
                 IsPrimary = radiatorImage.IsPrimary,
-                CreatedAt = radiatorImage.CreatedAt
+                CreatedAt = radiatorImage.UploadedAt
             };
         }
 
@@ -393,7 +392,7 @@ namespace RadiatorStockAPI.Services.Radiators
             var images = await _context.RadiatorImages
                 .Where(img => img.RadiatorId == radiatorId)
                 .OrderByDescending(img => img.IsPrimary)
-                .ThenBy(img => img.CreatedAt)
+                .ThenBy(img => img.UploadedAt)
                 .ToListAsync();
 
             return images.Select(img => new RadiatorImageDto
@@ -404,7 +403,7 @@ namespace RadiatorStockAPI.Services.Radiators
                 S3Key = img.S3Key,
                 Url = img.Url,
                 IsPrimary = img.IsPrimary,
-                CreatedAt = img.CreatedAt
+                CreatedAt = img.UploadedAt
             }).ToList();
         }
 
@@ -574,7 +573,7 @@ namespace RadiatorStockAPI.Services.Radiators
                         S3Key = imageUrl.Split('/').Last(),
                         Url = imageUrl,
                         IsPrimary = true,
-                        CreatedAt = now
+                        UploadedAt = now
                     };
 
                     _context.RadiatorImages.Add(radiatorImage);

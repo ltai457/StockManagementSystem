@@ -26,8 +26,8 @@ export default function WarehouseTable({
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      {/* Header */}
-      <div className="grid grid-cols-12 gap-4 p-4 bg-gray-50 border-b font-medium text-sm text-gray-600">
+      {/* Header - Hidden on mobile */}
+      <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-gray-50 border-b font-medium text-sm text-gray-600">
         <div className="col-span-3">
           <SortButton column="name">Warehouse</SortButton>
         </div>
@@ -51,10 +51,102 @@ export default function WarehouseTable({
       {/* Rows */}
       <div className="divide-y divide-gray-200">
         {items.map((warehouse) => (
-          <div 
-            key={warehouse.id} 
-            className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 transition-colors items-center"
-          >
+          <div key={warehouse.id}>
+            {/* Mobile Card Layout */}
+            <div className="md:hidden p-4 hover:bg-gray-50 transition-colors space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Warehouse className="h-8 w-8 text-gray-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900 truncate">
+                      {warehouse.name}
+                    </div>
+                    <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                      {warehouse.code}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-gray-600">Location:</span>
+                  <div className="text-gray-900">{warehouse.location || "Not specified"}</div>
+                  {warehouse.address && (
+                    <div className="text-xs text-gray-500">{warehouse.address}</div>
+                  )}
+                </div>
+
+                {(warehouse.phone || warehouse.email) && (
+                  <div>
+                    <span className="text-gray-600">Contact:</span>
+                    <div className="space-y-1 mt-1">
+                      {warehouse.phone && (
+                        <div className="flex items-center gap-1 text-gray-900">
+                          <Phone className="w-3 h-3" />
+                          <span>{warehouse.phone}</span>
+                        </div>
+                      )}
+                      {warehouse.email && (
+                        <div className="flex items-center gap-1 text-gray-500">
+                          <Mail className="w-3 h-3" />
+                          <span>{warehouse.email}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <span className="text-gray-600">Updated:</span>
+                  <div className="text-gray-900">
+                    {new Date(warehouse.updatedAt || warehouse.createdAt).toLocaleDateString('en-NZ', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onView(warehouse)}
+                  className="p-2 hover:bg-gray-100 min-w-[44px] min-h-[44px]"
+                  title="View Details"
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
+                {isAdmin && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(warehouse)}
+                      className="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 min-w-[44px] min-h-[44px]"
+                      title="Edit Warehouse"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(warehouse)}
+                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 min-w-[44px] min-h-[44px]"
+                      title="Delete Warehouse"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop Grid Layout */}
+            <div className="hidden md:grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 transition-colors items-center">
+
             {/* Warehouse Info - 3 columns */}
             <div className="col-span-3 flex items-center gap-2">
               <Warehouse className="h-8 w-8 text-gray-400 flex-shrink-0" />
@@ -154,6 +246,7 @@ export default function WarehouseTable({
                   </Button>
                 </>
               )}
+            </div>
             </div>
           </div>
         ))}
