@@ -15,7 +15,7 @@ import {
   Grid,
   Divider,
 } from "@mui/material";
-import ImageGallery from "../ImageGallery";
+
 
 const emptyForm = {
   brand: "",
@@ -330,13 +330,6 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
             </Grid>
           </Box>
 
-          <Divider />
-
-          {/* Image Gallery */}
-          <Box>
-            <Typography variant="subtitle2" gutterBottom>Product Images</Typography>
-            <ImageGallery radiatorId={radiator.id} onUpdate={() => {}} />
-          </Box>
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>

@@ -1,19 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using RadiatorStockAPI.DTOs.Warehouses;
 using RadiatorStockAPI.Models;
 
 namespace RadiatorStockAPI.Services.Warehouses;
 
 public interface IWarehouseService
 {
-    Task<IEnumerable<WarehouseDto>> GetAllWarehousesAsync();
-    Task<Warehouse?> GetWarehouseByCodeAsync(string code);
-    Task<bool> WarehouseExistsAsync(string code);
-    Task<WarehouseDto?> GetWarehouseByIdAsync(Guid id);
-    Task<WarehouseDto> CreateWarehouseAsync(CreateWarehouseDto dto);
-    Task<WarehouseDto> UpdateWarehouseAsync(Guid id, UpdateWarehouseDto dto);
-    Task<bool> DeleteWarehouseAsync(Guid id);
+    Task<List<Warehouse>> GetAllAsync();
+    Task<Warehouse?> GetByIdAsync(Guid id);
+    Task<Warehouse?> GetByCodeAsync(string code);
+    Task<bool> ExistsByCodeAsync(string code);
     Task<bool> HasStockLevelsAsync(Guid warehouseId);
+    Task<Warehouse> CreateAsync(string code, string name, string? location, string? address, string? phone, string? email);
+    Task<Warehouse> UpdateAsync(Guid id, string code, string name, string? location, string? address, string? phone, string? email);
+    Task<bool> DeleteAsync(Guid id);
 }

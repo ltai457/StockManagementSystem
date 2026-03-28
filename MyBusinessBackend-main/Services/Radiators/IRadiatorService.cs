@@ -1,27 +1,16 @@
-using Microsoft.AspNetCore.Http;
 using RadiatorStockAPI.DTOs.Radiators;
-using RadiatorStockAPI.DTOs.Common;
+using RadiatorStockAPI.Models;
 
 namespace RadiatorStockAPI.Services.Radiators;
 
 public interface IRadiatorService
 {
-    Task<RadiatorResponseDto?> CreateRadiatorAsync(CreateRadiatorDto dto);
-    Task<RadiatorResponseDto?> CreateRadiatorWithImageAsync(CreateRadiatorWithImageDto dto);
-
-    Task<List<RadiatorListDto>> GetAllRadiatorsAsync();
-    Task<PagedResult<RadiatorListDto>> GetRadiatorsPagedAsync(PaginationParams paginationParams);
-    Task<RadiatorResponseDto?> GetRadiatorByIdAsync(Guid id);
-    Task<RadiatorResponseDto?> UpdateRadiatorAsync(Guid id, UpdateRadiatorDto dto);
-    Task<bool> DeleteRadiatorAsync(Guid id);
-    Task<bool> RadiatorExistsAsync(Guid id);
-    Task<bool> CodeExistsAsync(string code, Guid? excludeId = null);
-    Task<List<RadiatorListDto>> UpdateMultiplePricesAsync(List<UpdateRadiatorPriceDto> updates);
-
-    Task<RadiatorImageDto?> AddImageToRadiatorAsync(Guid radiatorId, UploadRadiatorImageDto dto);
-    Task<List<RadiatorImageDto>> GetRadiatorImagesAsync(Guid radiatorId);
-    Task<bool> DeleteRadiatorImageAsync(Guid radiatorId, Guid imageId);
-    Task<bool> SetPrimaryImageAsync(Guid radiatorId, Guid imageId);
-
-    Task<string> TestS3Async(IFormFile file);
+    Task<Radiator?> CreateAsync(CreateRadiatorDto dto);
+    Task<List<Radiator>> GetAllAsync();
+    Task<(List<Radiator> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize);
+    Task<Radiator?> GetByIdAsync(Guid id);
+    Task<Radiator?> UpdateAsync(Guid id, UpdateRadiatorDto dto);
+    Task<bool> DeleteAsync(Guid id);
+    Task<bool> ExistsAsync(Guid id);
+    Task<List<Radiator>> UpdateMultiplePricesAsync(List<UpdateRadiatorPriceDto> updates);
 }

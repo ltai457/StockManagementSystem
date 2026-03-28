@@ -1,38 +1,21 @@
-using System;
 using RadiatorStockAPI.DTOs.Stock;
 using RadiatorStockAPI.DTOs.Common;
+using RadiatorStockAPI.Models;
 
 namespace RadiatorStockAPI.Services.Stock;
 
 public interface IStockService
 {
-    Task<StockResponseDto?> GetRadiatorStockAsync(Guid radiatorId);
-    Task<bool> UpdateStockAsync(Guid radiatorId, UpdateStockDto dto);
-    Task<Dictionary<string, int>> GetStockDictionaryAsync(Guid radiatorId);
-
-    Task<StockSummaryDto> GetStockSummaryAsync();
-    Task<IEnumerable<RadiatorWithStockDto>> GetAllRadiatorsWithStockAsync(string? search = null, bool lowStockOnly = false, string? warehouseCode = null);
-    Task<PagedResult<RadiatorWithStockDto>> GetAllRadiatorsWithStockPagedAsync(PaginationParams paginationParams, string? search = null, bool lowStockOnly = false, string? warehouseCode = null);
-    Task<IEnumerable<LowStockItemDto>> GetLowStockItemsAsync(int threshold = 5);
-    Task<IEnumerable<OutOfStockItemDto>> GetOutOfStockItemsAsync();
-    Task<BulkUpdateResultDto> BulkUpdateStockAsync(BulkUpdateStockDto dto);
-    Task<WarehouseStockDto?> GetWarehouseStockAsync(string warehouseCode);
-    Task<IEnumerable<StockHistoryDto>> GetStockHistoryAsync(Guid radiatorId, DateTime? fromDate = null, DateTime? toDate = null, string? warehouseCode = null);
-    Task<StockAdjustmentResultDto> AdjustStockAsync(StockAdjustmentDto dto);
-
-    Task<IEnumerable<StockMovementDto>> GetStockMovementsAsync(
-        Guid? radiatorId = null,
-        string? warehouseCode = null,
-        DateTime? fromDate = null,
-        DateTime? toDate = null,
-        string? movementType = null,
-        int? limit = null);
-
-    Task<PagedResult<StockMovementDto>> GetStockMovementsPagedAsync(
-        PaginationParams paginationParams,
-        Guid? radiatorId = null,
-        string? warehouseCode = null,
-        DateTime? fromDate = null,
-        DateTime? toDate = null,
-        string? movementType = null);
+    Task<Dictionary<string, int>?> GetRadiatorStockAsync(Guid radiatorId);
+    Task<bool> UpdateStockAsync(Guid radiatorId, string warehouseCode, int quantity);
+    Task<(int TotalRadiators, int TotalStock, int LowStock, int OutOfStock, List<Warehouse> Warehouses, List<StockLevel> StockLevels)> GetStockSummaryDataAsync();
+    Task<List<Radiator>> GetRadiatorsWithStockAsync(string? search, bool lowStockOnly, string? warehouseCode);
+    Task<(List<Radiator> Items, int TotalCount)> GetRadiatorsWithStockPagedAsync(int pageNumber, int pageSize, string? search, bool lowStockOnly, string? warehouseCode);
+    Task<List<StockLevel>> GetLowStockItemsAsync(int threshold);
+    Task<List<StockLevel>> GetOutOfStockItemsAsync();
+    Task<(bool Success, string? Error, int SuccessCount, int ErrorCount, List<(Guid RadiatorId, string WarehouseCode, string Error)> Errors)> BulkUpdateStockAsync(List<StockUpdateItemDto> updates);
+    Task<(Warehouse Warehouse, List<StockLevel> StockLevels)?> GetWarehouseStockDataAsync(string warehouseCode);
+    Task<(bool Success, string? Error, Guid RadiatorId, string WarehouseCode, int OldQuantity, int NewQuantity, string? Reason)> AdjustStockAsync(Guid radiatorId, string warehouseCode, int newQuantity, string? reason);
+    Task<List<StockHistory>> GetStockMovementsAsync(Guid? radiatorId, string? warehouseCode, DateTime? fromDate, DateTime? toDate, string? movementType, int? limit);
+    Task<(List<StockHistory> Items, int TotalCount)> GetStockMovementsPagedAsync(int pageNumber, int pageSize, Guid? radiatorId, string? warehouseCode, DateTime? fromDate, DateTime? toDate, string? movementType);
 }

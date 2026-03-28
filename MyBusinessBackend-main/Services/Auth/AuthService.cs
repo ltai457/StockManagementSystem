@@ -1,13 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using BCrypt.Net;
-using RadiatorStockAPI.Data;
-using RadiatorStockAPI.DTOs.Auth;
-using RadiatorStockAPI.DTOs.Users;
 using RadiatorStockAPI.Models;
 using RadiatorStockAPI.Services.Users;
 
@@ -15,199 +10,71 @@ namespace RadiatorStockAPI.Services.Auth;
 
 public class AuthService : IAuthService
 {
-    private readonly RadiatorDbContext _context;
-    private readonly IConfiguration _configuration;
+    private readonly IAuthDal _dal;
     private readonly IUserService _userService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
 
-    public AuthService(
-        RadiatorDbContext context,
-        IConfiguration configuration,
-        IUserService userService,
-        ILogger<AuthService> logger)
+    public AuthService(IAuthDal dal, IUserService userService, IConfiguration configuration, ILogger<AuthService> logger)
     {
-        _context = context;
-        _configuration = configuration;
+        _dal = dal;
         _userService = userService;
+        _configuration = configuration;
         _logger = logger;
     }
 
-    public async Task<AuthResponseDto?> LoginAsync(LoginRequestDto loginRequest)
+    public async Task<(User User, string AccessToken, string RefreshToken, DateTime ExpiresAt)?> LoginAsync(string username, string password)
     {
         try
         {
-            _logger.LogInformation("Login attempt for user: {Username}", loginRequest.Username);
-
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == loginRequest.Username && u.IsActive);
-
-            if (user == null)
+            var user = await _dal.GetActiveUserByUsernameAsync(username);
+            if (user is null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
-                _logger.LogWarning("Login failed - user not found: {Username}", loginRequest.Username);
+                _logger.LogWarning("Login failed for: {Username}", username);
                 return null;
             }
-
-            if (!BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
-            {
-                _logger.LogWarning("Login failed - invalid password for user: {Username}", loginRequest.Username);
-                return null;
-            }
-
             user.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            var userDto = await _userService.GetUserDtoAsync(user);
-            var accessToken = GenerateJwtToken(userDto);
-            var refreshToken = GenerateRefreshToken();
-
-            await CleanupOldRefreshTokens(user.Id);
-
-            var refreshTokenEntity = new RefreshToken
-            {
-                Id = Guid.NewGuid(),
-                Token = refreshToken,
-                UserId = user.Id,
-                CreatedAt = DateTime.UtcNow,
-                IsRevoked = false
-            };
-
-            _context.RefreshTokens.Add(refreshTokenEntity);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Login successful for user: {Username}", loginRequest.Username);
-
-            var expirationMinutes = _configuration.GetValue<int>("JWT:AccessTokenExpirationMinutes", 15);
-            var expiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes);
-
-            return new AuthResponseDto
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                ExpiresAt = expiresAt,
-                User = userDto
-            };
+            await _dal.CleanupOldTokensAsync(user.Id);
+            var (accessToken, refreshToken, expiresAt) = await CreateTokenPairAsync(user);
+            _logger.LogInformation("Login successful: {Username}", username);
+            return (user, accessToken, refreshToken, expiresAt);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during login for user: {Username}", loginRequest.Username);
+            _logger.LogError(ex, "Error during login: {Username}", username);
             return null;
         }
     }
 
-    public async Task<AuthResponseDto?> RegisterAsync(RegisterRequestDto registerRequest)
+    public async Task<(User User, string AccessToken, string RefreshToken, DateTime ExpiresAt)?> RegisterAsync(string username, string email, string password, UserRole role)
     {
         try
         {
-            _logger.LogInformation("Registration attempt for user: {Username}", registerRequest.Username);
-
-            if (await _userService.UsernameExistsAsync(registerRequest.Username))
-            {
-                _logger.LogWarning("Registration failed - username exists: {Username}", registerRequest.Username);
+            if (await _userService.UsernameExistsAsync(username) || await _userService.EmailExistsAsync(email))
                 return null;
-            }
-
-            if (await _userService.EmailExistsAsync(registerRequest.Email))
-            {
-                _logger.LogWarning("Registration failed - email exists: {Email}", registerRequest.Email);
-                return null;
-            }
-
-            var createUserDto = new CreateUserDto
-            {
-                Username = registerRequest.Username,
-                Email = registerRequest.Email,
-                Password = registerRequest.Password,
-                Role = registerRequest.Role
-            };
-
-            var userDto = await _userService.CreateUserAsync(createUserDto);
-            if (userDto == null)
-            {
-                _logger.LogError("Failed to create user: {Username}", registerRequest.Username);
-                return null;
-            }
-
-            var accessToken = GenerateJwtToken(userDto);
-            var refreshToken = GenerateRefreshToken();
-
-            var refreshTokenEntity = new RefreshToken
-            {
-                Id = Guid.NewGuid(),
-                Token = refreshToken,
-                UserId = userDto.Id,
-                CreatedAt = DateTime.UtcNow,
-                IsRevoked = false
-            };
-
-            _context.RefreshTokens.Add(refreshTokenEntity);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Registration successful for user: {Username}", registerRequest.Username);
-
-            var expirationMinutes = _configuration.GetValue<int>("JWT:AccessTokenExpirationMinutes", 15);
-            var expiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes);
-
-            return new AuthResponseDto
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                ExpiresAt = expiresAt,
-                User = userDto
-            };
+            var user = await _userService.CreateAsync(username, email, password, role);
+            if (user is null) return null;
+            var (accessToken, refreshToken, expiresAt) = await CreateTokenPairAsync(user);
+            _logger.LogInformation("Registration successful: {Username}", username);
+            return (user, accessToken, refreshToken, expiresAt);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during registration for user: {Username}", registerRequest.Username);
+            _logger.LogError(ex, "Error during registration: {Username}", username);
             return null;
         }
     }
 
-    public async Task<AuthResponseDto?> RefreshTokenAsync(string refreshToken)
+    public async Task<(User User, string AccessToken, string RefreshToken, DateTime ExpiresAt)?> RefreshTokenAsync(string refreshToken)
     {
         try
         {
-            _logger.LogInformation("Token refresh attempt");
-
-            var tokenEntity = await _context.RefreshTokens
-                .Include(rt => rt.User)
-                .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
-
-            if (tokenEntity == null || tokenEntity.IsRevoked || !tokenEntity.User.IsActive)
-            {
-                _logger.LogWarning("Token refresh failed - invalid token");
+            var tokenEntity = await _dal.GetRefreshTokenWithUserAsync(refreshToken);
+            if (tokenEntity is null || tokenEntity.IsRevoked || !tokenEntity.User.IsActive)
                 return null;
-            }
-
             tokenEntity.IsRevoked = true;
-
-            var userDto = await _userService.GetUserDtoAsync(tokenEntity.User);
-            var newAccessToken = GenerateJwtToken(userDto);
-            var newRefreshToken = GenerateRefreshToken();
-
-            var newTokenEntity = new RefreshToken
-            {
-                Id = Guid.NewGuid(),
-                Token = newRefreshToken,
-                UserId = tokenEntity.UserId,
-                CreatedAt = DateTime.UtcNow,
-                IsRevoked = false
-            };
-
-            _context.RefreshTokens.Add(newTokenEntity);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Token refresh successful for user: {Username}", tokenEntity.User.Username);
-
-            var expirationMinutes = _configuration.GetValue<int>("JWT:AccessTokenExpirationMinutes", 15);
-            var expiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes);
-
-            return new AuthResponseDto
-            {
-                AccessToken = newAccessToken,
-                RefreshToken = newRefreshToken,
-                ExpiresAt = expiresAt,
-                User = userDto
-            };
+            var (accessToken, newRefreshToken, expiresAt) = await CreateTokenPairAsync(tokenEntity.User);
+            return (tokenEntity.User, accessToken, newRefreshToken, expiresAt);
         }
         catch (Exception ex)
         {
@@ -220,18 +87,10 @@ public class AuthService : IAuthService
     {
         try
         {
-            var tokenEntity = await _context.RefreshTokens
-                .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
-
-            if (tokenEntity == null)
-            {
-                return false;
-            }
-
-            tokenEntity.IsRevoked = true;
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Token revoked successfully");
+            var token = await _dal.GetRefreshTokenAsync(refreshToken);
+            if (token is null) return false;
+            token.IsRevoked = true;
+            await _dal.SaveChangesAsync();
             return true;
         }
         catch (Exception ex)
@@ -241,85 +100,60 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordRequestDto changePasswordRequest)
+    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
     {
         try
         {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-            {
-                _logger.LogWarning("Password change failed - user not found: {UserId}", userId);
+            var user = await _userService.GetByIdAsync(userId);
+            if (user is null || !BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
                 return false;
-            }
-
-            if (!BCrypt.Net.BCrypt.Verify(changePasswordRequest.CurrentPassword, user.PasswordHash))
-            {
-                _logger.LogWarning("Password change failed - invalid current password for user: {UserId}", userId);
-                return false;
-            }
-
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(changePasswordRequest.NewPassword);
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
             user.UpdatedAt = DateTime.UtcNow;
-
-            var userTokens = await _context.RefreshTokens
-                .Where(rt => rt.UserId == userId && !rt.IsRevoked)
-                .ToListAsync();
-
-            foreach (var token in userTokens)
-            {
-                token.IsRevoked = true;
-            }
-
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Password changed successfully for user: {UserId}", userId);
+            var activeTokens = await _dal.GetActiveTokensByUserAsync(userId);
+            foreach (var t in activeTokens) t.IsRevoked = true;
+            await _dal.SaveChangesAsync();
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error changing password for user: {UserId}", userId);
+            _logger.LogError(ex, "Error changing password: {UserId}", userId);
             return false;
         }
     }
 
-    public async Task<bool> ValidateTokenAsync(string token)
+    public Task<bool> ValidateTokenAsync(string token)
     {
         try
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(
-                _configuration["JWT:Secret"] ??
-                throw new InvalidOperationException("JWT Secret not configured")
-            );
-
-            tokenHandler.ValidateToken(token, new TokenValidationParameters
+            var key = Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]!);
+            new JwtSecurityTokenHandler().ValidateToken(token, new TokenValidationParameters
             {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = true,
-                ValidIssuer = _configuration["JWT:Issuer"],
-                ValidateAudience = true,
-                ValidAudience = _configuration["JWT:Audience"],
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
-            }, out SecurityToken _);
-
-            return true;
+                ValidateIssuerSigningKey = true, IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true, ValidIssuer = _configuration["JWT:Issuer"],
+                ValidateAudience = true, ValidAudience = _configuration["JWT:Audience"],
+                ValidateLifetime = true, ClockSkew = TimeSpan.Zero
+            }, out _);
+            return Task.FromResult(true);
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Invalid token");
-            return false;
-        }
+        catch { return Task.FromResult(false); }
     }
 
-    public string GenerateJwtToken(UserDto user)
+    private async Task<(string AccessToken, string RefreshToken, DateTime ExpiresAt)> CreateTokenPairAsync(User user)
     {
-        var key = Encoding.UTF8.GetBytes(
-            _configuration["JWT:Secret"] ??
-            throw new InvalidOperationException("JWT Secret not configured")
-        );
+        var accessToken = GenerateJwtToken(user);
+        var refreshToken = GenerateRefreshToken();
+        await _dal.AddRefreshTokenAsync(new RefreshToken
+        {
+            Id = Guid.NewGuid(), Token = refreshToken, UserId = user.Id,
+            CreatedAt = DateTime.UtcNow, IsRevoked = false
+        });
+        await _dal.SaveChangesAsync();
+        return (accessToken, refreshToken, DateTime.UtcNow.AddMinutes(GetExpirationMinutes()));
+    }
 
+    private string GenerateJwtToken(User user)
+    {
+        var key = Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]!);
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -327,50 +161,28 @@ public class AuthService : IAuthService
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Role, user.Role.ToString())
         };
-
         if (!string.IsNullOrWhiteSpace(user.FirstName) || !string.IsNullOrWhiteSpace(user.LastName))
-        {
             claims.Add(new Claim("fullname", $"{user.FirstName} {user.LastName}".Trim()));
-        }
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(
-                _configuration.GetValue<int>("JWT:AccessTokenExpirationMinutes", 15)
-            ),
+            Expires = DateTime.UtcNow.AddMinutes(GetExpirationMinutes()),
             Issuer = _configuration["JWT:Issuer"],
             Audience = _configuration["JWT:Audience"],
-            SigningCredentials = new SigningCredentials(
-                new SymmetricSecurityKey(key),
-                SecurityAlgorithms.HmacSha256Signature)
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
-
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+        var handler = new JwtSecurityTokenHandler();
+        return handler.WriteToken(handler.CreateToken(tokenDescriptor));
     }
 
-    public string GenerateRefreshToken()
+    private static string GenerateRefreshToken()
     {
-        var randomNumber = new byte[32];
+        var bytes = new byte[32];
         using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(randomNumber);
-        return Convert.ToBase64String(randomNumber);
+        rng.GetBytes(bytes);
+        return Convert.ToBase64String(bytes);
     }
 
-    private async Task CleanupOldRefreshTokens(Guid userId)
-    {
-        var tokens = await _context.RefreshTokens
-            .Where(rt => rt.UserId == userId)
-            .OrderByDescending(rt => rt.CreatedAt)
-            .Skip(5)
-            .ToListAsync();
-
-        if (tokens.Count > 0)
-        {
-            _context.RefreshTokens.RemoveRange(tokens);
-            await _context.SaveChangesAsync();
-        }
-    }
+    private int GetExpirationMinutes() => _configuration.GetValue<int>("JWT:AccessTokenExpirationMinutes", 15);
 }

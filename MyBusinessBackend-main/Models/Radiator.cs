@@ -38,9 +38,6 @@ namespace RadiatorStockAPI.Models
         public decimal? MaxDiscountPercent { get; set; } = 20;
 
         // ===== NEW FIELDS - ADD THESE =====
-        [StringLength(100)]
-        public string? ProductType { get; set; }  // "Vehicle", "Truck", "Machinery", etc.
-        
         [StringLength(200)]
         public string? Dimensions { get; set; }   // "250x240x40mm" or "500x600"
         
@@ -54,6 +51,5 @@ namespace RadiatorStockAPI.Models
 
         // Navigation properties
         public virtual ICollection<StockLevel> StockLevels { get; set; } = new List<StockLevel>();
-        public virtual ICollection<RadiatorImage> Images { get; set; } = new List<RadiatorImage>(); 
     }
 }

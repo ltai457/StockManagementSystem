@@ -35,56 +35,13 @@ const RadiatorCards = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) =>
             key={r.id}
             className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition p-3 sm:p-4 flex flex-col"
           >
-            {/* Image Section */}
-            <div 
-              className="w-full bg-gray-100 rounded-lg mb-4 overflow-hidden relative flex items-center justify-center"
-              style={{ 
-                height: '160px', 
-                minHeight: '160px', 
-                maxHeight: '160px' 
-              }}
+            {/* Product Icon */}
+            <div
+              className="w-full bg-gray-100 rounded-lg mb-4 flex flex-col items-center justify-center text-gray-400"
+              style={{ height: '100px' }}
             >
-              {r.primaryImageUrl || r.imageUrl ? (
-                <>
-                  <img
-                    src={r.primaryImageUrl || r.imageUrl}
-                    alt={r.name}
-                    className="max-w-full max-h-full object-contain"
-                    style={{ 
-                      maxWidth: '100%', 
-                      maxHeight: '160px', 
-                      objectFit: 'contain' 
-                    }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.parentNode.querySelector('.fallback-placeholder').style.display = 'flex';
-                    }}
-                  />
-                  <div 
-                    className="fallback-placeholder absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center" 
-                    style={{ display: 'none', height: '160px' }}
-                  >
-                    <div className="text-center">
-                      <Package className="w-8 h-8 text-gray-400 mx-auto mb-1" />
-                      <span className="text-xs text-gray-500">Image failed to load</span>
-                    </div>
-                  </div>
-                  
-                  {r.imageCount > 1 && (
-                    <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-full z-10">
-                      +{r.imageCount - 1}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div 
-                  className="w-full flex flex-col items-center justify-center text-gray-400 bg-gray-100 rounded-lg"
-                  style={{ height: '160px' }}
-                >
-                  <Package className="w-8 h-8 mb-2" />
-                  <span className="text-xs">No image</span>
-                </div>
-              )}
+              <Package className="w-8 h-8 mb-1" />
+              <span className="text-xs">{r.productType || "Product"}</span>
             </div>
 
             {/* Main Info */}

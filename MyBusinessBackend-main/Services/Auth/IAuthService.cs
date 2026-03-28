@@ -1,16 +1,14 @@
 using RadiatorStockAPI.DTOs.Auth;
-using RadiatorStockAPI.DTOs.Users;
+using RadiatorStockAPI.Models;
 
 namespace RadiatorStockAPI.Services.Auth;
 
 public interface IAuthService
 {
-    Task<AuthResponseDto?> LoginAsync(LoginRequestDto loginRequest);
-    Task<AuthResponseDto?> RegisterAsync(RegisterRequestDto registerRequest);
-    Task<AuthResponseDto?> RefreshTokenAsync(string refreshToken);
+    Task<(User User, string AccessToken, string RefreshToken, DateTime ExpiresAt)?> LoginAsync(string username, string password);
+    Task<(User User, string AccessToken, string RefreshToken, DateTime ExpiresAt)?> RegisterAsync(string username, string email, string password, UserRole role);
+    Task<(User User, string AccessToken, string RefreshToken, DateTime ExpiresAt)?> RefreshTokenAsync(string refreshToken);
     Task<bool> RevokeTokenAsync(string refreshToken);
-    Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordRequestDto changePasswordRequest);
+    Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
     Task<bool> ValidateTokenAsync(string token);
-    string GenerateJwtToken(UserDto user);
-    string GenerateRefreshToken();
 }
