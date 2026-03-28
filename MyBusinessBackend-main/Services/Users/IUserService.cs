@@ -1,18 +1,15 @@
-using System;
-using RadiatorStockAPI.DTOs.Users;
 using RadiatorStockAPI.Models;
 
 namespace RadiatorStockAPI.Services.Users;
 
 public interface IUserService
 {
-    Task<IEnumerable<UserDto>> GetAllUsersAsync();
-    Task<UserDto?> GetUserByIdAsync(Guid id);
-    Task<UserDto?> CreateUserAsync(CreateUserDto dto);
-    Task<UserDto?> UpdateUserAsync(Guid id, UpdateUserDto dto);
-    Task<bool> DeleteUserAsync(Guid id);
-    Task<bool> UserExistsAsync(Guid id);
+    Task<List<User>> GetAllAsync();
+    Task<User?> GetByIdAsync(Guid id);
+    Task<User?> CreateAsync(string username, string email, string password, UserRole role, string? firstName = null, string? lastName = null);
+    Task<User?> UpdateAsync(Guid id, string username, string email, UserRole role, bool isActive, string? firstName = null, string? lastName = null);
+    Task<bool> DeleteAsync(Guid id);
+    Task<bool> ExistsAsync(Guid id);
     Task<bool> UsernameExistsAsync(string username, Guid? excludeId = null);
     Task<bool> EmailExistsAsync(string email, Guid? excludeId = null);
-    Task<UserDto> GetUserDtoAsync(User user);
 }

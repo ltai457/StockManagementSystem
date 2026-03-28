@@ -15,8 +15,6 @@ namespace RadiatorStockAPI.Data
         public DbSet<StockLevel> StockLevels { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
-        public DbSet<RadiatorImage> RadiatorImages { get; set; }
-
         public DbSet<StockHistory> StockHistories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -37,7 +35,6 @@ namespace RadiatorStockAPI.Data
                 entity.Property(r => r.UpdatedAt).IsRequired();
 
                 // Optional fields
-                entity.Property(r => r.ProductType).HasMaxLength(100);
                 entity.Property(r => r.Dimensions).HasMaxLength(200);
                 entity.Property(r => r.Notes).HasMaxLength(500);
             });
@@ -94,20 +91,6 @@ namespace RadiatorStockAPI.Data
                 entity.HasOne(rt => rt.User)
                     .WithMany(u => u.RefreshTokens)
                     .HasForeignKey(rt => rt.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // Configure RadiatorImage
-            modelBuilder.Entity<RadiatorImage>(entity =>
-            {
-                entity.HasKey(img => img.Id);
-                entity.Property(img => img.FileName).IsRequired().HasMaxLength(255);
-                entity.Property(img => img.S3Key).IsRequired().HasMaxLength(500);
-                entity.Property(img => img.Url).IsRequired().HasMaxLength(1000);
-
-                entity.HasOne(img => img.Radiator)
-                    .WithMany(r => r.Images)
-                    .HasForeignKey(img => img.RadiatorId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

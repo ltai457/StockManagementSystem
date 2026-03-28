@@ -30,12 +30,11 @@ public class CreateRadiatorDto
     [Range(0, 100)]
     public decimal? MaxDiscountPercent { get; set; } = 20;
 
-    [StringLength(100)]
-    public string? ProductType { get; set; }
-
     [StringLength(200)]
     public string? Dimensions { get; set; }
 
     [StringLength(500)]
     public string? Notes { get; set; }
+
+    public Dictionary<string, int>? InitialStock { get; set; }
 }

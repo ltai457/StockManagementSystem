@@ -44,9 +44,9 @@ const RadiatorList = () => {
   );
 
   // CRUD operations without the hook (to avoid auto-fetching)
-  const createRadiator = async (radiatorData, imageFile = null) => {
+  const createRadiator = async (radiatorData) => {
     try {
-      const result = await radiatorService.create(radiatorData, imageFile);
+      const result = await radiatorService.create(radiatorData);
       return result;
     } catch (err) {
       return { success: false, error: err.message };
@@ -158,8 +158,8 @@ const RadiatorList = () => {
     (Array.isArray(user?.role) &&
       user.role.map(String).some((r) => r.toLowerCase() === "admin" || r === "1"));
 
-  const handleAddRadiator = async (radiatorData, imageFile) => {
-    const result = await createRadiator(radiatorData, imageFile);
+  const handleAddRadiator = async (radiatorData) => {
+    const result = await createRadiator(radiatorData);
 
     if (result.success) {
       addModal.closeModal();

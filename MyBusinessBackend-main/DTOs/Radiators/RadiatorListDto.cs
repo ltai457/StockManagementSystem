@@ -12,9 +12,6 @@ public class RadiatorListDto
     public bool IsPriceOverridable { get; set; }
     public decimal? MaxDiscountPercent { get; set; }
     public Dictionary<string, int> Stock { get; set; } = new();
-    public string? ProductType { get; set; }
     public string? Dimensions { get; set; }
     public string? Notes { get; set; }
-    public string? PrimaryImageUrl { get; set; }
-    public int ImageCount { get; set; }
 }

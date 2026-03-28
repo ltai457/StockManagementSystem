@@ -6,11 +6,9 @@ using System.Text;
 using RadiatorStockAPI.Data;
 using RadiatorStockAPI.Services.Auth;
 using RadiatorStockAPI.Services.Radiators;
-using RadiatorStockAPI.Services.S3;
 using RadiatorStockAPI.Services.Stock;
 using RadiatorStockAPI.Services.Users;
 using RadiatorStockAPI.Services.Warehouses;
-using Amazon.S3;
 
 
 // Load .env file
@@ -39,40 +37,41 @@ builder.Services.AddDbContext<RadiatorDbContext>(options =>
            .UseSnakeCaseNamingConvention(); // Use snake_case for PostgreSQL
 });
 
-// Configure Digital Ocean Spaces (S3-compatible)
-var spacesAccessKey = builder.Configuration["DigitalOcean:Spaces:AccessKey"]
-    ?? Environment.GetEnvironmentVariable("DO_SPACES_ACCESS_KEY");
-var spacesSecretKey = builder.Configuration["DigitalOcean:Spaces:SecretKey"]
-    ?? Environment.GetEnvironmentVariable("DO_SPACES_SECRET_KEY");
-var spacesRegion = builder.Configuration["DigitalOcean:Spaces:Region"] ?? "sgp1";
+// Register DAL layer
+builder.Services.AddScoped<IWarehouseDal, WarehouseDal>();
+builder.Services.AddScoped<IStockDal, StockDal>();
+builder.Services.AddScoped<IRadiatorDal, RadiatorDal>();
+builder.Services.AddScoped<IUserDal, UserDal>();
+builder.Services.AddScoped<IAuthDal, AuthDal>();
 
-if (string.IsNullOrEmpty(spacesAccessKey) || string.IsNullOrEmpty(spacesSecretKey))
-{
-    throw new InvalidOperationException("Digital Ocean Spaces credentials not configured");
-}
-
-// Configure S3 client for Digital Ocean Spaces
-var spacesConfig = new Amazon.S3.AmazonS3Config
-{
-    ServiceURL = $"https://{spacesRegion}.digitaloceanspaces.com",
-    ForcePathStyle = false
-};
-
-builder.Services.AddSingleton<IAmazonS3>(sp =>
-    new Amazon.S3.AmazonS3Client(
-        spacesAccessKey,
-        spacesSecretKey,
-        spacesConfig
-    )
-);
-
-// Register services
+// Register Service layer
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IRadiatorService, RadiatorService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IS3Service, S3Service>();
+
+// Register Handler layer — Radiators
+builder.Services.AddScoped<IGetRadiatorHandler, GetRadiatorHandler>();
+builder.Services.AddScoped<ICreateRadiatorHandler, CreateRadiatorHandler>();
+builder.Services.AddScoped<IUpdateRadiatorHandler, UpdateRadiatorHandler>();
+
+// Register Handler layer — Warehouses
+builder.Services.AddScoped<IGetWarehouseHandler, GetWarehouseHandler>();
+builder.Services.AddScoped<ICreateWarehouseHandler, CreateWarehouseHandler>();
+builder.Services.AddScoped<IUpdateWarehouseHandler, UpdateWarehouseHandler>();
+
+// Register Handler layer — Users
+builder.Services.AddScoped<IGetUserHandler, GetUserHandler>();
+builder.Services.AddScoped<ICreateUserHandler, CreateUserHandler>();
+builder.Services.AddScoped<IUpdateUserHandler, UpdateUserHandler>();
+
+// Register Handler layer — Stock
+builder.Services.AddScoped<IGetStockHandler, GetStockHandler>();
+builder.Services.AddScoped<IUpdateStockHandler, UpdateStockHandler>();
+
+// Register Handler layer — Auth
+builder.Services.AddScoped<IAuthHandler, AuthHandler>();
 
 // Add health checks for monitoring
 builder.Services.AddHealthChecks()

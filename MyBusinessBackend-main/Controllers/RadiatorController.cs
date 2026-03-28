@@ -4,200 +4,37 @@ using RadiatorStockAPI.DTOs.Radiators;
 using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Services.Radiators;
 
-namespace RadiatorStockAPI.Controllers
+namespace RadiatorStockAPI.Controllers;
+
+[Route("api/v1/radiators"), Authorize]
+public class RadiatorsController : BaseController
 {
-    [ApiController]
-    [Route("api/v1/radiators")]
-    [Produces("application/json")]
-    [Authorize] // All endpoints require authentication
-    public class RadiatorsController : ControllerBase
+    private readonly IGetRadiatorHandler _get;
+    private readonly ICreateRadiatorHandler _create;
+    private readonly IUpdateRadiatorHandler _update;
+
+    public RadiatorsController(IGetRadiatorHandler get, ICreateRadiatorHandler create, IUpdateRadiatorHandler update)
     {
-        private readonly IRadiatorService _radiatorService;
-
-        public RadiatorsController(IRadiatorService radiatorService)
-        {
-            _radiatorService = radiatorService;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<RadiatorListDto>>> GetAllRadiators([FromQuery] int? pageNumber, [FromQuery] int? pageSize)
-        {
-            // If pagination parameters are provided, use paginated endpoint
-            if (pageNumber.HasValue || pageSize.HasValue)
-            {
-                var paginationParams = new PaginationParams
-                {
-                    PageNumber = pageNumber ?? 1,
-                    PageSize = pageSize ?? 20
-                };
-
-                var pagedResult = await _radiatorService.GetRadiatorsPagedAsync(paginationParams);
-                return Ok(pagedResult);
-            }
-
-            // Otherwise return all radiators (backward compatibility)
-            var radiators = await _radiatorService.GetAllRadiatorsAsync();
-            return Ok(radiators);
-        }
-
-        [HttpGet("{id:guid}")]
-        public async Task<ActionResult<RadiatorResponseDto>> GetRadiator(Guid id)
-        {
-            var radiator = await _radiatorService.GetRadiatorByIdAsync(id);
-            if (radiator == null)
-                return NotFound(new { message = $"Radiator with ID {id} not found." });
-
-            return Ok(radiator);
-        }
-
-        [HttpPost]
-        [Authorize(Roles = "Admin,Staff")] // Admin or Staff can create
-        public async Task<ActionResult<RadiatorResponseDto>> CreateRadiator([FromBody] CreateRadiatorDto dto)
-        {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            var created = await _radiatorService.CreateRadiatorAsync(dto);
-            if (created == null)
-                return Conflict(new { message = $"A radiator with code '{dto.Code}' already exists." });
-
-            return CreatedAtAction(nameof(GetRadiator), new { id = created.Id }, created);
-        }
-
-        [HttpPut("{id:guid}")]
-        [Authorize(Roles = "Admin,Staff")] // Admin or Staff can update
-        public async Task<ActionResult<RadiatorResponseDto>> UpdateRadiator(Guid id, [FromBody] UpdateRadiatorDto dto)
-        {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            if (!await _radiatorService.RadiatorExistsAsync(id))
-                return NotFound(new { message = $"Radiator with ID {id} not found." });
-
-            var updated = await _radiatorService.UpdateRadiatorAsync(id, dto);
-            return Ok(updated);
-        }
-
-        [HttpDelete("{id:guid}")]
-        [Authorize(Roles = "Admin")] // Only Admin can delete
-        public async Task<IActionResult> DeleteRadiator(Guid id)
-        {
-            if (!await _radiatorService.RadiatorExistsAsync(id))
-                return NotFound(new { message = $"Radiator with ID {id} not found." });
-
-            var deleted = await _radiatorService.DeleteRadiatorAsync(id);
-            if (!deleted)
-                return BadRequest(new { message = "Failed to delete radiator." });
-
-            return NoContent();
-        }
-        [HttpPost("test-s3")]
-        [Authorize(Roles = "Admin,Staff")]
-        public async Task<IActionResult> TestS3Upload(IFormFile file)
-        {
-            try
-            {
-                var url = await _radiatorService.TestS3Async(file);
-                return Ok(new { success = true, url });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { success = false, error = ex.Message });
-            }
-        }
-        [HttpPost("create-with-image")]
-        [Authorize(Roles = "Admin,Staff")]
-        [Consumes("multipart/form-data")]
-        public async Task<ActionResult<RadiatorResponseDto>> CreateRadiatorWithImage([FromForm] CreateRadiatorWithImageDto dto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            try
-            {
-                var created = await _radiatorService.CreateRadiatorWithImageAsync(dto);
-
-                if (created == null)
-                    return Conflict(new { message = $"A radiator with code '{dto.Code}' already exists." });
-
-                return CreatedAtAction(nameof(GetRadiator), new { id = created.Id }, created);
-            }
-            catch (Exception ex)
-            {
-                // Get the inner exception message for database errors
-                var errorMessage = ex.InnerException?.Message ?? ex.Message;
-                var fullError = $"{ex.Message} | Inner: {errorMessage}";
-                return BadRequest(new { message = fullError, details = ex.ToString() });
-            }
-        }
-        [HttpPost("{id:guid}/images")]
-        [Authorize(Roles = "Admin,Staff")]
-        [Consumes("multipart/form-data")]
-        public async Task<ActionResult<RadiatorImageDto>> UploadRadiatorImage(Guid id, [FromForm] UploadRadiatorImageDto dto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            try
-            {
-                var result = await _radiatorService.AddImageToRadiatorAsync(id, dto);
-
-                if (result == null)
-                    return NotFound(new { message = $"Radiator with ID {id} not found." });
-
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [HttpGet("{id:guid}/images")]
-        public async Task<ActionResult<List<RadiatorImageDto>>> GetRadiatorImages(Guid id)
-        {
-            if (!await _radiatorService.RadiatorExistsAsync(id))
-                return NotFound(new { message = $"Radiator with ID {id} not found." });
-
-            var images = await _radiatorService.GetRadiatorImagesAsync(id);
-            return Ok(images);
-        }
-
-        [HttpDelete("{radiatorId:guid}/images/{imageId:guid}")]
-        [Authorize(Roles = "Admin,Staff")]
-        public async Task<IActionResult> DeleteRadiatorImage(Guid radiatorId, Guid imageId)
-        {
-            try
-            {
-                var result = await _radiatorService.DeleteRadiatorImageAsync(radiatorId, imageId);
-
-                if (!result)
-                    return NotFound(new { message = $"Image with ID {imageId} not found for radiator {radiatorId}." });
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [HttpPut("{radiatorId:guid}/images/{imageId:guid}/set-primary")]
-        [Authorize(Roles = "Admin,Staff")]
-        public async Task<IActionResult> SetPrimaryImage(Guid radiatorId, Guid imageId)
-        {
-            try
-            {
-                var result = await _radiatorService.SetPrimaryImageAsync(radiatorId, imageId);
-
-                if (!result)
-                    return NotFound(new { message = $"Image with ID {imageId} not found for radiator {radiatorId}." });
-
-                return Ok(new { message = "Primary image updated successfully." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
+        _get = get;
+        _create = create;
+        _update = update;
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] int? pageNumber, [FromQuery] int? pageSize)
+        => (pageNumber.HasValue || pageSize.HasValue)
+            ? Run(await _get.GetPagedAsync(new PaginationParams { PageNumber = pageNumber ?? 1, PageSize = pageSize ?? 20 }))
+            : Run(await _get.GetAllAsync());
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id) => Run(await _get.GetByIdAsync(id));
+
+    [HttpPost, Authorize(Roles = "Admin,Staff")]
+    public async Task<IActionResult> Create([FromBody] CreateRadiatorDto dto) => Run(await _create.CreateAsync(dto));
+
+    [HttpPut("{id:guid}"), Authorize(Roles = "Admin,Staff")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRadiatorDto dto) => Run(await _update.UpdateAsync(id, dto));
+
+    [HttpDelete("{id:guid}"), Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(Guid id) => Run(await _update.DeleteAsync(id));
 }

@@ -27,13 +27,9 @@ export const useRadiators = () => {
     }
   }, []);
 
-  // Simplified: Create radiator (with optional image)
-  const createRadiator = async (radiatorData, imageFile = null) => {
+  const createRadiator = async (radiatorData) => {
     try {
-      console.log('🖼️ Creating radiator, image:', imageFile ? 'yes' : 'no');
-      
-      // Always use the same method - image is optional
-      const result = await radiatorService.create(radiatorData, imageFile);
+      const result = await radiatorService.create(radiatorData);
       
       if (result.success) {
         setRadiators(prev => [result.data, ...prev]);
@@ -93,29 +89,6 @@ export const useRadiators = () => {
     }
   };
 
-  // Image-related functions
-  const getRadiatorImages = async (radiatorId) => {
-    try {
-      const result = await radiatorService.getRadiatorImages(radiatorId);
-      return result;
-    } catch (err) {
-      return { success: false, error: getErrorMessage(err) };
-    }
-  };
-
-  const uploadRadiatorImage = async (radiatorId, imageFile, isPrimary = false) => {
-    try {
-      const result = await radiatorService.uploadImage(radiatorId, imageFile, isPrimary);
-      if (result.success) {
-        // Refresh the radiators to get updated image info
-        await fetchRadiators();
-      }
-      return result;
-    } catch (err) {
-      return { success: false, error: getErrorMessage(err) };
-    }
-  };
-
   useEffect(() => {
     fetchRadiators();
   }, [fetchRadiators]);
@@ -130,7 +103,5 @@ export const useRadiators = () => {
     updateRadiator,
     deleteRadiator,
     updateStock,
-    getRadiatorImages,
-    uploadRadiatorImage
   };
 };

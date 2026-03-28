@@ -1,5 +1,4 @@
-import React, { useState, useRef } from "react";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -11,7 +10,6 @@ import {
   FormControlLabel,
   Checkbox,
   Alert,
-  IconButton,
   Typography,
   Box,
   Grid,
@@ -49,9 +47,6 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const fileInputRef = useRef(null);
   const [initialStock, setInitialStock] = useState({});
 
   const updateField = (key, value) => {
@@ -66,30 +61,6 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
   };
 
   const num = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
-
-  const handleImageSelect = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("Please select a valid image file");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image file size must be less than 5MB");
-      return;
-    }
-    setSelectedImage(file);
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target.result);
-    reader.readAsDataURL(file);
-    setError("");
-  };
-
-  const handleRemoveImage = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
 
   const validate = () => {
     if (!form.brand?.trim()) return "Brand is required.";
@@ -132,7 +103,7 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
         dimensions: form.dimensions.trim() || null,
         notes: form.notes.trim() || null,
       };
-      const success = await onSuccess(payload, selectedImage);
+      const success = await onSuccess(payload);
       if (!success) throw new Error("Failed to create radiator");
       resetForm();
     } catch (e) {
@@ -144,10 +115,7 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
 
   const resetForm = () => {
     setForm(emptyForm);
-    setSelectedImage(null);
-    setImagePreview(null);
     setInitialStock({});
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleClose = () => {
@@ -258,58 +226,6 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
               />
             </Grid>
           </Grid>
-
-          {/* Image Upload */}
-          <Box>
-            <Typography variant="subtitle2" gutterBottom>Product Image</Typography>
-            {!imagePreview ? (
-              <Box
-                sx={{
-                  border: "2px dashed",
-                  borderColor: "grey.300",
-                  borderRadius: 2,
-                  p: 3,
-                  textAlign: "center",
-                  cursor: "pointer",
-                  "&:hover": { borderColor: "primary.main", bgcolor: "grey.50" },
-                }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageSelect}
-                  accept="image/*"
-                  hidden
-                  disabled={saving}
-                />
-                <ImageIcon size={40} style={{ margin: "0 auto", color: "#9e9e9e" }} />
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Click to upload a product image
-                </Typography>
-                <Typography variant="caption" color="text.disabled">
-                  PNG, JPG, GIF up to 5MB
-                </Typography>
-              </Box>
-            ) : (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, p: 2, border: 1, borderColor: "grey.300", borderRadius: 2 }}>
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }}
-                />
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="body2" fontWeight={500}>{selectedImage?.name}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {selectedImage && (selectedImage.size / 1024 / 1024).toFixed(2)} MB
-                  </Typography>
-                </Box>
-                <IconButton size="small" onClick={handleRemoveImage} disabled={saving}>
-                  <X size={18} />
-                </IconButton>
-              </Box>
-            )}
-          </Box>
 
           <Divider />
 
