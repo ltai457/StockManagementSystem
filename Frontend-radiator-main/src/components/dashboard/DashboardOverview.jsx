@@ -1,28 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Users, ShoppingCart, Package, PackageX, TrendingUp, DollarSign } from 'lucide-react';
+import { Package, PackageX, Warehouse, Box } from 'lucide-react';
 import { PageHeader } from '../common/layout/PageHeader';
 import { StatsGrid } from '../common/layout/StatsGrid';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 
 import QuickActions from './QuickActions';
 import RecentActivity from './RecentActivity';
-import salesService from '../../api/salesService';
-import customerService from '../../api/customerService';
 import radiatorService from '../../api/radiatorService';
 import stockService from '../../api/stockService';
-import { formatCurrency } from '../../utils/formatters';
 
 const DashboardOverview = ({ onNavigate }) => {
   const [dashboardData, setDashboardData] = useState({
-    sales: [],
-    customers: [],
     radiators: [],
     stockMovements: [],
+    stockSummary: null,
     loading: true,
     error: null
   });
 
-  // Fetch all dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -30,22 +25,20 @@ const DashboardOverview = ({ onNavigate }) => {
         const fromDate = new Date();
         fromDate.setDate(fromDate.getDate() - 30);
 
-        const [salesResult, customersResult, radiatorsResult, stockMovementsResult] = await Promise.all([
-          salesService.getAll(),
-          customerService.getAll(),
+        const [radiatorsResult, stockMovementsResult, stockSummaryResult] = await Promise.all([
           radiatorService.getAll(),
           stockService.getStockMovements({
             fromDate,
             toDate,
             limit: 20
-          })
+          }),
+          stockService.getStockSummary()
         ]);
 
         setDashboardData({
-          sales: salesResult.success ? salesResult.data : [],
-          customers: customersResult.success ? customersResult.data : [],
           radiators: radiatorsResult.success ? radiatorsResult.data : [],
           stockMovements: stockMovementsResult.success ? stockMovementsResult.data : [],
+          stockSummary: stockSummaryResult.success ? stockSummaryResult.data : null,
           loading: false,
           error: null
         });
@@ -61,151 +54,11 @@ const DashboardOverview = ({ onNavigate }) => {
     fetchDashboardData();
   }, []);
 
-  // Calculate metrics using live data
   const calculateStats = () => {
-    const { sales, customers, radiators } = dashboardData;
+    const { radiators, stockSummary } = dashboardData;
 
-    const normalizeStatus = (status) =>
-      (status ? status.toString().trim().toLowerCase() : '');
-
-    const isCountableSale = (sale) => {
-      const status =
-        normalizeStatus(sale?.status) ||
-        normalizeStatus(sale?.saleStatus) ||
-        normalizeStatus(sale?.paymentStatus);
-
-      if (!status) return true;
-
-      const excludedStatuses = new Set([
-        'cancelled',
-        'canceled',
-        'refunded',
-        'void',
-        'failed',
-        'draft'
-      ]);
-
-      if (excludedStatuses.has(status)) {
-        return false;
-      }
-
-      const includedStatuses = new Set([
-        'completed',
-        'complete',
-        'paid',
-        'success',
-        'fulfilled',
-        'finalized',
-        'processed'
-      ]);
-
-      if (includedStatuses.has(status)) {
-        return true;
-      }
-
-      return true;
-    };
-
-    const toLocalDateKey = (date) => {
-      if (!date || Number.isNaN(date.getTime())) return null;
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    const extractDateKey = (value) => {
-      if (!value) return null;
-
-      if (typeof value === 'string') {
-        const match = value.match(/\d{4}-\d{2}-\d{2}/);
-        if (match) {
-          return match[0];
-        }
-      }
-
-      const parsed = new Date(value);
-      return Number.isNaN(parsed.getTime()) ? null : toLocalDateKey(parsed);
-    };
-
-    const getSaleDateKey = (sale) => {
-      const dateSources = [
-        sale?.saleDate,
-        sale?.completedAt,
-        sale?.processedAt,
-        sale?.transactionDate,
-        sale?.createdAt,
-        sale?.updatedAt
-      ];
-
-      for (const source of dateSources) {
-        const key = extractDateKey(source);
-        if (key) return key;
-      }
-
-      return null;
-    };
-
-    const getNumericAmount = (amount) => {
-      if (amount === null || amount === undefined) return 0;
-      const parsed =
-        typeof amount === 'string' ? parseFloat(amount) : Number(amount);
-      return Number.isFinite(parsed) ? parsed : 0;
-    };
-
-    const calculatePercentageChange = (current, previous) => {
-      if (!Number.isFinite(current) || !Number.isFinite(previous)) return undefined;
-      if (previous <= 0) {
-        return current <= 0 ? 0 : 100;
-      }
-      return Math.round(((current - previous) / previous) * 1000) / 10;
-    };
-
-    const today = new Date();
-    const todayKey = toLocalDateKey(today);
-
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const yesterdayKey = toLocalDateKey(yesterday);
-
-    const countableSales = sales.filter(isCountableSale);
-
-    const todaysCountableSales = countableSales.filter(
-      (sale) => getSaleDateKey(sale) === todayKey
-    );
-
-    const yesterdaysCountableSales = countableSales.filter(
-      (sale) => getSaleDateKey(sale) === yesterdayKey
-    );
-
-    const todaysSalesCount = todaysCountableSales.length;
-    const yesterdaysSalesCount = yesterdaysCountableSales.length;
-
-    const todaysRevenue = todaysCountableSales.reduce(
-      (sum, sale) => sum + getNumericAmount(sale.totalAmount),
-      0
-    );
-    const yesterdaysRevenue = yesterdaysCountableSales.reduce(
-      (sum, sale) => sum + getNumericAmount(sale.totalAmount),
-      0
-    );
-
-    const monthKey = todayKey ? todayKey.slice(0, 7) : null;
-    const monthlyCountableSales = monthKey
-      ? countableSales.filter((sale) => {
-          const dateKey = getSaleDateKey(sale);
-          return dateKey ? dateKey.startsWith(monthKey) : false;
-        })
-      : countableSales;
-
-    const monthlyRevenue = monthlyCountableSales.reduce(
-      (sum, sale) => sum + getNumericAmount(sale.totalAmount),
-      0
-    );
-
-    const activeCustomers = customers.filter(
-      (customer) => customer?.isActive !== false
-    ).length;
+    const totalRadiators = radiators.length;
+    const totalWarehouses = stockSummary?.warehouseSummaries?.length ?? 0;
 
     const LOW_STOCK_THRESHOLD = 5;
 
@@ -230,19 +83,13 @@ const DashboardOverview = ({ onNavigate }) => {
               if (typeof item === 'string') return Number(item);
               if (typeof item === 'object') {
                 const quantity =
-                  item.quantity ??
-                  item.qty ??
-                  item.stock ??
-                  item.available ??
-                  item.onHand ??
-                  item.level;
+                  item.quantity ?? item.qty ?? item.stock ?? item.available ?? item.onHand ?? item.level;
                 if (quantity == null) return null;
                 return Number(quantity);
               }
               return null;
             })
             .filter((qty) => qty != null && Number.isFinite(qty));
-
           if (entries.length) return entries;
         } else if (typeof candidate === 'object') {
           const entries = Object.values(candidate)
@@ -252,19 +99,13 @@ const DashboardOverview = ({ onNavigate }) => {
               if (typeof value === 'string') return Number(value);
               if (typeof value === 'object') {
                 const quantity =
-                  value.quantity ??
-                  value.qty ??
-                  value.stock ??
-                  value.available ??
-                  value.onHand ??
-                  value.level;
+                  value.quantity ?? value.qty ?? value.stock ?? value.available ?? value.onHand ?? value.level;
                 if (quantity == null) return null;
                 return Number(quantity);
               }
               return null;
             })
             .filter((qty) => qty != null && Number.isFinite(qty));
-
           if (entries.length) return entries;
         }
       }
@@ -278,14 +119,11 @@ const DashboardOverview = ({ onNavigate }) => {
       );
 
       if (!stocks.length) {
-        return {
-          isOutOfStock: true,
-          isLowStock: false
-        };
+        return { isOutOfStock: true, isLowStock: false };
       }
 
-      const totalStock = stocks.reduce((sum, qty) => sum + qty, 0);
       const anyPositive = stocks.some((qty) => qty > 0);
+      const totalStock = stocks.reduce((sum, qty) => sum + qty, 0);
       const anyLowWarehouse = stocks.some(
         (qty) => qty > 0 && qty <= LOW_STOCK_THRESHOLD
       );
@@ -299,43 +137,25 @@ const DashboardOverview = ({ onNavigate }) => {
     });
 
     const lowStockItems = stockEvaluations.filter(
-      (evaluation) => evaluation.isLowStock && !evaluation.isOutOfStock
+      (e) => e.isLowStock && !e.isOutOfStock
     ).length;
 
     const outOfStockItems = stockEvaluations.filter(
-      (evaluation) => evaluation.isOutOfStock
+      (e) => e.isOutOfStock
     ).length;
-
-    /* const salesChange = calculatePercentageChange(
-      todaysSalesCount,
-      yesterdaysSalesCount
-    );
-
-    const revenueChange = calculatePercentageChange(
-      todaysRevenue,
-      yesterdaysRevenue
-    ); */
 
     return [
       {
-        title: "Today's Sales",
-        value: todaysSalesCount.toString(),
-        /* change: salesChange, */
+        title: 'Total Radiators',
+        value: totalRadiators.toString(),
         color: 'blue',
-        icon: ShoppingCart
+        icon: Box
       },
       {
-        title: "Today's Revenue",
-        value: formatCurrency(todaysRevenue),
-        /* change: revenueChange, */
-        color: 'green',
-        icon: TrendingUp
-      },
-      {
-        title: 'This Month\'s Revenue',
-        value: formatCurrency(monthlyRevenue),
+        title: 'Warehouses',
+        value: totalWarehouses.toString(),
         color: 'indigo',
-        icon: DollarSign
+        icon: Warehouse
       },
       {
         title: 'Low Stock Radiators',
@@ -348,12 +168,6 @@ const DashboardOverview = ({ onNavigate }) => {
         value: outOfStockItems.toString(),
         color: 'red',
         icon: PackageX
-      },
-      {
-        title: 'Active Customers',
-        value: activeCustomers.toString(),
-        color: 'purple',
-        icon: Users
       }
     ];
   };
@@ -366,8 +180,8 @@ const DashboardOverview = ({ onNavigate }) => {
     return (
       <div className="space-y-8">
         <PageHeader
-          title="Chan Mary 333 "
-          subtitle="Your complete radiator inventory and sales management system"
+          title="Chan Mary 333"
+          subtitle="Your complete radiator inventory management system"
         />
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {dashboardData.error}
@@ -380,10 +194,7 @@ const DashboardOverview = ({ onNavigate }) => {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Chan Mary 333 "
-        /* subtitle="Your complete radiator inventory and sales management system" */
-      />
+      <PageHeader title="Chan Mary 333" />
 
       <StatsGrid stats={stats} columns={4} />
 
@@ -393,13 +204,10 @@ const DashboardOverview = ({ onNavigate }) => {
         </div>
         <div className="lg:col-span-2">
           <RecentActivity
-            sales={dashboardData.sales}
             stockMovements={dashboardData.stockMovements}
           />
         </div>
       </div>
-
-      
     </div>
   );
 };

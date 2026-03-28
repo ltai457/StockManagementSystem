@@ -509,7 +509,6 @@ namespace RadiatorStockAPI.Services.Stock
     int newQuantity,
     string changeType,
     Guid? updatedBy,
-    Guid? saleId = null,
     string? notes = null)
         {
             try
@@ -534,7 +533,6 @@ namespace RadiatorStockAPI.Services.Stock
                     QuantityChange = quantityChange,
                     MovementType = movementType,
                     ChangeType = changeType,
-                    SaleId = saleId,
                     UpdatedBy = updatedBy,
                     Notes = notes,
                     CreatedAt = DateTime.UtcNow
@@ -566,8 +564,6 @@ namespace RadiatorStockAPI.Services.Stock
             var query = _context.StockHistories
                 .Include(sh => sh.Radiator)
                 .Include(sh => sh.Warehouse)
-                .Include(sh => sh.Sale)
-                    .ThenInclude(s => s.Customer)
                 .AsQueryable();
 
             if (radiatorId.HasValue)
@@ -612,12 +608,7 @@ namespace RadiatorStockAPI.Services.Stock
                 OldQuantity = sh.OldQuantity,
                 NewQuantity = sh.NewQuantity,
                 ChangeType = sh.ChangeType,
-                Notes = sh.Notes,
-                SaleId = sh.SaleId,
-                SaleNumber = sh.Sale?.SaleNumber,
-                CustomerName = sh.Sale?.Customer != null
-                    ? $"{sh.Sale.Customer.FirstName} {sh.Sale.Customer.LastName}".Trim()
-                    : null
+                Notes = sh.Notes
             }).ToList();
         }
 
@@ -636,8 +627,6 @@ namespace RadiatorStockAPI.Services.Stock
             var query = _context.StockHistories
                 .Include(sh => sh.Radiator)
                 .Include(sh => sh.Warehouse)
-                .Include(sh => sh.Sale)
-                    .ThenInclude(s => s.Customer)
                 .AsQueryable();
 
             // Apply filters
@@ -687,12 +676,7 @@ namespace RadiatorStockAPI.Services.Stock
                 OldQuantity = sh.OldQuantity,
                 NewQuantity = sh.NewQuantity,
                 ChangeType = sh.ChangeType,
-                Notes = sh.Notes,
-                SaleId = sh.SaleId,
-                SaleNumber = sh.Sale?.SaleNumber,
-                CustomerName = sh.Sale?.Customer != null
-                    ? $"{sh.Sale.Customer.FirstName} {sh.Sale.Customer.LastName}".Trim()
-                    : null
+                Notes = sh.Notes
             }).ToList();
 
             _logger.LogInformation("✅ Returned page {PageNumber} with {Count} items out of {Total} total",

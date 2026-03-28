@@ -15,12 +15,6 @@ namespace RadiatorStockAPI.Data
         public DbSet<StockLevel> StockLevels { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
-        public DbSet<Customer> Customers { get; set; }
-        public DbSet<Sale> Sales { get; set; }
-        public DbSet<SaleItem> SaleItems { get; set; }
-        public DbSet<Invoice> Invoices { get; set; }
-        public DbSet<InvoiceItem> InvoiceItems { get; set; }
-
         public DbSet<RadiatorImage> RadiatorImages { get; set; }
 
         public DbSet<StockHistory> StockHistories { get; set; }
@@ -103,46 +97,7 @@ namespace RadiatorStockAPI.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Configure Customer
-            modelBuilder.Entity<Customer>(entity =>
-            {
-                entity.HasKey(c => c.Id);
-                entity.Property(c => c.FirstName).IsRequired().HasMaxLength(100);
-                entity.Property(c => c.LastName).IsRequired().HasMaxLength(100);
-                entity.Property(c => c.Email).HasMaxLength(150);
-                entity.Property(c => c.Phone).HasMaxLength(20);
-                entity.Property(c => c.Company).HasMaxLength(200);
-                entity.Property(c => c.Address).HasMaxLength(500);
-                entity.HasIndex(c => c.Email);
-                entity.HasIndex(c => c.Phone);
-            });
-
-            // Configure Sale
-            modelBuilder.Entity<Sale>(entity =>
-            {
-                entity.HasKey(s => s.Id);
-                entity.Property(s => s.SaleNumber).IsRequired().HasMaxLength(50);
-                entity.Property(s => s.PaymentMethod).IsRequired().HasMaxLength(20);
-                entity.Property(s => s.SubTotal).HasPrecision(18, 2);
-                entity.Property(s => s.TaxAmount).HasPrecision(18, 2);
-                entity.Property(s => s.TotalAmount).HasPrecision(18, 2);
-                entity.Property(s => s.Notes).HasMaxLength(500);
-                entity.Property(s => s.Status).HasConversion<int>();
-
-                entity.HasIndex(s => s.SaleNumber).IsUnique();
-                entity.HasIndex(s => s.SaleDate);
-
-                entity.HasOne(s => s.Customer)
-                    .WithMany(c => c.Sales)
-                    .HasForeignKey(s => s.CustomerId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(s => s.ProcessedBy)
-                    .WithMany()
-                    .HasForeignKey(s => s.UserId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
-            // Configure RadiatorImage - add this to your OnModelCreating method
+            // Configure RadiatorImage
             modelBuilder.Entity<RadiatorImage>(entity =>
             {
                 entity.HasKey(img => img.Id);
@@ -154,29 +109,6 @@ namespace RadiatorStockAPI.Data
                     .WithMany(r => r.Images)
                     .HasForeignKey(img => img.RadiatorId)
                     .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // Configure SaleItem
-            modelBuilder.Entity<SaleItem>(entity =>
-            {
-                entity.HasKey(si => si.Id);
-                entity.Property(si => si.UnitPrice).HasPrecision(18, 2);
-                entity.Property(si => si.TotalPrice).HasPrecision(18, 2);
-
-                entity.HasOne(si => si.Sale)
-                    .WithMany(s => s.SaleItems)
-                    .HasForeignKey(si => si.SaleId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(si => si.Radiator)
-                    .WithMany()
-                    .HasForeignKey(si => si.RadiatorId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(si => si.Warehouse)
-                    .WithMany()
-                    .HasForeignKey(si => si.WarehouseId)
-                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Configure StockHistory
@@ -199,73 +131,12 @@ namespace RadiatorStockAPI.Data
                     .HasForeignKey(e => e.WarehouseId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(e => e.Sale)
-                    .WithMany()
-                    .HasForeignKey(e => e.SaleId)
-                    .OnDelete(DeleteBehavior.SetNull);
-
                 entity.HasIndex(e => e.RadiatorId);
                 entity.HasIndex(e => e.WarehouseId);
                 entity.HasIndex(e => e.CreatedAt);
                 entity.HasIndex(e => e.MovementType);
             });
 
-            // Configure Invoice
-            modelBuilder.Entity<Invoice>(entity =>
-            {
-                entity.HasKey(i => i.Id);
-                entity.Property(i => i.InvoiceNumber).IsRequired().HasMaxLength(50);
-                entity.Property(i => i.CustomerFullName).IsRequired().HasMaxLength(150);
-                entity.Property(i => i.CustomerEmail).HasMaxLength(150);
-                entity.Property(i => i.CustomerPhone).HasMaxLength(30);
-                entity.Property(i => i.CustomerCompany).HasMaxLength(200);
-                entity.Property(i => i.CustomerAddress).HasMaxLength(300);
-                entity.Property(i => i.SubTotal).HasPrecision(18, 2);
-                entity.Property(i => i.TaxRate).HasPrecision(5, 4);
-                entity.Property(i => i.TaxAmount).HasPrecision(18, 2);
-                entity.Property(i => i.TotalAmount).HasPrecision(18, 2);
-                entity.Property(i => i.PaymentMethod).IsRequired().HasMaxLength(20);
-                entity.Property(i => i.Notes).HasMaxLength(500);
-                entity.Property(i => i.Status).HasConversion<int>();
-
-                entity.HasIndex(i => i.InvoiceNumber).IsUnique();
-                entity.HasIndex(i => i.IssueDate);
-                entity.HasIndex(i => i.Status);
-
-                entity.HasOne(i => i.CreatedBy)
-                    .WithMany()
-                    .HasForeignKey(i => i.UserId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
-
-            // Configure InvoiceItem
-            modelBuilder.Entity<InvoiceItem>(entity =>
-            {
-                entity.HasKey(ii => ii.Id);
-                entity.Property(ii => ii.Description).IsRequired().HasMaxLength(500);
-                entity.Property(ii => ii.RadiatorCode).HasMaxLength(100);
-                entity.Property(ii => ii.RadiatorName).HasMaxLength(200);
-                entity.Property(ii => ii.Brand).HasMaxLength(100);
-                entity.Property(ii => ii.WarehouseCode).HasMaxLength(50);
-                entity.Property(ii => ii.WarehouseName).HasMaxLength(200);
-                entity.Property(ii => ii.UnitPrice).HasPrecision(18, 2);
-                entity.Property(ii => ii.TotalPrice).HasPrecision(18, 2);
-
-                entity.HasOne(ii => ii.Invoice)
-                    .WithMany(i => i.InvoiceItems)
-                    .HasForeignKey(ii => ii.InvoiceId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(ii => ii.Radiator)
-                    .WithMany()
-                    .HasForeignKey(ii => ii.RadiatorId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(ii => ii.Warehouse)
-                    .WithMany()
-                    .HasForeignKey(ii => ii.WarehouseId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -306,20 +177,6 @@ namespace RadiatorStockAPI.Data
                     if (entry.State == EntityState.Added)
                         user.CreatedAt = DateTime.UtcNow;
                     user.UpdatedAt = DateTime.UtcNow;
-                }
-            }
-
-            // Handle Customer timestamps
-            var customerEntries = ChangeTracker.Entries()
-                .Where(e => e.Entity is Customer && (e.State == EntityState.Added || e.State == EntityState.Modified));
-
-            foreach (var entry in customerEntries)
-            {
-                if (entry.Entity is Customer customer)
-                {
-                    if (entry.State == EntityState.Added)
-                        customer.CreatedAt = DateTime.UtcNow;
-                    customer.UpdatedAt = DateTime.UtcNow;
                 }
             }
 

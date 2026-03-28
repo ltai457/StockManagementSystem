@@ -279,14 +279,7 @@ const StockMovementsTab = () => {
                         <div className="text-sm text-gray-900">{movement.changeType}</div>
                       </td>
                       <td className="px-6 py-4">
-                        {movement.saleNumber ? (
-                          <div>
-                            <div className="text-sm font-mono text-gray-900">#{movement.saleNumber}</div>
-                            <div className="text-xs text-gray-500">{movement.customerName}</div>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-500">Manual Edit</span>
-                        )}
+                        <span className="text-sm text-gray-500">{movement.notes || 'Manual Edit'}</span>
                       </td>
                     </tr>
                   ))
@@ -312,7 +305,7 @@ const StockMovementsTab = () => {
                   m.movementType,
                   m.movementType === 'INCOMING' ? `+${m.quantity}` : `-${m.quantity}`,
                   m.changeType,
-                  m.saleNumber ? `#${m.saleNumber} - ${m.customerName}` : 'Manual Edit'
+                  m.notes || 'Manual Edit'
                 ])
               ].map(row => row.join(',')).join('\n');
 

@@ -1,8 +1,21 @@
-// src/components/inventory/modals/EditRadiatorModal.jsx
-import React, { useEffect, useState, useRef } from "react";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
-import { Modal } from "../../common/ui/Modal";
-import { Button } from "../../common/ui/Button";
+import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  MenuItem,
+  FormControlLabel,
+  Checkbox,
+  Alert,
+  Typography,
+  Box,
+  Grid,
+  Divider,
+} from "@mui/material";
+import ImageGallery from "../ImageGallery";
 
 const emptyForm = {
   brand: "",
@@ -19,16 +32,22 @@ const emptyForm = {
   notes: "",
 };
 
+const productTypes = [
+  { value: "Vehicle", label: "Vehicle" },
+  { value: "Truck", label: "Truck" },
+  { value: "Machinery", label: "Machinery" },
+  { value: "Generator", label: "Generator" },
+  { value: "Forklift", label: "Forklift" },
+  { value: "Harvester", label: "Harvester" },
+  { value: "Excavator", label: "Excavator" },
+  { value: "Tractor", label: "Tractor" },
+  { value: "Other", label: "Other" },
+];
+
 const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  // Image state
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [existingImageUrl, setExistingImageUrl] = useState(null);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && radiator) {
@@ -38,17 +57,11 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
         name: radiator.name ?? "",
         year: radiator.year?.toString() ?? "",
         retailPrice:
-          typeof radiator.retailPrice === "number"
-            ? radiator.retailPrice.toString()
-            : "",
+          typeof radiator.retailPrice === "number" ? radiator.retailPrice.toString() : "",
         tradePrice:
-          typeof radiator.tradePrice === "number"
-            ? radiator.tradePrice.toString()
-            : "",
+          typeof radiator.tradePrice === "number" ? radiator.tradePrice.toString() : "",
         costPrice:
-          typeof radiator.costPrice === "number"
-            ? radiator.costPrice.toString()
-            : "",
+          typeof radiator.costPrice === "number" ? radiator.costPrice.toString() : "",
         isPriceOverridable: !!radiator.isPriceOverridable,
         maxDiscountPercent:
           typeof radiator.maxDiscountPercent === "number"
@@ -58,12 +71,6 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
         dimensions: radiator.dimensions ?? "",
         notes: radiator.notes ?? "",
       });
-
-      // Set existing image if available
-      setExistingImageUrl(radiator.imageUrl || null);
-      setSelectedImage(null);
-      setImagePreview(null);
-      
       setSaving(false);
       setError("");
     }
@@ -77,36 +84,6 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
 
   const num = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
 
-  // Image handling
-  const handleImageSelect = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setError("Please select a valid image file");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image file size must be less than 5MB");
-      return;
-    }
-
-    setSelectedImage(file);
-
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target.result);
-    reader.readAsDataURL(file);
-
-    setError("");
-  };
-
-  const handleRemoveImage = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
-    setExistingImageUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
   const validate = () => {
     if (!form.brand?.trim()) return "Brand is required.";
     if (!form.code?.trim()) return "Code is required.";
@@ -115,17 +92,14 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
     if (Number(form.year) < 1900 || Number(form.year) > new Date().getFullYear() + 5) {
       return "Year must be between 1900 and " + (new Date().getFullYear() + 5);
     }
-
     const rp = num(form.retailPrice);
     const tp = num(form.tradePrice);
     const cp = num(form.costPrice);
     const md = num(form.maxDiscountPercent);
-
-    if (rp === null || isNaN(rp) || rp < 0) return "Retail price is required and must be ≥ 0.";
-    if (tp !== null && (isNaN(tp) || tp < 0)) return "Trade price must be ≥ 0.";
-    if (cp !== null && (isNaN(cp) || cp < 0)) return "Cost price must be ≥ 0.";
+    if (rp === null || isNaN(rp) || rp < 0) return "Retail price is required and must be >= 0.";
+    if (tp !== null && (isNaN(tp) || tp < 0)) return "Trade price must be >= 0.";
+    if (cp !== null && (isNaN(cp) || cp < 0)) return "Cost price must be >= 0.";
     if (md !== null && (isNaN(md) || md < 0 || md > 100)) return "Max discount must be between 0 and 100.";
-
     return "";
   };
 
@@ -135,10 +109,8 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
       setError(validationError);
       return;
     }
-
     setSaving(true);
     setError("");
-
     try {
       const payload = {
         brand: form.brand.trim(),
@@ -154,9 +126,7 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
         dimensions: form.dimensions.trim() || null,
         notes: form.notes.trim() || null,
       };
-
-      // Pass both payload and selected image to parent
-      const success = await onSuccess(payload, selectedImage);
+      const success = await onSuccess(payload);
       if (!success) throw new Error("Failed to update radiator");
     } catch (e) {
       console.error("Error updating radiator:", e);
@@ -169,312 +139,215 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
   const handleClose = () => {
     if (!saving) {
       setError("");
-      setSelectedImage(null);
-      setImagePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
       onClose();
     }
   };
 
-  // Determine which image to show
-  const displayImage = imagePreview || existingImageUrl;
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={`Edit Radiator — ${radiator.name || ""}`}>
-      <div className="space-y-5">
-        {error && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
-            {error}
-          </div>
-        )}
+    <Dialog open={isOpen} onClose={handleClose} maxWidth="sm" fullWidth scroll="paper">
+      <DialogTitle>Edit Radiator — {radiator.name || ""}</DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
 
-        {/* Basic details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Brand <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.brand}
-              onChange={(e) => updateField("brand", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., Denso"
-              disabled={saving}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Code <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.code}
-              onChange={(e) => updateField("code", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., DEN-001"
-              disabled={saving}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => updateField("name", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., Heavy Duty Radiator"
-              disabled={saving}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Year <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              min="1900"
-              max={new Date().getFullYear() + 5}
-              value={form.year}
-              onChange={(e) => updateField("year", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="2024"
-              disabled={saving}
-            />
-          </div>
-        </div>
-
-        {/* Pricing section */}
-        <div className="space-y-3">
-          <div className="text-sm font-medium text-gray-900">Pricing</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Retail Price ($) <span className="text-red-500">*</span>
-              </label>
-              <input
+          {/* Basic Details */}
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Brand"
+                required
+                fullWidth
+                size="small"
+                value={form.brand}
+                onChange={(e) => updateField("brand", e.target.value)}
+                placeholder="e.g., Denso"
+                disabled={saving}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Code"
+                required
+                fullWidth
+                size="small"
+                value={form.code}
+                onChange={(e) => updateField("code", e.target.value)}
+                placeholder="e.g., DEN-001"
+                disabled={saving}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Name"
+                required
+                fullWidth
+                size="small"
+                value={form.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                placeholder="e.g., Heavy Duty Radiator"
+                disabled={saving}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Year"
+                required
+                fullWidth
+                size="small"
                 type="number"
-                min={0}
-                step="0.01"
-                value={form.retailPrice}
-                onChange={(e) => updateField("retailPrice", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 149.99"
+                value={form.year}
+                onChange={(e) => updateField("year", e.target.value)}
+                placeholder="2024"
+                slotProps={{ htmlInput: { min: 1900, max: new Date().getFullYear() + 5 } }}
                 disabled={saving}
               />
-            </div>
+            </Grid>
+          </Grid>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Trade Price ($)</label>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.tradePrice}
-                onChange={(e) => updateField("tradePrice", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 129.99"
-                disabled={saving}
-              />
-            </div>
+          <Divider />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price ($)</label>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.costPrice}
-                onChange={(e) => updateField("costPrice", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 99.99"
-                disabled={saving}
-              />
-            </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isPriceOverridable"
-                checked={form.isPriceOverridable}
-                onChange={(e) => updateField("isPriceOverridable", e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                disabled={saving}
-              />
-              <label htmlFor="isPriceOverridable" className="ml-2 block text-sm text-gray-700">
-                Allow price override
-              </label>
-            </div>
-          </div>
-
-          {form.isPriceOverridable && (
-            <div className="sm:col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Discount (%)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={form.maxDiscountPercent}
-                onChange={(e) => updateField("maxDiscountPercent", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="0"
-                disabled={saving}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Additional fields section */}
-        <div className="space-y-3">
-          <div className="text-sm font-medium text-gray-900">Additional Information</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Product Type
-              </label>
-              <select
-                value={form.productType}
-                onChange={(e) => updateField("productType", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                disabled={saving}
-              >
-                <option value="">Select type...</option>
-                <option value="Truck">Truck (ទុក)</option>
-                <option value="Excavator">Excavator (ឧស្កា)</option>
-                <option value="Tractor">Tractor (ត្រាក)</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Dimensions
-              </label>
-              <input
-                type="text"
-                value={form.dimensions}
-                onChange={(e) => updateField("dimensions", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 250x240x40mm, 500x600, or 1020x430x100"
-                disabled={saving}
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes (Optional)
-              </label>
-              <textarea
-                value={form.notes}
-                onChange={(e) => updateField("notes", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Additional product information..."
-                rows={2}
-                disabled={saving}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Image Upload */}
-        <div className="space-y-3">
-          <div className="text-sm font-medium text-gray-900">Product Image</div>
-
-          {!displayImage ? (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageSelect}
-                accept="image/*"
-                className="hidden"
-                disabled={saving}
-              />
-              <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 mb-2">Click to upload a product image</p>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={saving}
-                className="inline-flex items-center"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Choose Image
-              </Button>
-              <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 5MB</p>
-            </div>
-          ) : (
-            <div className="relative border border-gray-300 rounded-lg p-4">
-              <div className="flex items-start space-x-4">
-                <img
-                  src={displayImage}
-                  alt="Preview"
-                  className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+          {/* Pricing */}
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>Pricing</Typography>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Retail Price ($)"
+                  required
+                  fullWidth
+                  size="small"
+                  type="number"
+                  value={form.retailPrice}
+                  onChange={(e) => updateField("retailPrice", e.target.value)}
+                  placeholder="0.00"
+                  slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                  disabled={saving}
                 />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    {selectedImage?.name || "Current image"}
-                  </p>
-                  {selectedImage && (
-                    <p className="text-xs text-gray-500">
-                      {(selectedImage.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  )}
-                  <div className="flex space-x-2 mt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Trade Price ($)"
+                  fullWidth
+                  size="small"
+                  type="number"
+                  value={form.tradePrice}
+                  onChange={(e) => updateField("tradePrice", e.target.value)}
+                  placeholder="0.00"
+                  slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                  disabled={saving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Cost Price ($)"
+                  fullWidth
+                  size="small"
+                  type="number"
+                  value={form.costPrice}
+                  onChange={(e) => updateField("costPrice", e.target.value)}
+                  placeholder="0.00"
+                  slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                  disabled={saving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }} sx={{ display: "flex", alignItems: "center" }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={form.isPriceOverridable}
+                      onChange={(e) => updateField("isPriceOverridable", e.target.checked)}
                       disabled={saving}
-                    >
-                      <Upload className="w-3 h-3 mr-1" />
-                      {existingImageUrl && !selectedImage ? "Replace" : "Change"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRemoveImage}
-                      disabled={saving}
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageSelect}
-                accept="image/*"
-                className="hidden"
-                disabled={saving}
-              />
-            </div>
-          )}
-        </div>
+                      size="small"
+                    />
+                  }
+                  label={<Typography variant="body2">Allow price override</Typography>}
+                />
+              </Grid>
+              {form.isPriceOverridable && (
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Max Discount (%)"
+                    fullWidth
+                    size="small"
+                    type="number"
+                    value={form.maxDiscountPercent}
+                    onChange={(e) => updateField("maxDiscountPercent", e.target.value)}
+                    placeholder="0"
+                    slotProps={{ htmlInput: { min: 0, max: 100, step: 0.1 } }}
+                    disabled={saving}
+                  />
+                </Grid>
+              )}
+            </Grid>
+          </Box>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
-          <Button variant="outline" onClick={handleClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
-      </div>
-    </Modal>
+          <Divider />
+
+          {/* Additional Info */}
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>Additional Information</Typography>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Product Type"
+                  select
+                  fullWidth
+                  size="small"
+                  value={form.productType}
+                  onChange={(e) => updateField("productType", e.target.value)}
+                  disabled={saving}
+                >
+                  <MenuItem value="">Select type...</MenuItem>
+                  {productTypes.map((pt) => (
+                    <MenuItem key={pt.value} value={pt.value}>{pt.label}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid size={12}>
+                <TextField
+                  label="Dimensions"
+                  fullWidth
+                  size="small"
+                  value={form.dimensions}
+                  onChange={(e) => updateField("dimensions", e.target.value)}
+                  placeholder="e.g., 250x240x40mm"
+                  disabled={saving}
+                />
+              </Grid>
+              <Grid size={12}>
+                <TextField
+                  label="Notes"
+                  fullWidth
+                  size="small"
+                  multiline
+                  rows={2}
+                  value={form.notes}
+                  onChange={(e) => updateField("notes", e.target.value)}
+                  placeholder="Additional product information..."
+                  disabled={saving}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Divider />
+
+          {/* Image Gallery */}
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>Product Images</Typography>
+            <ImageGallery radiatorId={radiator.id} onUpdate={() => {}} />
+          </Box>
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={handleClose} disabled={saving}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Changes"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

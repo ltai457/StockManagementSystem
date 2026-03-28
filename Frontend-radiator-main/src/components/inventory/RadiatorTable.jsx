@@ -2,202 +2,177 @@ import React from "react";
 import { Edit, Trash2, Package } from "lucide-react";
 import {
   Table,
-  TableHead,
-  TableHeader,
   TableBody,
-  TableRow,
   TableCell,
-} from "../common/ui/Table";
-import { Button } from "../common/ui/Button";
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Chip,
+  Tooltip,
+  Typography,
+  Box,
+} from "@mui/material";
 
-// Money formatter
 const fmtMoney = (n) =>
-  (n ?? n === 0)
+  n != null
     ? new Intl.NumberFormat(undefined, { style: "currency", currency: "NZD" }).format(n)
-    : "—";
+    : "\u2014";
 
-const RadiatorTable = ({
-  radiators,
-  onEdit,
-  onDelete,
-  onEditStock,
-  isAdmin, // boolean passed from parent
-}) => {
+const RadiatorTable = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) => {
   const getTotalStock = (stock) => {
     if (!stock) return 0;
     return Object.values(stock).reduce((total, qty) => total + (qty || 0), 0);
   };
 
-  const getStockColor = (totalStock) => {
-    if (totalStock === 0) return "text-red-600";
-    if (totalStock <= 5) return "text-yellow-600";
-    return "text-green-600";
+  const getStockChipColor = (totalStock) => {
+    if (totalStock === 0) return "error";
+    if (totalStock <= 5) return "warning";
+    return "success";
   };
 
   const userIsAdmin = !!isAdmin;
 
   return (
-    <Table className="min-w-[1300px] table-auto">
-      <TableHeader className="table-header-group">
-        <TableRow className="table-row">
-          <TableHead className="table-cell w-36 text-center align-middle">
-            Product
-          </TableHead>
-          <TableHead className="table-cell text-center align-middle">
-            Brand
-          </TableHead>
-          <TableHead className="table-cell text-center align-middle">
-            Code
-          </TableHead>
-          <TableHead className="table-cell text-center align-middle">
-            Year
-          </TableHead>
+    <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, overflow: "auto" }}>
+      <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Product</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Brand</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Code</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Year</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Type</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Dimensions</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="right">Retail</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="right">Trade</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Stock</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {radiators.map((radiator) => {
+            const totalStock = getTotalStock(radiator.stock);
 
-          {/* NEW COLUMNS */}
-          <TableHead className="table-cell text-center align-middle">
-            Type
-          </TableHead>
-          <TableHead className="table-cell text-center align-middle">
-            Dimensions
-          </TableHead>
-
-          <TableHead className="table-cell text-center align-middle">
-            Retail
-          </TableHead>
-          <TableHead className="table-cell text-center align-middle">
-            Trade
-          </TableHead>
-
-          {/* Stock */}
-          <TableHead className="table-cell w-40 text-center align-middle">
-            Stock
-          </TableHead>
-
-          <TableHead className="table-cell w-50 text-center align-middle">
-            Actions
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-
-      <TableBody>
-        {radiators.map((radiator) => {
-          const totalStock = getTotalStock(radiator.stock);
-
-          return (
-            <TableRow key={radiator.id}>
-              <TableCell>
-                <div className="font-medium text-gray-900">{radiator.name}</div>
-                {/* Show notes as subtitle if available */}
-                {radiator.notes && (
-                  <div className="text-xs text-gray-500 mt-1 truncate max-w-48">
-                    {radiator.notes}
-                  </div>
-                )}
-              </TableCell>
-
-              <TableCell>
-                <div className="text-sm text-gray-900">{radiator.brand}</div>
-              </TableCell>
-
-              <TableCell>
-                <div className="text-sm font-mono text-gray-900">
-                  {radiator.code}
-                </div>
-              </TableCell>
-
-              <TableCell>
-                <div className="text-sm text-gray-900">{radiator.year}</div>
-              </TableCell>
-
-              {/* NEW CELLS */}
-              <TableCell>
-                <div className="text-sm text-gray-900">
-                  {radiator.productType && (
-                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                      {radiator.productType}
-                    </span>
+            return (
+              <TableRow
+                key={radiator.id}
+                hover
+                sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+              >
+                <TableCell>
+                  <Typography variant="body2" fontWeight={500}>
+                    {radiator.name}
+                  </Typography>
+                  {radiator.notes && (
+                    <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 200, display: "block" }}>
+                      {radiator.notes}
+                    </Typography>
                   )}
-                  {!radiator.productType && <span className="text-gray-400">—</span>}
-                </div>
-              </TableCell>
+                </TableCell>
 
-              <TableCell>
-                <div className="text-sm text-gray-900">
-                  {radiator.dimensions || <span className="text-gray-400">—</span>}
-                </div>
-              </TableCell>
+                <TableCell>
+                  <Typography variant="body2">{radiator.brand}</Typography>
+                </TableCell>
 
-              {/* Retail Price */}
-              <TableCell className="text-center align-middle">
-                <div className="text-sm text-gray-900">
-                  {fmtMoney(radiator.retailPrice)}
-                </div>
-              </TableCell>
+                <TableCell>
+                  <Typography variant="body2" fontFamily="monospace">
+                    {radiator.code}
+                  </Typography>
+                </TableCell>
 
-              {/* Trade Price */}
-              <TableCell className="text-center align-middle">
-                <div className="text-sm text-gray-900">
-                  {fmtMoney(radiator.tradePrice)}
-                </div>
-              </TableCell>
+                <TableCell align="center">
+                  <Typography variant="body2">{radiator.year}</Typography>
+                </TableCell>
 
-              {/* Stock */}
-              <TableCell className="text-center align-middle">
-                <div
-                  className={`text-sm font-medium ${getStockColor(totalStock)}`}
-                >
-                  {totalStock} units
-                </div>
-                {radiator.stock && (
-                  <div className="mt-0.5 text-xs text-gray-500 inline-flex flex-wrap justify-center gap-x-2">
-                    {Object.entries(radiator.stock).map(([warehouse, qty]) => (
-                      <span key={warehouse}>
-                        {warehouse}: {qty}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </TableCell>
+                <TableCell align="center">
+                  {radiator.productType ? (
+                    <Chip
+                      label={radiator.productType}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                  ) : (
+                    <Typography variant="body2" color="text.disabled">{"\u2014"}</Typography>
+                  )}
+                </TableCell>
 
-              {/* Actions */}
-              <TableCell className="text-center align-middle">
-                <div className="inline-flex items-center justify-center gap-1 sm:gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEditStock(radiator)}
-                    icon={Package}
-                    className="p-2 text-blue-600 hover:text-blue-800 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                    title="Edit Stock"
+                <TableCell>
+                  <Typography variant="body2">
+                    {radiator.dimensions || <span style={{ color: "#9e9e9e" }}>{"\u2014"}</span>}
+                  </Typography>
+                </TableCell>
+
+                <TableCell align="right">
+                  <Typography variant="body2">{fmtMoney(radiator.retailPrice)}</Typography>
+                </TableCell>
+
+                <TableCell align="right">
+                  <Typography variant="body2">{fmtMoney(radiator.tradePrice)}</Typography>
+                </TableCell>
+
+                <TableCell align="center">
+                  <Chip
+                    label={`${totalStock} units`}
+                    size="small"
+                    color={getStockChipColor(totalStock)}
+                    variant="filled"
                   />
-
-                  {userIsAdmin && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEdit(radiator)}
-                        icon={Edit}
-                        className="p-2 text-yellow-600 hover:text-yellow-800 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                        title="Edit Radiator"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onDelete(radiator)}
-                        icon={Trash2}
-                        className="p-2 text-red-600 hover:text-red-800 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                        title="Delete Radiator"
-                      />
-                    </>
+                  {radiator.stock && (
+                    <Box sx={{ mt: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {Object.entries(radiator.stock)
+                          .map(([wh, qty]) => `${wh}: ${qty}`)
+                          .join(" | ")}
+                      </Typography>
+                    </Box>
                   )}
-                </div>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                </TableCell>
+
+                <TableCell align="center">
+                  <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5 }}>
+                    <Tooltip title="Edit Stock">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => onEditStock(radiator)}
+                      >
+                        <Package size={18} />
+                      </IconButton>
+                    </Tooltip>
+
+                    {userIsAdmin && (
+                      <>
+                        <Tooltip title="Edit Radiator">
+                          <IconButton
+                            size="small"
+                            color="warning"
+                            onClick={() => onEdit(radiator)}
+                          >
+                            <Edit size={18} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Radiator">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => onDelete(radiator)}
+                          >
+                            <Trash2 size={18} />
+                          </IconButton>
+                        </Tooltip>
+                      </>
+                    )}
+                  </Box>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 };
 
