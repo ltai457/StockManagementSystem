@@ -17,7 +17,4 @@ public class StockMovementDto
     public int NewQuantity { get; set; }
     public string ChangeType { get; set; } = string.Empty;
     public string? Notes { get; set; }
-    public Guid? SaleId { get; set; }
-    public string? SaleNumber { get; set; }
-    public string? CustomerName { get; set; }
 }

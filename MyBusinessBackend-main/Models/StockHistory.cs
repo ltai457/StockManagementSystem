@@ -32,9 +32,6 @@ namespace RadiatorStockAPI.Models
         [MaxLength(100)]
         public string ChangeType { get; set; } = string.Empty; // "Manual Update", "Sale", etc.
 
-        public Guid? SaleId { get; set; }
-        public Sale? Sale { get; set; }
-
         public Guid? UpdatedBy { get; set; }
 
         [Required]

@@ -1,8 +1,22 @@
-// src/components/inventory/modals/AddRadiatorModal.jsx
 import React, { useState, useRef } from "react";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
-import { Modal } from "../../common/ui/Modal";
-import { Button } from "../../common/ui/Button";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  MenuItem,
+  FormControlLabel,
+  Checkbox,
+  Alert,
+  IconButton,
+  Typography,
+  Box,
+  Grid,
+  Divider,
+} from "@mui/material";
 
 const emptyForm = {
   brand: "",
@@ -14,23 +28,30 @@ const emptyForm = {
   costPrice: "",
   isPriceOverridable: false,
   maxDiscountPercent: "",
-  // NEW FIELDS ADDED
   productType: "",
   dimensions: "",
   notes: "",
 };
 
+const productTypes = [
+  { value: "Vehicle", label: "Vehicle" },
+  { value: "Truck", label: "Truck" },
+  { value: "Machinery", label: "Machinery" },
+  { value: "Generator", label: "Generator" },
+  { value: "Forklift", label: "Forklift" },
+  { value: "Harvester", label: "Harvester" },
+  { value: "Excavator", label: "Excavator" },
+  { value: "Tractor", label: "Tractor" },
+  { value: "Other", label: "Other" },
+];
+
 const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  // Image state
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-
-  // Initial stock for warehouses
   const [initialStock, setInitialStock] = useState({});
 
   const updateField = (key, value) => {
@@ -46,11 +67,9 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
 
   const num = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
 
-  // Image handling
   const handleImageSelect = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     if (!file.type.startsWith("image/")) {
       setError("Please select a valid image file");
       return;
@@ -59,13 +78,10 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
       setError("Image file size must be less than 5MB");
       return;
     }
-
     setSelectedImage(file);
-
     const reader = new FileReader();
     reader.onload = (e) => setImagePreview(e.target.result);
     reader.readAsDataURL(file);
-
     setError("");
   };
 
@@ -83,15 +99,12 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
     if (Number(form.year) < 1900 || Number(form.year) > new Date().getFullYear() + 5) {
       return "Year must be between 1900 and " + (new Date().getFullYear() + 5);
     }
-
     const rp = num(form.retailPrice);
     const tp = num(form.tradePrice);
     const md = num(form.maxDiscountPercent);
-
-    if (rp === null || isNaN(rp) || rp < 0) return "Retail price is required and must be ≥ 0.";
-    if (tp !== null && (isNaN(tp) || tp < 0)) return "Trade price must be ≥ 0.";
+    if (rp === null || isNaN(rp) || rp < 0) return "Retail price is required and must be >= 0.";
+    if (tp !== null && (isNaN(tp) || tp < 0)) return "Trade price must be >= 0.";
     if (md !== null && (isNaN(md) || md < 0 || md > 100)) return "Max discount must be between 0 and 100.";
-
     return "";
   };
 
@@ -101,10 +114,8 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
       setError(validationError);
       return;
     }
-
     setSaving(true);
     setError("");
-
     try {
       const payload = {
         brand: form.brand.trim(),
@@ -116,24 +127,14 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
         costPrice: num(form.costPrice),
         isPriceOverridable: !!form.isPriceOverridable,
         maxDiscountPercent: num(form.maxDiscountPercent),
-        stock: initialStock, // key used by service to map to InitialStock[…]
-        
-        // NEW FIELDS ADDED
+        stock: initialStock,
         productType: form.productType.trim() || null,
         dimensions: form.dimensions.trim() || null,
         notes: form.notes.trim() || null,
       };
-
-      // onSuccess is provided by parent and must return true/false
       const success = await onSuccess(payload, selectedImage);
       if (!success) throw new Error("Failed to create radiator");
-
-      // Reset form
-      setForm(emptyForm);
-      setSelectedImage(null);
-      setImagePreview(null);
-      setInitialStock({});
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      resetForm();
     } catch (e) {
       setError(e.message || "Failed to create radiator");
     } finally {
@@ -141,321 +142,287 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
     }
   };
 
+  const resetForm = () => {
+    setForm(emptyForm);
+    setSelectedImage(null);
+    setImagePreview(null);
+    setInitialStock({});
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleClose = () => {
     if (!saving) {
       setError("");
-      setForm(emptyForm);
-      setSelectedImage(null);
-      setImagePreview(null);
-      setInitialStock({});
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      resetForm();
       onClose();
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add New Radiator">
-      <div className="space-y-5">
-        {error && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
-            {error}
-          </div>
-        )}
+    <Dialog open={isOpen} onClose={handleClose} maxWidth="sm" fullWidth scroll="paper">
+      <DialogTitle>Add New Radiator</DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1 }}>
+          {error && <Alert severity="error">{error}</Alert>}
 
-        {/* Basic details */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Brand <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.brand}
-              onChange={(e) => updateField("brand", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., Denso"
-              disabled={saving}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Code <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.code}
-              onChange={(e) => updateField("code", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Unique product code"
-              disabled={saving}
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => updateField("name", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., Toyota Corolla Radiator"
-              disabled={saving}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Year <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              value={form.year}
-              onChange={(e) => updateField("year", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., 2018"
-              min={1900}
-              max={new Date().getFullYear() + 5}
-              disabled={saving}
-            />
-          </div>
-
-          {/* NEW FIELDS SECTION */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product Type
-            </label>
-            <select
-              value={form.productType}
-              onChange={(e) => updateField("productType", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={saving}
-            >
-              <option value="">Select Type</option>
-              <option value="Vehicle">Vehicle (រថយន្ត)</option>
-              <option value="Truck">Truck (ឡាន)</option>
-              <option value="Machinery">Machinery (យន្តរឧបករណ៍)</option>
-              <option value="Generator">Generator (ម៉ាស៊ីនភ្លើង)</option>
-              <option value="Forklift">Forklift (រទេះអូស)</option>
-              <option value="Harvester">Harvester (ម៉ាស៊ីនច្រូត)</option>
-              <option value="Excavator">Excavator (ឧស្កា)</option>
-              <option value="Tractor">Tractor (ត្រាក)</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Dimensions
-            </label>
-            <input
-              type="text"
-              value={form.dimensions}
-              onChange={(e) => updateField("dimensions", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., 250x240x40mm, 500x600, or 1020x430x100"
-              disabled={saving}
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (Optional)
-            </label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => updateField("notes", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Additional product information..."
-              rows={2}
-              disabled={saving}
-            />
-          </div>
-          {/* END NEW FIELDS SECTION */}
-        </div>
-
-        {/* Image Upload */}
-        <div className="space-y-3">
-          <div className="text-sm font-medium text-gray-900">Product Image</div>
-
-          {!imagePreview ? (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageSelect}
-                accept="image/*"
-                className="hidden"
+          {/* Basic Details */}
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Brand"
+                required
+                fullWidth
+                size="small"
+                value={form.brand}
+                onChange={(e) => updateField("brand", e.target.value)}
+                placeholder="e.g., Denso"
                 disabled={saving}
               />
-              <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 mb-2">Click to upload a product image</p>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Code"
+                required
+                fullWidth
+                size="small"
+                value={form.code}
+                onChange={(e) => updateField("code", e.target.value)}
+                placeholder="Unique product code"
                 disabled={saving}
-                className="inline-flex items-center"
+              />
+            </Grid>
+            <Grid size={12}>
+              <TextField
+                label="Name"
+                required
+                fullWidth
+                size="small"
+                value={form.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                placeholder="e.g., Toyota Corolla Radiator"
+                disabled={saving}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Year"
+                required
+                fullWidth
+                size="small"
+                type="number"
+                value={form.year}
+                onChange={(e) => updateField("year", e.target.value)}
+                placeholder="e.g., 2018"
+                slotProps={{ htmlInput: { min: 1900, max: new Date().getFullYear() + 5 } }}
+                disabled={saving}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Product Type"
+                select
+                fullWidth
+                size="small"
+                value={form.productType}
+                onChange={(e) => updateField("productType", e.target.value)}
+                disabled={saving}
               >
-                <Upload className="w-4 h-4 mr-2" />
-                Choose Image
-              </Button>
-              <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 5MB</p>
-            </div>
-          ) : (
-            <div className="relative border border-gray-300 rounded-lg p-4">
-              <div className="flex items-start space-x-4">
+                <MenuItem value="">Select Type</MenuItem>
+                {productTypes.map((pt) => (
+                  <MenuItem key={pt.value} value={pt.value}>{pt.label}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={12}>
+              <TextField
+                label="Dimensions"
+                fullWidth
+                size="small"
+                value={form.dimensions}
+                onChange={(e) => updateField("dimensions", e.target.value)}
+                placeholder="e.g., 250x240x40mm"
+                disabled={saving}
+              />
+            </Grid>
+            <Grid size={12}>
+              <TextField
+                label="Notes"
+                fullWidth
+                size="small"
+                multiline
+                rows={2}
+                value={form.notes}
+                onChange={(e) => updateField("notes", e.target.value)}
+                placeholder="Additional product information..."
+                disabled={saving}
+              />
+            </Grid>
+          </Grid>
+
+          {/* Image Upload */}
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>Product Image</Typography>
+            {!imagePreview ? (
+              <Box
+                sx={{
+                  border: "2px dashed",
+                  borderColor: "grey.300",
+                  borderRadius: 2,
+                  p: 3,
+                  textAlign: "center",
+                  cursor: "pointer",
+                  "&:hover": { borderColor: "primary.main", bgcolor: "grey.50" },
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageSelect}
+                  accept="image/*"
+                  hidden
+                  disabled={saving}
+                />
+                <ImageIcon size={40} style={{ margin: "0 auto", color: "#9e9e9e" }} />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Click to upload a product image
+                </Typography>
+                <Typography variant="caption" color="text.disabled">
+                  PNG, JPG, GIF up to 5MB
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2, p: 2, border: 1, borderColor: "grey.300", borderRadius: 2 }}>
                 <img
                   src={imagePreview}
                   alt="Preview"
-                  className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                  style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }}
                 />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{selectedImage?.name}</p>
-                  <p className="text-xs text-gray-500">
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" fontWeight={500}>{selectedImage?.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">
                     {selectedImage && (selectedImage.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
+                  </Typography>
+                </Box>
+                <IconButton size="small" onClick={handleRemoveImage} disabled={saving}>
+                  <X size={18} />
+                </IconButton>
+              </Box>
+            )}
+          </Box>
+
+          <Divider />
+
+          {/* Pricing */}
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>Pricing</Typography>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Retail Price ($)"
+                  required
+                  fullWidth
+                  size="small"
+                  type="number"
+                  value={form.retailPrice}
+                  onChange={(e) => updateField("retailPrice", e.target.value)}
+                  placeholder="0.00"
+                  slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
                   disabled={saving}
-                  className="text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Pricing */}
-        <div className="space-y-3">
-          <div className="text-sm font-medium text-gray-900">Pricing</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Retail Price ($) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.retailPrice}
-                onChange={(e) => updateField("retailPrice", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="0.00"
-                disabled={saving}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Trade Price ($)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.tradePrice}
-                onChange={(e) => updateField("tradePrice", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="0.00"
-                disabled={saving}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cost Price ($)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.costPrice}
-                onChange={(e) => updateField("costPrice", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="0.00"
-                disabled={saving}
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="isPriceOverridable"
-                checked={form.isPriceOverridable}
-                onChange={(e) => updateField("isPriceOverridable", e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                disabled={saving}
-              />
-              <label htmlFor="isPriceOverridable" className="text-sm text-gray-700">
-                Allow price override during sales
-              </label>
-            </div>
-          </div>
-
-          {form.isPriceOverridable && (
-            <div className="sm:w-1/2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Discount (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="100"
-                value={form.maxDiscountPercent}
-                onChange={(e) => updateField("maxDiscountPercent", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="0"
-                disabled={saving}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Initial Stock */}
-        {warehouses.length > 0 && (
-          <div className="space-y-3">
-            <div className="text-sm font-medium text-gray-900">Initial Stock</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {warehouses.map((warehouse) => (
-                <div key={warehouse.id}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {warehouse.name} ({warehouse.code})
-                  </label>
-                  <input
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Trade Price ($)"
+                  fullWidth
+                  size="small"
+                  type="number"
+                  value={form.tradePrice}
+                  onChange={(e) => updateField("tradePrice", e.target.value)}
+                  placeholder="0.00"
+                  slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                  disabled={saving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Cost Price ($)"
+                  fullWidth
+                  size="small"
+                  type="number"
+                  value={form.costPrice}
+                  onChange={(e) => updateField("costPrice", e.target.value)}
+                  placeholder="0.00"
+                  slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
+                  disabled={saving}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }} sx={{ display: "flex", alignItems: "center" }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={form.isPriceOverridable}
+                      onChange={(e) => updateField("isPriceOverridable", e.target.checked)}
+                      disabled={saving}
+                      size="small"
+                    />
+                  }
+                  label={<Typography variant="body2">Allow price override</Typography>}
+                />
+              </Grid>
+              {form.isPriceOverridable && (
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    label="Max Discount (%)"
+                    fullWidth
+                    size="small"
                     type="number"
-                    min="0"
-                    value={initialStock[warehouse.code] || ""}
-                    onChange={(e) => updateStock(warehouse.code, e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={form.maxDiscountPercent}
+                    onChange={(e) => updateField("maxDiscountPercent", e.target.value)}
                     placeholder="0"
+                    slotProps={{ htmlInput: { min: 0, max: 100, step: 0.1 } }}
                     disabled={saving}
                   />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+                </Grid>
+              )}
+            </Grid>
+          </Box>
 
-        {/* Actions */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-          <Button variant="outline" onClick={handleClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} loading={saving}>
-            {saving ? "Creating..." : "Create Radiator"}
-          </Button>
-        </div>
-      </div>
-    </Modal>
+          {/* Initial Stock */}
+          {warehouses.length > 0 && (
+            <Box>
+              <Divider sx={{ mb: 2 }} />
+              <Typography variant="subtitle2" gutterBottom>Initial Stock</Typography>
+              <Grid container spacing={2}>
+                {warehouses.map((warehouse) => (
+                  <Grid size={{ xs: 12, sm: 6 }} key={warehouse.id}>
+                    <TextField
+                      label={`${warehouse.name} (${warehouse.code})`}
+                      fullWidth
+                      size="small"
+                      type="number"
+                      value={initialStock[warehouse.code] || ""}
+                      onChange={(e) => updateStock(warehouse.code, e.target.value)}
+                      placeholder="0"
+                      slotProps={{ htmlInput: { min: 0 } }}
+                      disabled={saving}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={handleClose} disabled={saving}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSave} disabled={saving}>
+          {saving ? "Creating..." : "Create Radiator"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

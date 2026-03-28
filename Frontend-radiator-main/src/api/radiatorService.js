@@ -164,6 +164,24 @@ const radiatorService = {
     );
   },
 
+  deleteImage(radiatorId, imageId) {
+    return handleRequest(
+      () => httpClient.delete(`/radiators/${radiatorId}/images/${imageId}`),
+      {
+        fallbackMessage: "Failed to delete image",
+      }
+    );
+  },
+
+  setPrimaryImage(radiatorId, imageId) {
+    return handleRequest(
+      () => httpClient.put(`/radiators/${radiatorId}/images/${imageId}/set-primary`),
+      {
+        fallbackMessage: "Failed to set primary image",
+      }
+    );
+  },
+
   testS3(imageFile) {
     const formData = new FormData();
     formData.append("file", imageFile, imageFile.name);

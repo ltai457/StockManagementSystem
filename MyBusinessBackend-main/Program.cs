@@ -5,10 +5,8 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using RadiatorStockAPI.Data;
 using RadiatorStockAPI.Services.Auth;
-using RadiatorStockAPI.Services.Customers;
 using RadiatorStockAPI.Services.Radiators;
 using RadiatorStockAPI.Services.S3;
-using RadiatorStockAPI.Services.Sales;
 using RadiatorStockAPI.Services.Stock;
 using RadiatorStockAPI.Services.Users;
 using RadiatorStockAPI.Services.Warehouses;
@@ -74,9 +72,6 @@ builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IRadiatorService, RadiatorService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-builder.Services.AddScoped<ISalesService, SalesService>();
-// Add this line with your other services
 builder.Services.AddScoped<IS3Service, S3Service>();
 
 // Add health checks for monitoring
@@ -157,7 +152,7 @@ builder.Services.AddSwaggerGen(c =>
     { 
         Title = "RadiatorStock API", 
         Version = "v1",
-        Description = "API for managing radiator inventory and sales"
+        Description = "API for managing radiator inventory and stock"
     });
     
     // Add JWT authentication to Swagger
@@ -298,8 +293,7 @@ app.MapGet("/api/v1/info", (IWebHostEnvironment env) => Results.Ok(new {
         auth = "/api/v1/auth",
         radiators = "/api/v1/radiators",
         warehouses = "/api/v1/warehouses",
-        customers = "/api/v1/customers",
-        sales = "/api/v1/sales"
+        stock = "/api/v1/stock"
     }
 })).AllowAnonymous();
 

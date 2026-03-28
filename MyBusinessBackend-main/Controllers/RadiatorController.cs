@@ -161,5 +161,43 @@ namespace RadiatorStockAPI.Controllers
             return Ok(images);
         }
 
+        [HttpDelete("{radiatorId:guid}/images/{imageId:guid}")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> DeleteRadiatorImage(Guid radiatorId, Guid imageId)
+        {
+            try
+            {
+                var result = await _radiatorService.DeleteRadiatorImageAsync(radiatorId, imageId);
+
+                if (!result)
+                    return NotFound(new { message = $"Image with ID {imageId} not found for radiator {radiatorId}." });
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{radiatorId:guid}/images/{imageId:guid}/set-primary")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> SetPrimaryImage(Guid radiatorId, Guid imageId)
+        {
+            try
+            {
+                var result = await _radiatorService.SetPrimaryImageAsync(radiatorId, imageId);
+
+                if (!result)
+                    return NotFound(new { message = $"Image with ID {imageId} not found for radiator {radiatorId}." });
+
+                return Ok(new { message = "Primary image updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
     }
 }
