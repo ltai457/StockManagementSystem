@@ -157,7 +157,7 @@ const authService = {
   },
 
   // Logout function
-  async logout(refreshToken) {
+  async logout() {
     if (tokenRefreshTimer) {
       clearTimeout(tokenRefreshTimer);
       tokenRefreshTimer = null;

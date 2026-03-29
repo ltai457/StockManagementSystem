@@ -1,43 +1,31 @@
 import React, { useState } from "react";
-import { Package, TrendingDown } from "lucide-react";
+import { ArrowRightLeft, Package, ShoppingCart } from "lucide-react";
 import { useStockManagement } from "../../hooks/useStockManagement";
 import StockHeader from "./sections/StockHeader";
 import StockToolbar from "./sections/StockToolbar";
 import StockOverviewGrid from "./sections/StockOverviewGrid";
 import StockTable from "./views/StockTable";
 import StockMovementsTab from "./sections/StockMovementsTab";
-import warehouseService from "../../api/warehouseService";
-import radiatorService from "../../api/radiatorService";
+import SalesTab from "./sections/SalesTab";
+import PageLoadingState from "../common/feedback/PageLoadingState";
+import PageErrorState from "../common/feedback/PageErrorState";
 
 export default function StockManagement() {
   const sm = useStockManagement();
-  const [activeTab, setActiveTab] = useState("inventory"); // "inventory" or "movements"
+  const [activeTab, setActiveTab] = useState("inventory");
 
   if (sm.loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Package className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading stock data...</p>
-        </div>
-      </div>
-    );
+    return <PageLoadingState text="Loading stock data..." />;
   }
 
   if (sm.error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {sm.error}
-        </div>
-      </div>
-    );
+    return <PageErrorState title="Error loading stock data" message={sm.error} />;
   }
 
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
-        <StockHeader />
+        <StockHeader radiators={sm.filteredRadiators} />
 
         {/* Tab Navigation */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-1 flex gap-1">
@@ -60,8 +48,19 @@ export default function StockManagement() {
                 : "text-gray-600 hover:bg-gray-50"
             }`}
           >
-            <TrendingDown className="w-4 h-4" />
-            Stock Movements
+            <ArrowRightLeft className="w-4 h-4" />
+            Stock
+          </button>
+          <button
+            onClick={() => setActiveTab("sales")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium transition-colors ${
+              activeTab === "sales"
+                ? "bg-blue-600 text-white"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Sales
           </button>
         </div>
 
@@ -115,9 +114,26 @@ export default function StockManagement() {
               onChangeStock={sm.handleStockChange}
             />
           </>
-        ) : (
-          <StockMovementsTab />
-        )}
+        ) : null}
+
+        {activeTab === "movements" ? (
+          <StockMovementsTab
+            radiators={sm.radiators}
+            warehouses={sm.warehouses}
+            selectedWarehouse={sm.selectedWarehouse}
+            onSubmitStockIn={sm.handleStockIn}
+            onSubmitMovement={sm.handleTransferStock}
+          />
+        ) : null}
+
+        {activeTab === "sales" ? (
+          <SalesTab
+            radiators={sm.radiators}
+            warehouses={sm.warehouses}
+            selectedWarehouse={sm.selectedWarehouse}
+            onSubmitSale={sm.handleRecordSale}
+          />
+        ) : null}
       </div>
     </div>
   );

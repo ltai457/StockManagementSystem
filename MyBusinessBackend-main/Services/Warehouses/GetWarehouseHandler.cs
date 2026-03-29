@@ -21,7 +21,11 @@ public class GetWarehouseHandler : IGetWarehouseHandler
     public async Task<Result<WarehouseDto>> GetByIdAsync(Guid id)
     {
         var w = await _service.GetByIdAsync(id);
-        return w is null ? Result<WarehouseDto>.NotFound($"Warehouse {id} not found.") : Result<WarehouseDto>.Ok(ToDto(w));
+        if (w is null)
+        {
+            return Result<WarehouseDto>.NotFound($"Warehouse {id} not found.");
+        }
+        return Result<WarehouseDto>.Ok(ToDto(w));
     }
 
     private static WarehouseDto ToDto(Warehouse w) => new()

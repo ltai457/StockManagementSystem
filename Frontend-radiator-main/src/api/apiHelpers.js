@@ -57,6 +57,21 @@ export async function handleRequest(factory, options = {}) {
   }
 }
 
+export function compactObject(obj = {}) {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined && value !== null && value !== "")
+  );
+}
+
+export function serializeDateParams(params = {}) {
+  return Object.fromEntries(
+    Object.entries(params).map(([key, value]) => [
+      key,
+      value instanceof Date ? value.toISOString() : value,
+    ])
+  );
+}
+
 export function createCrudService(basePath, options = {}) {
   const {
     client = httpClient,

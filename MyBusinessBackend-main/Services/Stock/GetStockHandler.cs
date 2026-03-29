@@ -30,12 +30,16 @@ public class GetStockHandler : IGetStockHandler
     public async Task<Result<StockResponseDto>> GetRadiatorStockAsync(Guid radiatorId)
     {
         if (!await _radiatorService.ExistsAsync(radiatorId))
+        {
             return Result<StockResponseDto>.NotFound($"Radiator {radiatorId} not found.");
+        }
 
         var stock = await _service.GetRadiatorStockAsync(radiatorId);
-        return stock is null
-            ? Result<StockResponseDto>.NotFound($"Stock not found for radiator {radiatorId}.")
-            : Result<StockResponseDto>.Ok(new StockResponseDto { Stock = stock });
+        if (stock is null)
+        {
+            return Result<StockResponseDto>.NotFound($"Stock not found for radiator {radiatorId}.");
+        }
+        return Result<StockResponseDto>.Ok(new StockResponseDto { Stock = stock });
     }
 
     public async Task<Result<StockSummaryDto>> GetStockSummaryAsync()
@@ -51,7 +55,7 @@ public class GetStockHandler : IGetStockHandler
                 Code = w.Code, Name = w.Name,
                 TotalStock = warehouseStock.Sum(sl => sl.Quantity),
                 UniqueItems = warehouseStock.Count(),
-                LowStockItems = warehouseStock.Count(sl => sl.Quantity > 0 && sl.Quantity <= 5),
+                LowStockItems = warehouseStock.Count(sl => sl.Quantity > 0 && sl.Quantity <= StockAlertSettings.LowStockThreshold),
                 OutOfStockItems = warehouseStock.Count(sl => sl.Quantity == 0)
             };
         }).ToList();
@@ -101,7 +105,10 @@ public class GetStockHandler : IGetStockHandler
     public async Task<Result<WarehouseStockDto>> GetWarehouseStockAsync(string warehouseCode)
     {
         var data = await _service.GetWarehouseStockDataAsync(warehouseCode);
-        if (data is null) return Result<WarehouseStockDto>.NotFound($"Warehouse '{warehouseCode}' not found.");
+        if (data is null)
+        {
+            return Result<WarehouseStockDto>.NotFound($"Warehouse '{warehouseCode}' not found.");
+        }
         return Result<WarehouseStockDto>.Ok(StockMapper.ToWarehouseStock(data.Value));
     }
 
@@ -132,7 +139,9 @@ public class GetStockHandler : IGetStockHandler
         Guid radiatorId, DateTime? fromDate, DateTime? toDate, string? warehouseCode)
     {
         if (!await _radiatorService.ExistsAsync(radiatorId))
+        {
             return Result<List<StockHistoryDto>>.NotFound($"Radiator {radiatorId} not found.");
+        }
         return Result<List<StockHistoryDto>>.Ok(new List<StockHistoryDto>());
     }
 }

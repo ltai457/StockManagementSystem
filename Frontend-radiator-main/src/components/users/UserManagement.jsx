@@ -1,18 +1,20 @@
 // src/components/users/UserManagement.jsx
 import React, { useState } from 'react';
-import { Users, Plus, Shield } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { Users, Plus } from 'lucide-react';
+import { useAuth } from '../../contexts/auth-context';
 import { useUsers } from '../../hooks/useUsers';
 import { useModal } from '../../hooks/useModal';
 import { PageHeader } from '../common/layout/PageHeader';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import { Button } from '../common/ui/Button';
 import { EmptyState } from '../common/layout/EmptyState';
+import AccessDeniedState from '../common/feedback/AccessDeniedState';
 import UserStats from './UserStats';
 import UserFilters from './UserFilters';
 import UserTable from './UserTable';
 import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
+import { isAdminRole, isAdminUser } from '../../utils/roles';
 
 const UserManagement = () => {
   const { user: currentUser } = useAuth();
@@ -27,13 +29,7 @@ const UserManagement = () => {
   });
 
   // Check if current user is admin
-  const isAdmin =
-    currentUser?.role === 1 ||
-    currentUser?.role === '1' ||
-    currentUser?.role === 'Admin' ||
-    currentUser?.role === 'admin' ||
-    (Array.isArray(currentUser?.role) &&
-      currentUser.role.map(String).some((r) => r.toLowerCase() === 'admin' || r === '1'));
+  const isAdmin = isAdminUser(currentUser);
 
   // Filter users based on search and filters
   const filteredUsers = users.filter(user => {
@@ -46,8 +42,8 @@ const UserManagement = () => {
 
     const matchesRole = 
       filters.role === 'all' ||
-      (filters.role === 'admin' && (user.role === 'Admin' || user.role === 1 || user.role === '1')) ||
-      (filters.role === 'staff' && (user.role === 'Staff' || user.role === 2 || user.role === '2'));
+      (filters.role === 'admin' && isAdminRole(user.role)) ||
+      (filters.role === 'staff' && !isAdminRole(user.role));
 
     const matchesStatus =
       filters.status === 'all' ||
@@ -87,13 +83,7 @@ const UserManagement = () => {
   };
 
   if (!isAdmin) {
-    return (
-      <div className="text-center py-12">
-        <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h3>
-        <p className="text-gray-600">You don't have permission to access user management.</p>
-      </div>
-    );
+    return <AccessDeniedState message="You don't have permission to access user management." />;
   }
 
   if (loading) {

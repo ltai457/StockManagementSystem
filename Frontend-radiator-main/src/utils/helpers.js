@@ -1,3 +1,5 @@
+import { LOW_STOCK_THRESHOLD } from './stock';
+
 export const debounce = (func, delay) => {
   let timeoutId;
   return (...args) => {
@@ -55,9 +57,9 @@ export const filterArray = (array, filters) => {
           case 'available':
             return qty > 0;
           case 'good':
-            return qty > 5;
+            return qty > LOW_STOCK_THRESHOLD;
           case 'low':
-            return qty >= 1 && qty <= 5;
+            return qty >= 1 && qty <= LOW_STOCK_THRESHOLD;
           case 'out':
             return qty === 0;
           default:
@@ -73,7 +75,6 @@ export const filterArray = (array, filters) => {
           item.code?.toLowerCase().includes(searchTerm) ||
           item.brand?.toLowerCase().includes(searchTerm) ||
           item.year?.toString().includes(searchTerm) ||
-          item.productType?.toLowerCase().includes(searchTerm) ||
           item.dimensions?.toLowerCase().includes(searchTerm) ||
           item.notes?.toLowerCase().includes(searchTerm)
         );
@@ -91,7 +92,7 @@ export const filterArray = (array, filters) => {
       // Special handling for status filters
       if (key === 'status' && value !== 'all') {
         // For customers: check isActive field
-        if (item.hasOwnProperty('isActive')) {
+        if (Object.prototype.hasOwnProperty.call(item, 'isActive')) {
           if (value === 'active') return item.isActive === true;
           if (value === 'inactive') return item.isActive === false;
         }
@@ -139,7 +140,7 @@ export const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text);
     return true;
-  } catch (err) {
+  } catch {
     // Fallback for older browsers
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -168,7 +169,5 @@ export const isDateInRange = (date, startDate, endDate) => {
   
   return true;
 };
-
-
 
 

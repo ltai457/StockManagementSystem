@@ -14,7 +14,7 @@ public static class StockMapper
             RetailPrice = r.RetailPrice, TradePrice = r.TradePrice, CostPrice = r.CostPrice,
             IsPriceOverridable = r.IsPriceOverridable, MaxDiscountPercent = r.MaxDiscountPercent,
             Stock = stockDict, TotalStock = stockDict.Values.Sum(),
-            HasLowStock = stockDict.Values.Any(q => q > 0 && q <= 5),
+            HasLowStock = stockDict.Values.Any(q => q > 0 && q <= StockAlertSettings.LowStockThreshold),
             HasOutOfStock = stockDict.Values.Any(q => q == 0),
             CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt
         };
@@ -48,13 +48,30 @@ public static class StockMapper
 
     public static WarehouseStockDto ToWarehouseStock((Warehouse Warehouse, List<StockLevel> StockLevels) data)
     {
-        var items = data.StockLevels.Select(sl => new WarehouseStockItemDto
+        var items = data.StockLevels.Select(sl =>
         {
-            RadiatorId = sl.RadiatorId, RadiatorName = sl.Radiator.Name,
-            RadiatorCode = sl.Radiator.Code, Brand = sl.Radiator.Brand,
-            Quantity = sl.Quantity,
-            Status = sl.Quantity == 0 ? "Out" : sl.Quantity <= 5 ? "Low" : "Good",
-            LastUpdated = sl.UpdatedAt
+            string status;
+            if (sl.Quantity == 0)
+            {
+                status = "Out";
+            }
+            else if (sl.Quantity <= StockAlertSettings.LowStockThreshold)
+            {
+                status = "Low";
+            }
+            else
+            {
+                status = "Good";
+            }
+
+            return new WarehouseStockItemDto
+            {
+                RadiatorId = sl.RadiatorId, RadiatorName = sl.Radiator.Name,
+                RadiatorCode = sl.Radiator.Code, Brand = sl.Radiator.Brand,
+                Quantity = sl.Quantity,
+                Status = status,
+                LastUpdated = sl.UpdatedAt
+            };
         }).ToList();
 
         return new WarehouseStockDto

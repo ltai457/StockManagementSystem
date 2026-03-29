@@ -1,11 +1,12 @@
 // src/components/warehouse/WarehouseManagement.jsx
 import React, { useMemo, useState } from "react";
-import { AlertCircle, Warehouse as WarehouseIcon } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
+import { Warehouse as WarehouseIcon } from "lucide-react";
+import { useAuth } from "../../contexts/auth-context";
 import { useWarehouses } from "../../hooks/useWarehouses";
 import { useModal } from "../../hooks/useModal";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
 import { EmptyState } from "../common/layout/EmptyState";
+import PageErrorState from "../common/feedback/PageErrorState";
 
 import WarehouseHeader from "./sections/WarehouseHeader";
 import WarehouseStats from "./sections/WarehouseStats";
@@ -16,6 +17,7 @@ import WarehouseCards from "./views/WarehouseCards";
 import CreateWarehouseModal from "./modals/CreateWarehouseModal";
 import EditWarehouseModal from "./modals/EditWarehouseModal";
 import ConfirmDeleteModal from "../common/modals/ConfirmDeleteModal";
+import { isAdminUser } from "../../utils/roles";
 
 const WarehouseManagement = () => {
   const { user } = useAuth();
@@ -41,24 +43,10 @@ const WarehouseManagement = () => {
   const deleteModal = useModal();
   const viewModal = useModal();
 
-  // ✅ FIXED: Use the same comprehensive admin role check as RadiatorList.jsx
-  const isAdmin =
-    user?.role === 1 ||
-    user?.role === '1' ||
-    user?.role === 'Admin' ||
-    user?.role === 'admin' ||
-    (Array.isArray(user?.role) && user.role.map(String).some(r => r.toLowerCase() === 'admin' || r === '1'));
-
-  // 🔍 DEBUG: Add logging to help diagnose role issues
-  console.log('=== WAREHOUSE MANAGEMENT DEBUG ===');
-  console.log('User object:', user);
-  console.log('User role:', user?.role);
-  console.log('Role type:', typeof user?.role);
-  console.log('isAdmin result:', isAdmin);
-  console.log('================================');
+  const isAdmin = isAdminUser(user);
 
   // ---- defensive base list
-  const list = Array.isArray(warehouses) ? warehouses : [];
+  const list = useMemo(() => (Array.isArray(warehouses) ? warehouses : []), [warehouses]);
 
   // ---- derived: processed list
   const processedWarehouses = useMemo(() => {
@@ -123,7 +111,6 @@ const WarehouseManagement = () => {
 
   const handleExport = () => {
     // TODO: Implement export functionality
-    console.log("Export warehouses:", items);
     alert("Export functionality not yet implemented");
   };
 
@@ -138,7 +125,6 @@ const WarehouseManagement = () => {
       }
       throw new Error(result?.error || "Failed to create warehouse");
     } catch (e) {
-      console.error("Create warehouse failed:", e);
       alert(`Failed to create warehouse: ${e.message}`);
       throw e;
     } finally {
@@ -167,7 +153,6 @@ const WarehouseManagement = () => {
       }
       throw new Error(result?.error || "Failed to update warehouse");
     } catch (e) {
-      console.error("Update warehouse failed:", e);
       alert(`Failed to update warehouse: ${e.message}`);
       throw e;
     } finally {
@@ -187,7 +172,6 @@ const WarehouseManagement = () => {
         throw new Error(result?.error || "Failed to delete warehouse");
       }
     } catch (e) {
-      console.error("Delete warehouse failed:", e);
       alert(`Failed to delete warehouse: ${e.message}`);
     } finally {
       setActionLoading(false);
@@ -199,27 +183,11 @@ const WarehouseManagement = () => {
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600" />
-            <div>
-              <h3 className="font-medium text-red-800">
-                Error loading warehouses
-              </h3>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <button
-              onClick={refetch}
-              className="px-3 py-1 text-sm border rounded-md"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
+      <PageErrorState
+        title="Error loading warehouses"
+        message={error}
+        onRetry={refetch}
+      />
     );
   }
 

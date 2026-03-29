@@ -16,16 +16,29 @@ public class UpdateRadiatorHandler : IUpdateRadiatorHandler
 
     public async Task<Result<RadiatorResponseDto>> UpdateAsync(Guid id, UpdateRadiatorDto dto)
     {
-        if (!await _service.ExistsAsync(id)) return Result<RadiatorResponseDto>.NotFound($"Radiator {id} not found.");
+        if (!await _service.ExistsAsync(id))
+        {
+            return Result<RadiatorResponseDto>.NotFound($"Radiator {id} not found.");
+        }
         var r = await _service.UpdateAsync(id, dto);
-        return r is null
-            ? Result<RadiatorResponseDto>.Conflict("Code conflict.")
-            : Result<RadiatorResponseDto>.Ok(RadiatorMapper.ToResponseDto(r));
+        if (r is null)
+        {
+            return Result<RadiatorResponseDto>.Conflict("Code conflict.");
+        }
+        return Result<RadiatorResponseDto>.Ok(RadiatorMapper.ToResponseDto(r));
     }
 
     public async Task<Result<object>> DeleteAsync(Guid id)
     {
-        if (!await _service.ExistsAsync(id)) return Result<object>.NotFound($"Radiator {id} not found.");
-        return await _service.DeleteAsync(id) ? Result<object>.Deleted() : Result<object>.Fail("Failed to delete.");
+        if (!await _service.ExistsAsync(id))
+        {
+            return Result<object>.NotFound($"Radiator {id} not found.");
+        }
+        var success = await _service.DeleteAsync(id);
+        if (success)
+        {
+            return Result<object>.Deleted();
+        }
+        return Result<object>.Fail("Failed to delete.");
     }
 }

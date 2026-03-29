@@ -47,7 +47,7 @@ public class StockService : IStockService
             stockLevel.UpdatedAt = DateTime.UtcNow;
         }
 
-        await LogStockHistoryAsync(radiatorId, warehouse, oldQuantity, quantity, "Manual Update", null);
+        await LogStockHistoryAsync(radiatorId, warehouse, oldQuantity, quantity, "Manual Adjustment", null);
         await _dal.SaveChangesAsync();
         return true;
     }
@@ -57,7 +57,7 @@ public class StockService : IStockService
         var totalRadiators = await _dal.GetRadiatorCountAsync();
         var stockLevels = await _dal.GetAllStockLevelsWithRelatedAsync();
         var totalStock = stockLevels.Sum(sl => sl.Quantity);
-        var lowStock = stockLevels.Count(sl => sl.Quantity > 0 && sl.Quantity <= 5);
+        var lowStock = stockLevels.Count(sl => sl.Quantity > 0 && sl.Quantity <= StockAlertSettings.LowStockThreshold);
         var outOfStock = stockLevels.Count(sl => sl.Quantity == 0);
         var warehouses = stockLevels.Where(sl => sl.Warehouse != null).Select(sl => sl.Warehouse).DistinctBy(w => w.Id).ToList();
         return (totalRadiators, totalStock, lowStock, outOfStock, warehouses, stockLevels);
@@ -126,6 +126,155 @@ public class StockService : IStockService
         }
     }
 
+    public async Task<(bool Success, string? Error, Guid RadiatorId, string WarehouseCode, int QuantityAdded, int NewQuantity, string? Reason)> RecordStockInAsync(
+        Guid radiatorId,
+        string warehouseCode,
+        int quantity,
+        string? reason,
+        Guid? updatedBy)
+    {
+        if (quantity <= 0)
+        {
+            return (false, "Stock in quantity must be greater than zero.", radiatorId, warehouseCode, quantity, 0, reason);
+        }
+
+        var warehouse = await _warehouseService.GetByCodeAsync(warehouseCode);
+        if (warehouse == null)
+        {
+            return (false, $"Warehouse '{warehouseCode}' not found.", radiatorId, warehouseCode, quantity, 0, reason);
+        }
+
+        var stockLevel = await EnsureStockLevelAsync(radiatorId, warehouse.Id);
+        var oldQuantity = stockLevel.Quantity;
+        stockLevel.Quantity += quantity;
+        stockLevel.UpdatedAt = DateTime.UtcNow;
+
+        await LogStockHistoryAsync(
+            radiatorId,
+            warehouse,
+            oldQuantity,
+            stockLevel.Quantity,
+            "Stock In",
+            updatedBy,
+            string.IsNullOrWhiteSpace(reason) ? "Stock received." : reason.Trim()
+        );
+
+        await _dal.SaveChangesAsync();
+        return (true, null, radiatorId, warehouse.Code, quantity, stockLevel.Quantity, reason);
+    }
+
+    public async Task<(bool Success, string? Error, Guid RadiatorId, string FromWarehouseCode, string ToWarehouseCode, int Quantity)> TransferStockAsync(
+        Guid radiatorId,
+        string fromWarehouseCode,
+        string toWarehouseCode,
+        int quantity,
+        string? reason,
+        Guid? updatedBy)
+    {
+        if (quantity <= 0)
+        {
+            return (false, "Transfer quantity must be greater than zero.", radiatorId, fromWarehouseCode, toWarehouseCode, quantity);
+        }
+
+        if (string.Equals(fromWarehouseCode, toWarehouseCode, StringComparison.OrdinalIgnoreCase))
+        {
+            return (false, "Source and destination warehouses must be different.", radiatorId, fromWarehouseCode, toWarehouseCode, quantity);
+        }
+
+        var fromWarehouse = await _warehouseService.GetByCodeAsync(fromWarehouseCode);
+        if (fromWarehouse == null)
+        {
+            return (false, $"Warehouse '{fromWarehouseCode}' not found.", radiatorId, fromWarehouseCode, toWarehouseCode, quantity);
+        }
+
+        var toWarehouse = await _warehouseService.GetByCodeAsync(toWarehouseCode);
+        if (toWarehouse == null)
+        {
+            return (false, $"Warehouse '{toWarehouseCode}' not found.", radiatorId, fromWarehouseCode, toWarehouseCode, quantity);
+        }
+
+        var sourceLevel = await _dal.GetStockLevelAsync(radiatorId, fromWarehouse.Id);
+        var sourceQuantity = sourceLevel?.Quantity ?? 0;
+
+        if (sourceQuantity < quantity)
+        {
+            return (false, $"Not enough stock in {fromWarehouse.Code}. Available: {sourceQuantity}.", radiatorId, fromWarehouse.Code, toWarehouse.Code, quantity);
+        }
+
+        var destinationLevel = await EnsureStockLevelAsync(radiatorId, toWarehouse.Id);
+        sourceLevel!.Quantity = sourceQuantity - quantity;
+        sourceLevel.UpdatedAt = DateTime.UtcNow;
+
+        var destinationOldQuantity = destinationLevel.Quantity;
+        destinationLevel.Quantity += quantity;
+        destinationLevel.UpdatedAt = DateTime.UtcNow;
+
+        await LogStockHistoryAsync(
+            radiatorId,
+            fromWarehouse,
+            sourceQuantity,
+            sourceLevel.Quantity,
+            "Stock Movement Out",
+            updatedBy,
+            BuildTransferNote("to", toWarehouse.Code, reason)
+        );
+        await LogStockHistoryAsync(
+            radiatorId,
+            toWarehouse,
+            destinationOldQuantity,
+            destinationLevel.Quantity,
+            "Stock Movement In",
+            updatedBy,
+            BuildTransferNote("from", fromWarehouse.Code, reason)
+        );
+
+        await _dal.SaveChangesAsync();
+        return (true, null, radiatorId, fromWarehouse.Code, toWarehouse.Code, quantity);
+    }
+
+    public async Task<(bool Success, string? Error, Guid RadiatorId, string WarehouseCode, int QuantitySold, int RemainingQuantity, string? Reason)> RecordSaleAsync(
+        Guid radiatorId,
+        string warehouseCode,
+        int quantity,
+        string? reason,
+        Guid? updatedBy)
+    {
+        if (quantity <= 0)
+        {
+            return (false, "Sold quantity must be greater than zero.", radiatorId, warehouseCode, quantity, 0, reason);
+        }
+
+        var warehouse = await _warehouseService.GetByCodeAsync(warehouseCode);
+        if (warehouse == null)
+        {
+            return (false, $"Warehouse '{warehouseCode}' not found.", radiatorId, warehouseCode, quantity, 0, reason);
+        }
+
+        var stockLevel = await _dal.GetStockLevelAsync(radiatorId, warehouse.Id);
+        var currentQuantity = stockLevel?.Quantity ?? 0;
+
+        if (currentQuantity < quantity)
+        {
+            return (false, $"Not enough stock in {warehouse.Code}. Available: {currentQuantity}.", radiatorId, warehouse.Code, quantity, currentQuantity, reason);
+        }
+
+        stockLevel!.Quantity = currentQuantity - quantity;
+        stockLevel.UpdatedAt = DateTime.UtcNow;
+
+        await LogStockHistoryAsync(
+            radiatorId,
+            warehouse,
+            currentQuantity,
+            stockLevel.Quantity,
+            "Sale",
+            updatedBy,
+            string.IsNullOrWhiteSpace(reason) ? "Sale recorded manually." : reason.Trim()
+        );
+
+        await _dal.SaveChangesAsync();
+        return (true, null, radiatorId, warehouse.Code, quantity, stockLevel.Quantity, reason);
+    }
+
     public async Task<List<StockHistory>> GetStockMovementsAsync(
         Guid? radiatorId, string? warehouseCode, DateTime? fromDate, DateTime? toDate, string? movementType, int? limit)
     {
@@ -151,7 +300,7 @@ public class StockService : IStockService
         return await _dal.GetStockMovementsPagedAsync(pageNumber, pageSize, radiatorId, warehouseId, fromDate, toDate, movementType);
     }
 
-    private async Task LogStockHistoryAsync(Guid radiatorId, Warehouse warehouse, int oldQuantity, int newQuantity, string changeType, Guid? updatedBy)
+    private async Task LogStockHistoryAsync(Guid radiatorId, Warehouse warehouse, int oldQuantity, int newQuantity, string changeType, Guid? updatedBy, string? notes = null)
     {
         try
         {
@@ -161,12 +310,43 @@ public class StockService : IStockService
                 Id = Guid.NewGuid(), RadiatorId = radiatorId, WarehouseId = warehouse.Id,
                 OldQuantity = oldQuantity, NewQuantity = newQuantity, QuantityChange = quantityChange,
                 MovementType = quantityChange >= 0 ? "INCOMING" : "OUTGOING",
-                ChangeType = changeType, UpdatedBy = updatedBy, CreatedAt = DateTime.UtcNow
+                ChangeType = changeType, UpdatedBy = updatedBy, CreatedAt = DateTime.UtcNow,
+                Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim()
             });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error logging stock history for radiator {RadiatorId}", radiatorId);
         }
+    }
+
+    private async Task<StockLevel> EnsureStockLevelAsync(Guid radiatorId, Guid warehouseId)
+    {
+        var stockLevel = await _dal.GetStockLevelAsync(radiatorId, warehouseId);
+        if (stockLevel != null)
+        {
+            return stockLevel;
+        }
+
+        stockLevel = new StockLevel
+        {
+            Id = Guid.NewGuid(),
+            RadiatorId = radiatorId,
+            WarehouseId = warehouseId,
+            Quantity = 0,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        await _dal.AddStockLevelAsync(stockLevel);
+        return stockLevel;
+    }
+
+    private static string BuildTransferNote(string direction, string warehouseCode, string? reason)
+    {
+        var reference = $"Stock moved {direction} {warehouseCode}.";
+        return string.IsNullOrWhiteSpace(reason)
+            ? reference
+            : $"{reference} {reason.Trim()}";
     }
 }

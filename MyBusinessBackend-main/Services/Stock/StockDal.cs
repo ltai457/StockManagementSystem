@@ -96,7 +96,7 @@ public class StockDal : IStockDal
             query = query.Where(r => r.StockLevels.Any(sl => sl.Warehouse.Code == warehouseUpper));
         }
         if (lowStockOnly)
-            query = query.Where(r => r.StockLevels.Any(sl => sl.Quantity >= 0 && sl.Quantity <= 5));
+            query = query.Where(r => r.StockLevels.Any(sl => sl.Quantity >= 0 && sl.Quantity <= StockAlertSettings.LowStockThreshold));
         return query;
     }
 

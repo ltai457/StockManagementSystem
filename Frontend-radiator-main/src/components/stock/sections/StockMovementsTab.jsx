@@ -1,79 +1,121 @@
-// src/components/stock/sections/StockMovementsTab.jsx
-import React, { useState, useEffect } from 'react';
-import { Package, Calendar, MapPin, TrendingDown, TrendingUp, AlertCircle, ArrowUp, ArrowDown } from 'lucide-react';
-import { LoadingSpinner } from '../../common/ui/LoadingSpinner';
-import stockService from '../../../api/stockService';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  Alert,
+  Button,
+  Chip,
+  MenuItem,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { LoadingSpinner } from "../../common/ui/LoadingSpinner";
+import stockService from "../../../api/stockService";
+import StockInModal from "../modals/StockInModal";
+import TransferStockModal from "../modals/TransferStockModal";
+import {
+  getMovementRoute,
+  isManualAdjustmentEvent,
+  isStockInEvent,
+  isStockMovementEvent,
+} from "../../../utils/stockEvents";
 
-const StockMovementsTab = () => {
+const StockMovementsTab = ({
+  radiators = [],
+  warehouses = [],
+  selectedWarehouse = "all",
+  onSubmitStockIn,
+  onSubmitMovement,
+}) => {
   const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState('30');
-  const [warehouseFilter, setWarehouseFilter] = useState('all');
-  const [productFilter, setProductFilter] = useState('');
-  const [movementTypeFilter, setMovementTypeFilter] = useState('all');
+  const [submitting, setSubmitting] = useState(false);
+  const [stockInOpen, setStockInOpen] = useState(false);
+  const [movementOpen, setMovementOpen] = useState(false);
+  const [dateRange, setDateRange] = useState("30");
+  const [warehouseFilter, setWarehouseFilter] = useState(selectedWarehouse === "all" ? "all" : selectedWarehouse);
+  const [productFilter, setProductFilter] = useState("");
+  const [movementTypeFilter, setMovementTypeFilter] = useState("all");
 
-  useEffect(() => {
-    loadMovements();
-  }, [dateRange, warehouseFilter, movementTypeFilter]);
-
-  const loadMovements = async () => {
+  const loadMovements = useCallback(async () => {
     setLoading(true);
     try {
       const toDate = new Date();
       const fromDate = new Date();
-      fromDate.setDate(fromDate.getDate() - parseInt(dateRange));
+      fromDate.setDate(fromDate.getDate() - Number.parseInt(dateRange, 10));
 
-      const params = {
+      const result = await stockService.getStockMovements({
         fromDate,
         toDate,
-        limit: 500
-      };
+        limit: 500,
+      });
 
-      if (warehouseFilter !== 'all') {
-        params.warehouseCode = warehouseFilter;
-      }
-
-      if (movementTypeFilter !== 'all') {
-        params.movementType = movementTypeFilter;
-      }
-
-      const result = await stockService.getStockMovements(params);
-      
       if (result.success) {
-        setMovements(result.data || []);
+        setMovements(
+          (result.data || []).filter(
+            (movement) =>
+              isStockMovementEvent(movement) ||
+              isStockInEvent(movement) ||
+              isManualAdjustmentEvent(movement)
+          )
+        );
       } else {
-        console.error('Failed to load movements:', result.error);
         setMovements([]);
       }
-    } catch (error) {
-      console.error('Error loading movements:', error);
+    } catch {
       setMovements([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange]);
 
-  // Get unique warehouses for filter
-  const uniqueWarehouses = [...new Set(movements.map(m => m.warehouseCode))].filter(Boolean);
+  useEffect(() => {
+    loadMovements();
+  }, [loadMovements]);
 
-  // Filter movements
-  const filteredMovements = movements.filter(movement => {
-    const matchesProduct = !productFilter || 
-      movement.productName.toLowerCase().includes(productFilter.toLowerCase()) ||
-      movement.productCode.toLowerCase().includes(productFilter.toLowerCase());
-    
-    return matchesProduct;
-  });
+  useEffect(() => {
+    if (selectedWarehouse !== "all") {
+      setWarehouseFilter(selectedWarehouse);
+    }
+  }, [selectedWarehouse]);
 
-  // Calculate statistics
-  const incomingCount = filteredMovements.filter(m => m.movementType === 'INCOMING').length;
-  const outgoingCount = filteredMovements.filter(m => m.movementType === 'OUTGOING').length;
-  const incomingQty = filteredMovements.filter(m => m.movementType === 'INCOMING').reduce((sum, m) => sum + m.quantity, 0);
-  const outgoingQty = filteredMovements.filter(m => m.movementType === 'OUTGOING').reduce((sum, m) => sum + m.quantity, 0);
+  const filteredMovements = useMemo(
+    () =>
+      movements.filter((movement) => {
+        const route = getMovementRoute(movement);
+        const matchesProduct =
+          !productFilter ||
+          movement.productName.toLowerCase().includes(productFilter.toLowerCase()) ||
+          movement.productCode.toLowerCase().includes(productFilter.toLowerCase());
+
+        const matchesWarehouse =
+          warehouseFilter === "all" ||
+          route.fromWarehouseCode === warehouseFilter ||
+          route.toWarehouseCode === warehouseFilter;
+
+        const matchesMovementType =
+          movementTypeFilter === "all" || movement.movementType === movementTypeFilter;
+
+        return matchesProduct && matchesWarehouse && matchesMovementType;
+      }),
+    [movements, productFilter, warehouseFilter, movementTypeFilter]
+  );
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${date.toLocaleDateString([], {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    })} ${date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
   };
 
   if (loading) {
@@ -81,247 +123,205 @@ const StockMovementsTab = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Stock Movements</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Track all incoming and outgoing stock changes
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          {/* Product Search */}
-          <input
-            type="text"
-            placeholder="Search product..."
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row">
+          <TextField
+            size="small"
+            placeholder="Filter by product"
             value={productFilter}
-            onChange={(e) => setProductFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            onChange={(event) => setProductFilter(event.target.value)}
+            fullWidth
           />
 
-          {/* Movement Type Filter */}
-          <select
+          <TextField
+            select
+            size="small"
+            label="Direction"
             value={movementTypeFilter}
-            onChange={(e) => setMovementTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            onChange={(event) => setMovementTypeFilter(event.target.value)}
+            sx={{ minWidth: 120 }}
           >
-            <option value="all">All Types</option>
-            <option value="INCOMING">Incoming Only</option>
-            <option value="OUTGOING">Outgoing Only</option>
-          </select>
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="INCOMING">Incoming</MenuItem>
+            <MenuItem value="OUTGOING">Outgoing</MenuItem>
+          </TextField>
 
-          {/* Warehouse Filter */}
-          <select
+          <TextField
+            select
+            size="small"
+            label="Warehouse"
             value={warehouseFilter}
-            onChange={(e) => setWarehouseFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            onChange={(event) => setWarehouseFilter(event.target.value)}
+            sx={{ minWidth: 150 }}
           >
-            <option value="all">All Warehouses</option>
-            {uniqueWarehouses.map(code => (
-              <option key={code} value={code}>{code}</option>
+            <MenuItem value="all">All Warehouses</MenuItem>
+            {(warehouses || []).map((warehouse) => (
+              <MenuItem key={warehouse.id} value={warehouse.code}>
+                {warehouse.name} ({warehouse.code})
+              </MenuItem>
             ))}
-          </select>
+          </TextField>
 
-          {/* Date Range */}
-          <select
+          <TextField
+            select
+            size="small"
+            label="Range"
             value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            onChange={(event) => setDateRange(event.target.value)}
+            sx={{ minWidth: 130 }}
           >
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option value="180">Last 6 months</option>
-          </select>
+            <MenuItem value="7">Last 7 days</MenuItem>
+            <MenuItem value="30">Last 30 days</MenuItem>
+            <MenuItem value="90">Last 90 days</MenuItem>
+            <MenuItem value="180">Last 6 months</MenuItem>
+          </TextField>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button size="small" variant="outlined" onClick={() => setStockInOpen(true)}>
+            Stock In
+          </Button>
+          <Button size="small" variant="contained" onClick={() => setMovementOpen(true)}>
+            Move Stock
+          </Button>
         </div>
       </div>
 
-      {/* Info Banner if no movements */}
-      {movements.length === 0 && !loading && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div>
-            <p className="font-medium text-blue-900">No stock movements yet</p>
-            <p className="text-sm text-blue-700 mt-1">
-              Stock movements are tracked when you create sales or edit stock levels.
-            </p>
-          </div>
-        </div>
+      {filteredMovements.length === 0 ? (
+        <Alert severity="info">No stock movements found for the selected filters.</Alert>
+      ) : (
+        <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
+          <Table size="small" sx={{ minWidth: 980 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>Product</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>From</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>To</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }} align="center">
+                    Action
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }} align="center">
+                    Qty
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>Note</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredMovements.map((movement) => {
+                  const route = getMovementRoute(movement);
+                  const isStockIn = isStockInEvent(movement);
+                  const isManualAdjustment = isManualAdjustmentEvent(movement);
+                  const typeLabel = isStockIn
+                    ? "Stock In"
+                    : isManualAdjustment
+                      ? "Manual Adjustment"
+                      : "Stock Movement";
+
+                  return (
+                    <TableRow key={movement.id} hover>
+                      <TableCell sx={{ py: 1, px: 1.5, whiteSpace: "nowrap" }}>
+                        <Typography variant="caption">{formatDate(movement.date)}</Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 1, px: 1.5 }}>
+                        <Typography variant="body2" fontWeight={500} noWrap>
+                          {movement.productName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" noWrap>
+                          {movement.productCode}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 1, px: 1.5 }}>
+                        <Typography variant="caption" fontWeight={500} noWrap>
+                          {route.fromWarehouseCode || "-"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 1, px: 1.5 }}>
+                        <Typography variant="caption" fontWeight={500} noWrap>
+                          {route.toWarehouseCode || "-"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 1, px: 1.5 }} align="center">
+                        <Chip
+                          size="small"
+                          label={typeLabel}
+                          color={movement.movementType === "INCOMING" ? "success" : "error"}
+                          variant="filled"
+                          sx={{ height: 22, "& .MuiChip-label": { px: 1, fontSize: 11 } }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ py: 1, px: 1.5 }} align="center">
+                        <Chip
+                          size="small"
+                          label={`${movement.movementType === "INCOMING" ? "+" : "-"}${movement.quantity}`}
+                          color={movement.movementType === "INCOMING" ? "success" : "error"}
+                          variant="outlined"
+                          sx={{ height: 22, "& .MuiChip-label": { px: 1, fontSize: 11 } }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ py: 1, px: 1.5, maxWidth: 220 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            display: "block",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {movement.notes || "Stock movement"}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
       )}
 
-      {/* Summary Cards */}
-      {movements.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <TrendingDown className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Total Movements</p>
-                <p className="text-xl font-bold text-gray-900">{filteredMovements.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <ArrowUp className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Incoming</p>
-                <p className="text-xl font-bold text-gray-900">{incomingQty} units</p>
-                <p className="text-xs text-gray-500">{incomingCount} movements</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <ArrowDown className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Outgoing</p>
-                <p className="text-xl font-bold text-gray-900">{outgoingQty} units</p>
-                <p className="text-xs text-gray-500">{outgoingCount} movements</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Warehouses</p>
-                <p className="text-xl font-bold text-gray-900">{uniqueWarehouses.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Movements Table */}
-      {movements.length > 0 && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Warehouse</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Change Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredMovements.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
-                      No stock movements found for selected filters
-                    </td>
-                  </tr>
-                ) : (
-                  filteredMovements.map(movement => (
-                    <tr key={movement.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 text-sm text-gray-900">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          {formatDate(movement.date)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="font-medium text-gray-900">{movement.productName}</div>
-                          <div className="text-sm text-gray-500">{movement.brand} - {movement.productCode}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-blue-500" />
-                          <div>
-                            <div className="font-medium text-gray-900">{movement.warehouseName}</div>
-                            <div className="text-xs text-gray-500">{movement.warehouseCode}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        {movement.movementType === 'INCOMING' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <ArrowUp className="w-3 h-3" />
-                            Incoming
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            <ArrowDown className="w-3 h-3" />
-                            Outgoing
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          movement.movementType === 'INCOMING' 
-                            ? 'bg-green-50 text-green-700' 
-                            : 'bg-red-50 text-red-700'
-                        }`}>
-                          {movement.movementType === 'INCOMING' ? '+' : '-'}{movement.quantity}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{movement.changeType}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-500">{movement.notes || 'Manual Edit'}</span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Export Button */}
-      {filteredMovements.length > 0 && (
-        <div className="flex justify-end">
-          <button
-            onClick={() => {
-              const csv = [
-                ['Date', 'Product', 'Code', 'Warehouse', 'Type', 'Quantity', 'Change Type', 'Reference'],
-                ...filteredMovements.map(m => [
-                  formatDate(m.date),
-                  m.productName,
-                  m.productCode,
-                  m.warehouseName,
-                  m.movementType,
-                  m.movementType === 'INCOMING' ? `+${m.quantity}` : `-${m.quantity}`,
-                  m.changeType,
-                  m.notes || 'Manual Edit'
-                ])
-              ].map(row => row.join(',')).join('\n');
-
-              const blob = new Blob([csv], { type: 'text/csv' });
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `stock-movements-${new Date().toISOString().split('T')[0]}.csv`;
-              a.click();
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Export to CSV
-          </button>
-        </div>
-      )}
+      <TransferStockModal
+        open={movementOpen}
+        onClose={() => setMovementOpen(false)}
+        radiators={radiators}
+        warehouses={warehouses}
+        selectedWarehouse={selectedWarehouse}
+        submitting={submitting}
+        onSubmit={async (payload) => {
+          setSubmitting(true);
+          try {
+            const success = await onSubmitMovement?.(payload);
+            if (success) {
+              await loadMovements();
+            }
+            return success;
+          } finally {
+            setSubmitting(false);
+          }
+        }}
+      />
+      <StockInModal
+        open={stockInOpen}
+        onClose={() => setStockInOpen(false)}
+        radiators={radiators}
+        warehouses={warehouses}
+        selectedWarehouse={selectedWarehouse}
+        submitting={submitting}
+        onSubmit={async (payload) => {
+          setSubmitting(true);
+          try {
+            const success = await onSubmitStockIn?.(payload);
+            if (success) {
+              await loadMovements();
+            }
+            return success;
+          } finally {
+            setSubmitting(false);
+          }
+        }}
+      />
     </div>
   );
 };

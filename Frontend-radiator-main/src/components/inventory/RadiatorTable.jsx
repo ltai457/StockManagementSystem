@@ -1,5 +1,5 @@
 import React from "react";
-import { Edit, Trash2, Package } from "lucide-react";
+import { Edit, Package, Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,11 +14,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-
-const fmtMoney = (n) =>
-  n != null
-    ? new Intl.NumberFormat(undefined, { style: "currency", currency: "NZD" }).format(n)
-    : "\u2014";
+import { LOW_STOCK_THRESHOLD } from "../../utils/stock";
 
 const RadiatorTable = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) => {
   const getTotalStock = (stock) => {
@@ -28,7 +24,7 @@ const RadiatorTable = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) =>
 
   const getStockChipColor = (totalStock) => {
     if (totalStock === 0) return "error";
-    if (totalStock <= 5) return "warning";
+    if (totalStock <= LOW_STOCK_THRESHOLD) return "warning";
     return "success";
   };
 
@@ -36,17 +32,14 @@ const RadiatorTable = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) =>
 
   return (
     <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, overflow: "auto" }}>
-      <Table stickyHeader size="small" sx={{ minWidth: 1100 }}>
+      <Table stickyHeader size="small" sx={{ minWidth: 920 }}>
         <TableHead>
           <TableRow>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Product</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Brand</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Code</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Year</TableCell>
-            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Type</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Dimensions</TableCell>
-            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="right">Retail</TableCell>
-            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="right">Trade</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Stock</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Actions</TableCell>
           </TableRow>
@@ -86,31 +79,10 @@ const RadiatorTable = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) =>
                   <Typography variant="body2">{radiator.year}</Typography>
                 </TableCell>
 
-                <TableCell align="center">
-                  {radiator.productType ? (
-                    <Chip
-                      label={radiator.productType}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
-                  ) : (
-                    <Typography variant="body2" color="text.disabled">{"\u2014"}</Typography>
-                  )}
-                </TableCell>
-
                 <TableCell>
                   <Typography variant="body2">
                     {radiator.dimensions || <span style={{ color: "#9e9e9e" }}>{"\u2014"}</span>}
                   </Typography>
-                </TableCell>
-
-                <TableCell align="right">
-                  <Typography variant="body2">{fmtMoney(radiator.retailPrice)}</Typography>
-                </TableCell>
-
-                <TableCell align="right">
-                  <Typography variant="body2">{fmtMoney(radiator.tradePrice)}</Typography>
                 </TableCell>
 
                 <TableCell align="center">
@@ -120,15 +92,6 @@ const RadiatorTable = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) =>
                     color={getStockChipColor(totalStock)}
                     variant="filled"
                   />
-                  {radiator.stock && (
-                    <Box sx={{ mt: 0.5 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {Object.entries(radiator.stock)
-                          .map(([wh, qty]) => `${wh}: ${qty}`)
-                          .join(" | ")}
-                      </Typography>
-                    </Box>
-                  )}
                 </TableCell>
 
                 <TableCell align="center">
@@ -137,15 +100,14 @@ const RadiatorTable = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) =>
                       <IconButton
                         size="small"
                         color="primary"
-                        onClick={() => onEditStock(radiator)}
+                        onClick={() => onEditStock?.(radiator)}
                       >
                         <Package size={18} />
                       </IconButton>
                     </Tooltip>
-
                     {userIsAdmin && (
                       <>
-                        <Tooltip title="Edit Radiator">
+                        <Tooltip title="Edit Product">
                           <IconButton
                             size="small"
                             color="warning"
@@ -154,7 +116,7 @@ const RadiatorTable = ({ radiators, onEdit, onDelete, onEditStock, isAdmin }) =>
                             <Edit size={18} />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Delete Radiator">
+                        <Tooltip title="Delete Product">
                           <IconButton
                             size="small"
                             color="error"

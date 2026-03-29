@@ -56,6 +56,21 @@ const RecentActivity = ({ stockMovements = [] }) => {
     return recentMovements.map(movement => {
       const type = resolveMovementType(movement);
       const isIncoming = type === 'INCOMING';
+      const changeType = String(movement?.changeType || '').trim();
+      const normalizedChangeType = changeType.toUpperCase();
+
+      let message = isIncoming ? 'Stock received' : 'Stock dispatched';
+      if (normalizedChangeType === 'SALE') {
+        message = 'Sale completed';
+      } else if (normalizedChangeType === 'STOCK IN') {
+        message = 'Stock received';
+      } else if (normalizedChangeType === 'STOCK MOVEMENT IN') {
+        message = 'Stock moved in';
+      } else if (normalizedChangeType === 'STOCK MOVEMENT OUT') {
+        message = 'Stock moved out';
+      } else if (normalizedChangeType === 'MANUAL ADJUSTMENT' || normalizedChangeType === 'MANUAL UPDATE') {
+        message = 'Manual adjustment';
+      }
 
       const movementId =
         movement?.id ??
@@ -67,14 +82,14 @@ const RecentActivity = ({ stockMovements = [] }) => {
       return {
         id: `movement-${movementId}`,
         type: isIncoming ? 'incoming' : 'outgoing',
-        message: isIncoming ? 'Stock received' : 'Stock dispatched',
+        message,
         details: `${movement.productName ||
           movement.productCode ||
           movement.radiatorName ||
           movement.radiatorCode ||
           'Stock item'} · ${getMovementQuantity(movement)} units · ${movement.warehouseName ||
           movement.warehouseCode ||
-          'Unknown warehouse'}`,
+          'Unknown warehouse'}${changeType ? ` · ${changeType}` : ''}`,
         time: resolveMovementTime(movement),
         color: isIncoming ? 'green' : 'red'
       };
