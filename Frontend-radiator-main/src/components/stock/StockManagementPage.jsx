@@ -1,18 +1,23 @@
 import React, { useState } from "react";
-import { ArrowRightLeft, Package, ShoppingCart } from "lucide-react";
+import { ArrowRightLeft, PackagePlus, ShoppingCart } from "lucide-react";
 import { useStockManagement } from "../../hooks/useStockManagement";
 import StockHeader from "./sections/StockHeader";
 import StockToolbar from "./sections/StockToolbar";
 import StockOverviewGrid from "./sections/StockOverviewGrid";
 import StockTable from "./views/StockTable";
-import StockMovementsTab from "./sections/StockMovementsTab";
-import SalesTab from "./sections/SalesTab";
+import StockInModal from "./modals/StockInModal";
+import TransferStockModal from "./modals/TransferStockModal";
+import RecordSaleModal from "./modals/RecordSaleModal";
 import PageLoadingState from "../common/feedback/PageLoadingState";
 import PageErrorState from "../common/feedback/PageErrorState";
 
 export default function StockManagement() {
   const sm = useStockManagement();
-  const [activeTab, setActiveTab] = useState("inventory");
+
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [stockInOpen, setStockInOpen] = useState(false);
+  const [saleOpen, setSaleOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   if (sm.loading) {
     return <PageLoadingState text="Loading stock data..." />;
@@ -22,118 +27,124 @@ export default function StockManagement() {
     return <PageErrorState title="Error loading stock data" message={sm.error} />;
   }
 
+  const handleOperation = (handler) => async (payload) => {
+    setSubmitting(true);
+    try {
+      return await handler(payload);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         <StockHeader radiators={sm.filteredRadiators} />
 
-        {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-1 flex gap-1">
+        {/* 3 Action Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
-            onClick={() => setActiveTab("inventory")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium transition-colors ${
-              activeTab === "inventory"
-                ? "bg-blue-600 text-white"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
+            onClick={() => setTransferOpen(true)}
+            className="flex items-center justify-center gap-3 px-5 py-4 bg-white border-2 border-blue-200 rounded-xl text-blue-700 font-semibold hover:bg-blue-50 hover:border-blue-400 transition-all shadow-sm"
           >
-            <Package className="w-4 h-4" />
-            Current Inventory
+            <ArrowRightLeft className="w-5 h-5" />
+            Transfer Stock
           </button>
           <button
-            onClick={() => setActiveTab("movements")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium transition-colors ${
-              activeTab === "movements"
-                ? "bg-blue-600 text-white"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
+            onClick={() => setStockInOpen(true)}
+            className="flex items-center justify-center gap-3 px-5 py-4 bg-white border-2 border-green-200 rounded-xl text-green-700 font-semibold hover:bg-green-50 hover:border-green-400 transition-all shadow-sm"
           >
-            <ArrowRightLeft className="w-4 h-4" />
-            Stock
+            <PackagePlus className="w-5 h-5" />
+            Receive from Supplier
           </button>
           <button
-            onClick={() => setActiveTab("sales")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium transition-colors ${
-              activeTab === "sales"
-                ? "bg-blue-600 text-white"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
+            onClick={() => setSaleOpen(true)}
+            className="flex items-center justify-center gap-3 px-5 py-4 bg-white border-2 border-red-200 rounded-xl text-red-700 font-semibold hover:bg-red-50 hover:border-red-400 transition-all shadow-sm"
           >
-            <ShoppingCart className="w-4 h-4" />
-            Sales
+            <ShoppingCart className="w-5 h-5" />
+            Sell to Customer
           </button>
         </div>
 
-        {/* Tab Content */}
-        {activeTab === "inventory" ? (
-          <>
-            <StockOverviewGrid
-              warehouses={sm.warehouses}
-              radiators={sm.radiators}
-              selectedWarehouse={sm.selectedWarehouse}
-              setSelectedWarehouse={sm.setSelectedWarehouse}
-              getTotalStock={sm.getTotalStock}
-            />
+        {/* Warehouse Overview Cards */}
+        <StockOverviewGrid
+          warehouses={sm.warehouses}
+          radiators={sm.radiators}
+          selectedWarehouse={sm.selectedWarehouse}
+          setSelectedWarehouse={sm.setSelectedWarehouse}
+          getTotalStock={sm.getTotalStock}
+        />
 
-            <StockToolbar
-              searchTerm={sm.searchTerm}
-              setSearchTerm={sm.setSearchTerm}
-              filterLowStock={sm.filterLowStock}
-              setFilterLowStock={sm.setFilterLowStock}
-              editMode={sm.editMode}
-              updating={sm.updating}
-              editingCount={Object.keys(sm.editingStocks || {}).length}
-              onEdit={sm.handleEditMode}
-              onCancel={sm.handleCancelEdit}
-              onSave={sm.handleSaveChanges}
-              selectedWarehouse={sm.selectedWarehouse}
-            />
+        {/* Search + Filter + Edit Toolbar */}
+        <StockToolbar
+          searchTerm={sm.searchTerm}
+          setSearchTerm={sm.setSearchTerm}
+          filterLowStock={sm.filterLowStock}
+          setFilterLowStock={sm.setFilterLowStock}
+          editMode={sm.editMode}
+          updating={sm.updating}
+          editingCount={Object.keys(sm.editingStocks || {}).length}
+          onEdit={sm.handleEditMode}
+          onCancel={sm.handleCancelEdit}
+          onSave={sm.handleSaveChanges}
+          selectedWarehouse={sm.selectedWarehouse}
+        />
 
-            <div className="mb-1">
-              <p className="text-sm text-gray-600">
-                {sm.selectedWarehouse === "all"
-                  ? "Viewing stock across all warehouses"
-                  : `Viewing stock for ${
-                      sm.warehouses.find((w) => w.code === sm.selectedWarehouse)?.name ||
-                      sm.selectedWarehouse
-                    }`}
-                {sm.editMode && sm.selectedWarehouse !== "all" && (
-                  <span className="ml-2 text-blue-600 font-medium">• Edit Mode Active</span>
-                )}
-              </p>
-            </div>
+        <div className="mb-1">
+          <p className="text-sm text-gray-600">
+            {sm.selectedWarehouse === "all"
+              ? "Viewing stock across all warehouses"
+              : `Viewing stock for ${
+                  sm.warehouses.find((w) => w.code === sm.selectedWarehouse)?.name ||
+                  sm.selectedWarehouse
+                }`}
+            {sm.editMode && sm.selectedWarehouse !== "all" && (
+              <span className="ml-2 text-blue-600 font-medium">• Edit Mode Active</span>
+            )}
+          </p>
+        </div>
 
-            <StockTable
-              warehouses={sm.warehouses}
-              items={sm.filteredRadiators}
-              selectedWarehouse={sm.selectedWarehouse}
-              editMode={sm.editMode}
-              getTotalStock={sm.getTotalStock}
-              getStockStatus={sm.getStockStatus}
-              getDisplayStock={sm.getDisplayStock}
-              onChangeStock={sm.handleStockChange}
-            />
-          </>
-        ) : null}
+        {/* Stock Table */}
+        <StockTable
+          warehouses={sm.warehouses}
+          items={sm.filteredRadiators}
+          selectedWarehouse={sm.selectedWarehouse}
+          editMode={sm.editMode}
+          getTotalStock={sm.getTotalStock}
+          getStockStatus={sm.getStockStatus}
+          getDisplayStock={sm.getDisplayStock}
+          onChangeStock={sm.handleStockChange}
+        />
 
-        {activeTab === "movements" ? (
-          <StockMovementsTab
-            radiators={sm.radiators}
-            warehouses={sm.warehouses}
-            selectedWarehouse={sm.selectedWarehouse}
-            onSubmitStockIn={sm.handleStockIn}
-            onSubmitMovement={sm.handleTransferStock}
-          />
-        ) : null}
-
-        {activeTab === "sales" ? (
-          <SalesTab
-            radiators={sm.radiators}
-            warehouses={sm.warehouses}
-            selectedWarehouse={sm.selectedWarehouse}
-            onSubmitSale={sm.handleRecordSale}
-          />
-        ) : null}
+        {/* Modals */}
+        <TransferStockModal
+          open={transferOpen}
+          onClose={() => setTransferOpen(false)}
+          radiators={sm.radiators}
+          warehouses={sm.warehouses}
+          selectedWarehouse={sm.selectedWarehouse}
+          submitting={submitting}
+          onSubmit={handleOperation(sm.handleTransferStock)}
+        />
+        <StockInModal
+          open={stockInOpen}
+          onClose={() => setStockInOpen(false)}
+          radiators={sm.radiators}
+          warehouses={sm.warehouses}
+          selectedWarehouse={sm.selectedWarehouse}
+          submitting={submitting}
+          onSubmit={handleOperation(sm.handleStockIn)}
+          onProductCreated={sm.refreshStockData}
+        />
+        <RecordSaleModal
+          open={saleOpen}
+          onClose={() => setSaleOpen(false)}
+          radiators={sm.radiators}
+          warehouses={sm.warehouses}
+          selectedWarehouse={sm.selectedWarehouse}
+          submitting={submitting}
+          onSubmit={handleOperation(sm.handleRecordSale)}
+        />
       </div>
     </div>
   );

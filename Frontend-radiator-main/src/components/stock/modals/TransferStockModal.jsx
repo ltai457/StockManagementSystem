@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -104,24 +105,41 @@ export default function TransferStockModal({
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Stock Movement</DialogTitle>
+      <DialogTitle>Transfer Stock</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           {error ? <Alert severity="error">{error}</Alert> : null}
 
-          <TextField
-            select
-            label="Product"
-            value={form.radiatorId}
-            onChange={handleChange("radiatorId")}
-            fullWidth
-          >
-            {(radiators || []).map((radiator) => (
-              <MenuItem key={radiator.id} value={radiator.id}>
-                {radiator.name} ({radiator.code})
-              </MenuItem>
-            ))}
-          </TextField>
+          <Autocomplete
+            options={radiators || []}
+            getOptionLabel={(option) => `${option.name} (${option.code})`}
+            filterOptions={(options, { inputValue }) => {
+              const term = inputValue.toLowerCase();
+              return options.filter(
+                (o) =>
+                  o.name.toLowerCase().includes(term) ||
+                  o.code.toLowerCase().includes(term) ||
+                  (o.brand || "").toLowerCase().includes(term)
+              );
+            }}
+            value={selectedRadiator || null}
+            onChange={(_, newValue) => {
+              const preferredWarehouse =
+                selectedWarehouse !== "all"
+                  ? selectedWarehouse
+                  : form.fromWarehouseCode;
+              setForm((current) => ({
+                ...current,
+                radiatorId: newValue?.id || "",
+                fromWarehouseCode: newValue ? preferredWarehouse : "",
+              }));
+              setError("");
+            }}
+            renderInput={(params) => (
+              <TextField {...params} label="Search product" placeholder="Type name, code, or brand..." />
+            )}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+          />
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField

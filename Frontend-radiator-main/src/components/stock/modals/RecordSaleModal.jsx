@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -92,24 +93,37 @@ export default function RecordSaleModal({
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Sale</DialogTitle>
+      <DialogTitle>Sell to Customer</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           {error ? <Alert severity="error">{error}</Alert> : null}
 
-          <TextField
-            select
-            label="Product"
-            value={form.radiatorId}
-            onChange={handleChange("radiatorId")}
-            fullWidth
-          >
-            {(radiators || []).map((radiator) => (
-              <MenuItem key={radiator.id} value={radiator.id}>
-                {radiator.name} ({radiator.code})
-              </MenuItem>
-            ))}
-          </TextField>
+          <Autocomplete
+            options={radiators || []}
+            getOptionLabel={(option) => `${option.name} (${option.code})`}
+            filterOptions={(options, { inputValue }) => {
+              const term = inputValue.toLowerCase();
+              return options.filter(
+                (o) =>
+                  o.name.toLowerCase().includes(term) ||
+                  o.code.toLowerCase().includes(term) ||
+                  (o.brand || "").toLowerCase().includes(term)
+              );
+            }}
+            value={selectedRadiator || null}
+            onChange={(_, newValue) => {
+              const next = { ...form, radiatorId: newValue?.id || "" };
+              if (newValue && selectedWarehouse !== "all") {
+                next.warehouseCode = selectedWarehouse;
+              }
+              setForm(next);
+              setError("");
+            }}
+            renderInput={(params) => (
+              <TextField {...params} label="Search product" placeholder="Type name, code, or brand..." />
+            )}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+          />
 
           <TextField
             select
@@ -161,7 +175,7 @@ export default function RecordSaleModal({
           Cancel
         </Button>
         <Button onClick={handleSubmit} variant="contained" color="error" disabled={submitting}>
-          {submitting ? "Saving..." : "Save Sale"}
+          {submitting ? "Saving..." : "Confirm Sale"}
         </Button>
       </DialogActions>
     </Dialog>

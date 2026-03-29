@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard, Package,
   Warehouse, Box, UserCog, Menu, X, LogOut,
-  TrendingUp, ChevronRight
+  TrendingUp, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../contexts/auth-context';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,7 @@ import DashboardOverview from './DashboardOverview';
 import RadiatorList from '../inventory/RadiatorList';
 import WarehouseManagement from '../warehouse/WarehouseManagement';
 import StockManagement from '../stock/StockManagementPage';
+import ActivityPage from '../stock/ActivityPage';
 import UserManagement from '../users/UserManagement';
 import { isAdminUser } from '../../utils/roles';
 
@@ -22,6 +23,7 @@ const navConfig = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, color: 'blue' },
   { id: 'inventory', label: 'Inventory', icon: Package, color: 'orange' },
   { id: 'stock', label: 'Stock Management', icon: Box, color: 'indigo' },
+  { id: 'activity', label: 'Activity Log', icon: ClipboardList, color: 'green' },
   { id: 'warehouses', label: 'Warehouses', icon: Warehouse, color: 'cyan' },
 ];
 
@@ -77,6 +79,8 @@ const Dashboard = () => {
         return <WarehouseManagement />;
       case 'stock':
         return <StockManagement />;
+      case 'activity':
+        return <ActivityPage />;
       case 'users':
         return <UserManagement />;
       default:
