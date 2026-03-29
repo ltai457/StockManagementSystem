@@ -1,6 +1,7 @@
 import React from 'react';
 import { Package, AlertTriangle, CheckCircle, TrendingDown } from 'lucide-react';
 import { StatsGrid } from '../common/layout/StatsGrid';
+import { LOW_STOCK_THRESHOLD } from '../../utils/stock';
 
 const RadiatorStats = ({ radiators }) => {
   const totalProducts = radiators.length;
@@ -15,7 +16,7 @@ const RadiatorStats = ({ radiators }) => {
       
       if (productTotal === 0) {
         outOfStockItems++;
-      } else if (productTotal <= 5) {
+      } else if (productTotal <= LOW_STOCK_THRESHOLD) {
         lowStockItems++;
       }
     }

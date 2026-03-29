@@ -2,16 +2,13 @@
 import React from 'react';
 import { Users, Shield, User, CheckCircle } from 'lucide-react';
 import { StatsGrid } from '../common/layout/StatsGrid';
+import { isAdminRole } from '../../utils/roles';
 
 const UserStats = ({ users }) => {
   const totalUsers = users.length;
   const activeUsers = users.filter(u => u.isActive).length;
-  const adminUsers = users.filter(u => 
-    u.role === 'Admin' || u.role === 1 || u.role === '1'
-  ).length;
-  const staffUsers = users.filter(u => 
-    u.role === 'Staff' || u.role === 2 || u.role === '2'
-  ).length;
+  const adminUsers = users.filter((u) => isAdminRole(u.role)).length;
+  const staffUsers = users.filter((u) => !isAdminRole(u.role)).length;
 
   const stats = [
     {

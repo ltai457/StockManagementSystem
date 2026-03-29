@@ -1,12 +1,12 @@
 import React from "react";
 import { Package, Warehouse } from "lucide-react";
+import { LOW_STOCK_THRESHOLD } from "../../../utils/stock";
 
 export default function StockOverviewGrid({
   warehouses,
   radiators,
   selectedWarehouse,
   setSelectedWarehouse,
-  getTotalStock,
 }) {
   // Always calculate total across ALL warehouses (fixed number)
   const totalAcrossAll = (radiators || []).reduce((t, r) => {
@@ -33,7 +33,7 @@ export default function StockOverviewGrid({
         );
         const lowStockItems = (radiators || []).filter((r) => {
           const s = r.stock?.[w.code] || 0;
-          return s > 0 && s <= 5;
+          return s > 0 && s <= LOW_STOCK_THRESHOLD;
         }).length;
         const outOfStockItems = (radiators || []).filter(
           (r) => (r.stock?.[w.code] || 0) === 0

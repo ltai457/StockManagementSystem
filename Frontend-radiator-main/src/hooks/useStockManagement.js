@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import stockService from "../api/stockService";
 import warehouseService from "../api/warehouseService";
+import { LOW_STOCK_THRESHOLD } from "../utils/stock";
 
 export function useStockManagement() {
   const [warehouses, setWarehouses] = useState([]);
@@ -56,7 +57,7 @@ export function useStockManagement() {
 
   const getStockStatus = useCallback((quantity) => {
     if (quantity === 0) return { status: "out", color: "text-red-600", bg: "bg-red-100", label: "Out of Stock" };
-    if (quantity <= 5) return { status: "low", color: "text-yellow-600", bg: "bg-yellow-100", label: "Low Stock" };
+    if (quantity <= LOW_STOCK_THRESHOLD) return { status: "low", color: "text-yellow-600", bg: "bg-yellow-100", label: "Low Stock" };
     return { status: "good", color: "text-green-600", bg: "bg-green-100", label: "In Stock" };
   }, []);
 
@@ -79,10 +80,10 @@ export function useStockManagement() {
         
         switch (stockStatusFilter) {
           case "good":
-            if (totalStock <= 5) return false;
+            if (totalStock <= LOW_STOCK_THRESHOLD) return false;
             break;
           case "low":
-            if (totalStock === 0 || totalStock > 5) return false;
+            if (totalStock === 0 || totalStock > LOW_STOCK_THRESHOLD) return false;
             break;
           case "out":
             if (totalStock !== 0) return false;
@@ -102,7 +103,7 @@ export function useStockManagement() {
       
       // Define priority: Good = 0, Low = 1, Out = 2
       const getPriority = (stock) => {
-        if (stock > 5) return 0; // Good stock
+        if (stock > LOW_STOCK_THRESHOLD) return 0; // Good stock
         if (stock >= 1) return 1; // Low stock
         return 2; // Out of stock
       };
@@ -120,7 +121,7 @@ export function useStockManagement() {
     });
 
     return filtered;
-  }, [radiators, searchTerm, stockStatusFilter, selectedWarehouse, getTotalStock]);
+  }, [radiators, searchTerm, stockStatusFilter, getTotalStock]);
 
   // edit mode actions
   const handleEditMode = useCallback(() => {
@@ -180,16 +181,68 @@ export function useStockManagement() {
     }
   }, [editingStocks, selectedWarehouse]);
 
+  const refreshStockData = useCallback(async () => {
+    await loadInitialData();
+  }, [loadInitialData]);
+
+  const handleTransferStock = useCallback(
+    async (payload) => {
+      const response = await stockService.transferStock(payload);
+      if (!response?.success) {
+        alert(response?.error || "Failed to transfer stock.");
+        return false;
+      }
+
+      await refreshStockData();
+      return true;
+    },
+    [refreshStockData]
+  );
+
+  const handleStockIn = useCallback(
+    async (payload) => {
+      const response = await stockService.recordStockIn(payload);
+      if (!response?.success) {
+        alert(response?.error || "Failed to add stock.");
+        return false;
+      }
+
+      await refreshStockData();
+      return true;
+    },
+    [refreshStockData]
+  );
+
+  const handleRecordSale = useCallback(
+    async (payload) => {
+      const response = await stockService.recordSale(payload);
+      if (!response?.success) {
+        alert(response?.error || "Failed to record sale.");
+        return false;
+      }
+
+      await refreshStockData();
+      return true;
+    },
+    [refreshStockData]
+  );
+
+  const filterLowStock = stockStatusFilter === "low";
+  const setFilterLowStock = useCallback((enabled) => {
+    setStockStatusFilter(enabled ? "low" : "all");
+  }, []);
+
   return {
     // data
     warehouses, radiators, loading, error,
     // ui state
     selectedWarehouse, searchTerm, stockStatusFilter, editMode, editingStocks, updating,
     // setters
-    setSelectedWarehouse, setSearchTerm, setStockStatusFilter,
+    setSelectedWarehouse, setSearchTerm, setStockStatusFilter, setFilterLowStock,
     // derived & helpers
-    filteredRadiators, getTotalStock, getStockStatus, getDisplayStock,
+    filteredRadiators, getTotalStock, getStockStatus, getDisplayStock, filterLowStock,
     // actions
     handleEditMode, handleCancelEdit, handleStockChange, handleSaveChanges,
+    refreshStockData, handleStockIn, handleTransferStock, handleRecordSale,
   };
 }

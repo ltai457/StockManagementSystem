@@ -5,7 +5,7 @@ import {
   Warehouse, Box, UserCog, Menu, X, LogOut,
   TrendingUp, ChevronRight
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/auth-context';
 import { useNavigate } from 'react-router-dom';
 
 // Dashboard content components
@@ -14,6 +14,7 @@ import RadiatorList from '../inventory/RadiatorList';
 import WarehouseManagement from '../warehouse/WarehouseManagement';
 import StockManagement from '../stock/StockManagementPage';
 import UserManagement from '../users/UserManagement';
+import { isAdminUser } from '../../utils/roles';
 
 const TESTING_MODE = false; // Should match AuthContext
 
@@ -44,13 +45,7 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
 
   // Detect admin (matches your logic)
-  const isAdmin =
-    user?.role === 1 ||
-    user?.role === '1' ||
-    user?.role === 'Admin' ||
-    user?.role === 'admin' ||
-    (Array.isArray(user?.role) &&
-      user.role.map(String).some((r) => r.toLowerCase() === 'admin' || r === '1'));
+  const isAdmin = isAdminUser(user);
 
   // Dynamic nav with admin section
   const navItems = [
@@ -77,7 +72,7 @@ const Dashboard = () => {
       case 'overview':
         return <DashboardOverview onNavigate={setActiveTab} />;
       case 'inventory':
-        return <RadiatorList />;
+        return <RadiatorList onNavigate={setActiveTab} />;
       case 'warehouses':
         return <WarehouseManagement />;
       case 'stock':

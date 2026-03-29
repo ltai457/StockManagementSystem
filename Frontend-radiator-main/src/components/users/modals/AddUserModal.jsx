@@ -71,15 +71,13 @@ const AddUserModal = ({ isOpen, onClose, onSuccess }) => {
     setLoading(true);
 
     // Remove confirmPassword and format data before sending to API
-    const { confirmPassword, ...userData } = formData;
+    const { confirmPassword: _confirmPassword, ...userData } = formData;
     
     // Ensure role is sent as integer
     const formattedData = {
       ...userData,
       role: parseInt(userData.role, 10)
     };
-    
-    console.log('📤 Submitting user data:', formattedData);
     
     const success = await onSuccess(formattedData);
     

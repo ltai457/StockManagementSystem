@@ -1,23 +1,18 @@
 // src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/auth-context';
 import Login from './components/auth/Login';
 import Dashboard from './components/dashboard/Dashboard';
+import PageLoadingState from './components/common/feedback/PageLoadingState';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoadingState />;
   }
 
 
@@ -34,14 +29,7 @@ const LoginRoute = () => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoadingState />;
   }
 
   return isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />;
@@ -52,14 +40,7 @@ const RootRedirect = () => {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoadingState />;
   }
   
   return isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
@@ -67,16 +48,13 @@ const RootRedirect = () => {
 
 // Session Warning Component
 const SessionWarningNotification = () => {
-  const { sessionWarning, extendSession, refreshUserSession, remainingTime } = useAuth();
+  const { sessionWarning, refreshUserSession, remainingTime } = useAuth();
 
   if (!sessionWarning) return null;
 
   const handleExtendSession = async () => {
     const success = await refreshUserSession();
-    if (!success) {
-      // If refresh fails, the session expired handler will take care of logout
-      console.log('Failed to extend session');
-    }
+    if (!success) return;
   };
 
   return (

@@ -3,11 +3,13 @@ import { Package, PackageX, Warehouse, Box } from 'lucide-react';
 import { PageHeader } from '../common/layout/PageHeader';
 import { StatsGrid } from '../common/layout/StatsGrid';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
+import PageErrorState from '../common/feedback/PageErrorState';
 
 import QuickActions from './QuickActions';
 import RecentActivity from './RecentActivity';
 import radiatorService from '../../api/radiatorService';
 import stockService from '../../api/stockService';
+import { LOW_STOCK_THRESHOLD } from '../../utils/stock';
 
 const DashboardOverview = ({ onNavigate }) => {
   const [dashboardData, setDashboardData] = useState({
@@ -42,7 +44,7 @@ const DashboardOverview = ({ onNavigate }) => {
           loading: false,
           error: null
         });
-      } catch (error) {
+      } catch {
         setDashboardData(prev => ({
           ...prev,
           loading: false,
@@ -59,8 +61,6 @@ const DashboardOverview = ({ onNavigate }) => {
 
     const totalRadiators = radiators.length;
     const totalWarehouses = stockSummary?.warehouseSummaries?.length ?? 0;
-
-    const LOW_STOCK_THRESHOLD = 5;
 
     const extractWarehouseStocks = (radiator) => {
       const candidates = [
@@ -183,9 +183,7 @@ const DashboardOverview = ({ onNavigate }) => {
           title="Chan Mary 333"
           subtitle="Your complete radiator inventory management system"
         />
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {dashboardData.error}
-        </div>
+        <PageErrorState message={dashboardData.error} />
       </div>
     );
   }

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RadiatorStockAPI.DTOs.Radiators;
-using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Services.Radiators;
 
 namespace RadiatorStockAPI.Controllers;
@@ -22,9 +21,7 @@ public class RadiatorsController : BaseController
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int? pageNumber, [FromQuery] int? pageSize)
-        => (pageNumber.HasValue || pageSize.HasValue)
-            ? Run(await _get.GetPagedAsync(new PaginationParams { PageNumber = pageNumber ?? 1, PageSize = pageSize ?? 20 }))
-            : Run(await _get.GetAllAsync());
+        => Run(await _get.GetAllAsync(pageNumber, pageSize));
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id) => Run(await _get.GetByIdAsync(id));

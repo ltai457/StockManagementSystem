@@ -22,7 +22,11 @@ public class GetUserHandler : IGetUserHandler
     public async Task<Result<UserDto>> GetByIdAsync(Guid id)
     {
         var u = await _service.GetByIdAsync(id);
-        return u is null ? Result<UserDto>.NotFound($"User {id} not found.") : Result<UserDto>.Ok(UserMapper.ToDto(u));
+        if (u is null)
+        {
+            return Result<UserDto>.NotFound($"User {id} not found.");
+        }
+        return Result<UserDto>.Ok(UserMapper.ToDto(u));
     }
 
     public async Task<Result<object>> CheckUsernameAsync(string username)

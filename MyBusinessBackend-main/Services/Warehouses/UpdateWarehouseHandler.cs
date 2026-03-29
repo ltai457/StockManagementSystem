@@ -1,3 +1,4 @@
+
 using RadiatorStockAPI.DTOs.Warehouses;
 using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Models;
@@ -17,14 +18,20 @@ public class UpdateWarehouseHandler : IUpdateWarehouseHandler
 
     public async Task<Result<WarehouseDto>> UpdateAsync(Guid id, UpdateWarehouseDto dto)
     {
-        if (await _service.GetByIdAsync(id) is null) return Result<WarehouseDto>.NotFound($"Warehouse {id} not found.");
+        if (await _service.GetByIdAsync(id) is null)
+        {
+            return Result<WarehouseDto>.NotFound($"Warehouse {id} not found.");
+        }
         var w = await _service.UpdateAsync(id, dto.Code, dto.Name, dto.Location, dto.Address, dto.Phone, dto.Email);
         return Result<WarehouseDto>.Ok(ToDto(w));
     }
 
     public async Task<Result<object>> DeleteAsync(Guid id)
     {
-        if (await _service.GetByIdAsync(id) is null) return Result<object>.NotFound($"Warehouse {id} not found.");
+        if (await _service.GetByIdAsync(id) is null)
+        {
+            return Result<object>.NotFound($"Warehouse {id} not found.");
+        }
         await _service.DeleteAsync(id);
         return Result<object>.Deleted();
     }

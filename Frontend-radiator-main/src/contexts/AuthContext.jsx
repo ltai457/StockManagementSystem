@@ -1,18 +1,7 @@
-// Replace your AuthContext.jsx with this less aggressive version:
-
 // src/contexts/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import authService from '../api/authService';
-
-const AuthContext = createContext();
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
+import { AuthContext } from './auth-context';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -22,14 +11,10 @@ export const AuthProvider = ({ children }) => {
   // Check authentication status on app start
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('🔐 Initializing authentication...');
-      
       const currentUser = authService.getCurrentUser();
       if (currentUser && authService.isAuthenticated()) {
-        console.log('✅ Found valid session for user:', currentUser.username);
         setUser(currentUser);
       } else {
-        console.log('❌ No valid session found');
         setUser(null);
       }
       setLoading(false);
@@ -45,15 +30,13 @@ export const AuthProvider = ({ children }) => {
     const checkSession = () => {
       // Only check if session is still valid, don't auto-logout
       if (!authService.isSessionValid()) {
-        console.log('⏰ Session appears expired, but allowing user to continue');
         // Just show warning instead of auto-logout
         setSessionWarning(true);
         return;
       }
 
       const remainingTime = authService.getRemainingSessionTime();
-      console.log(`⏱️ Session time remaining: ${remainingTime} minutes`);
-      
+
       // Show warning when 10 minutes left (increased from 5)
       if (remainingTime <= 10 && remainingTime > 0) {
         setSessionWarning(true);
@@ -98,7 +81,6 @@ export const AuthProvider = ({ children }) => {
           authService.extendSession();
           setSessionWarning(false);
           lastActivity = now;
-          console.log('🕐 Session extended due to user activity');
         }
       }
     };
@@ -117,38 +99,31 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const login = async (username, password) => {
-    console.log('🚀 Attempting login for user:', username);
     setLoading(true);
     
     try {
       const result = await authService.login(username, password);
       if (result.success) {
-        console.log('✅ Login successful');
         setUser(result.user);
         setSessionWarning(false);
-      } else {
-        console.error('❌ Login failed:', result.error);
       }
       setLoading(false);
       return result;
-    } catch (error) {
-      console.error('❌ Login error:', error);
+    } catch {
       setLoading(false);
       return { success: false, error: 'An unexpected error occurred during login' };
     }
   };
 
   const logout = async () => {
-    console.log('🔓 Logging out user');
-    
     try {
       // Attempt server-side logout if we have a refresh token
       const refreshToken = sessionStorage.getItem('refreshToken');
       if (refreshToken) {
         await authService.logout(refreshToken);
       }
-    } catch (error) {
-      console.warn('⚠️ Server-side logout failed, proceeding with client-side logout:', error);
+    } catch {
+      // Proceed with client-side logout even if the server request fails.
     }
 
     // Always clear client-side session
@@ -161,30 +136,18 @@ export const AuthProvider = ({ children }) => {
     return !!(user && authService.isAuthenticated());
   };
 
-  const extendSession = () => {
-    if (user && authService.isAuthenticated()) {
-      authService.extendSession();
-      setSessionWarning(false);
-    }
-  };
-
   const refreshUserSession = async () => {
-    console.log('🔄 Attempting to refresh user session...');
-    
     try {
       const result = await authService.refreshToken();
       if (result.success) {
-        console.log('✅ Session refreshed successfully');
         setSessionWarning(false);
         return true;
       } else {
-        console.error('❌ Session refresh failed:', result.error);
         // Don't automatically logout, let user try to continue
         setSessionWarning(true);
         return false;
       }
-    } catch (error) {
-      console.error('❌ Session refresh error:', error);
+    } catch {
       setSessionWarning(true);
       return false;
     }
@@ -192,7 +155,6 @@ export const AuthProvider = ({ children }) => {
 
   // Manual logout function for when API calls fail with 401
   const handleApiUnauthorized = () => {
-    console.log('🔓 API returned 401, forcing logout');
     handleSessionExpired();
   };
 
@@ -203,7 +165,6 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated,
     sessionWarning,
-    extendSession,
     refreshUserSession,
     handleApiUnauthorized, // Expose this for components to call when needed
     remainingTime: user ? authService.getRemainingSessionTime() : 0,

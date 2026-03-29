@@ -16,7 +16,10 @@ public class CreateWarehouseHandler : ICreateWarehouseHandler
 
     public async Task<Result<WarehouseDto>> CreateAsync(CreateWarehouseDto dto)
     {
-        if (await _service.ExistsByCodeAsync(dto.Code)) return Result<WarehouseDto>.Conflict($"Code '{dto.Code}' already exists.");
+        if (await _service.ExistsByCodeAsync(dto.Code))
+        {
+            return Result<WarehouseDto>.Conflict($"Code '{dto.Code}' already exists.");
+        }
         var w = await _service.CreateAsync(dto.Code, dto.Name, dto.Location, dto.Address, dto.Phone, dto.Email);
         return Result<WarehouseDto>.Created(ToDto(w), "GetById", new { id = w.Id });
     }

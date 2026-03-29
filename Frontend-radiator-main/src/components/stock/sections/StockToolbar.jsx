@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Filter, Edit3, Save, X } from "lucide-react";
+import { Edit3, Filter, Save, Search, X } from "lucide-react";
 
 export default function StockToolbar({
   searchTerm,
@@ -12,7 +12,7 @@ export default function StockToolbar({
   onEdit,
   onCancel,
   onSave,
-  selectedWarehouse, // controls visibility of Edit Stock
+  selectedWarehouse,
 }) {
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-6">
@@ -43,7 +43,6 @@ export default function StockToolbar({
           </button>
         </div>
 
-        {/* Edit / Save Controls */}
         <div className="flex items-center gap-3">
           {editMode ? (
             <>
@@ -72,7 +71,6 @@ export default function StockToolbar({
               </button>
             </>
           ) : (
-            // Hide the "Edit Stock" button when on "all"
             selectedWarehouse !== "all" && (
               <button
                 onClick={onEdit}

@@ -15,25 +15,11 @@ const userCrud = createCrudService("/users", {
 });
 
 const userService = {
-  getAllUsers(params) {
-    return userCrud.list(params);
-  },
-
-  getUserById(id) {
-    return userCrud.get(id);
-  },
-
-  createUser(userData) {
-    return userCrud.create(userData);
-  },
-
-  updateUser(userId, userData) {
-    return userCrud.update(userId, userData);
-  },
-
-  deleteUser(userId) {
-    return userCrud.remove(userId);
-  },
+  getAllUsers: (params) => userCrud.list(params),
+  getUserById: (id) => userCrud.get(id),
+  createUser: (userData) => userCrud.create(userData),
+  updateUser: (userId, userData) => userCrud.update(userId, userData),
+  deleteUser: (userId) => userCrud.remove(userId),
 
   async checkUsernameExists(username) {
     const result = await handleRequest(

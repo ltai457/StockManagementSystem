@@ -1,5 +1,21 @@
 import React from "react";
 import { AlertTriangle, CheckCircle, Minus, Plus } from "lucide-react";
+import {
+  Box,
+  Chip,
+  IconButton,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { LOW_STOCK_THRESHOLD } from "../../../utils/stock";
 
 export default function StockTable({
   warehouses,
@@ -15,136 +31,101 @@ export default function StockTable({
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Product
-              </th>
+      <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
+        <Table sx={{ minWidth: 840 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Product</TableCell>
               {selectedWarehouse === "all" ? (
                 <>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Stock
-                  </th>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Total Stock</TableCell>
                   {(warehouses || []).map((w) => (
-                    <th
-                      key={w.id}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
+                    <TableCell key={w.id} sx={{ fontWeight: 600, bgcolor: "grey.50" }}>
                       {w.code}
-                    </th>
+                    </TableCell>
                   ))}
                 </>
               ) : (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>
                   {editMode ? "Edit Quantity" : "Current Stock"}
-                </th>
+                </TableCell>
               )}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-            </tr>
-          </thead>
+              <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Status</TableCell>
+            </TableRow>
+          </TableHead>
 
-          <tbody className="bg-white divide-y divide-gray-200">
+          <TableBody>
             {safeItems.map((r) => {
               const total = getTotalStock(r.stock);
               const out = total === 0;
-              const low = total > 0 && total <= 5;
+              const low = total > 0 && total <= LOW_STOCK_THRESHOLD;
 
               return (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  {/* Product Info */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
+                <TableRow key={r.id} hover>
+                  <TableCell>
+                    <Box>
+                      <Typography variant="body2" fontWeight={500}>
                         {r.name}
-                      </div>
-                      <div className="text-sm text-gray-500">
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
                         {r.brand} - {r.code}
-                      </div>
-                    </div>
-                  </td>
+                      </Typography>
+                    </Box>
+                  </TableCell>
 
-                  {/* Stock Columns */}
                   {selectedWarehouse === "all" ? (
                     <>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {total}
-                        </div>
-                      </td>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={500}>{total}</Typography>
+                      </TableCell>
                       {(warehouses || []).map((w) => {
                         const current = r.stock?.[w.code] || 0;
-                        const status = getStockStatus(current);
                         return (
-                          <td
-                            key={w.id}
-                            className="px-6 py-4 whitespace-nowrap"
-                          >
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.color}`}
-                            >
-                              {current}
-                            </span>
-                          </td>
+                          <TableCell key={w.id}>
+                            <Chip
+                              size="small"
+                              label={current}
+                              color={current === 0 ? "error" : current <= LOW_STOCK_THRESHOLD ? "warning" : "success"}
+                              variant="outlined"
+                            />
+                          </TableCell>
                         );
                       })}
                     </>
                   ) : (
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <TableCell>
                       {editMode ? (
                         <QuantityEditor
                           value={getDisplayStock(r.id, total)}
                           onDecrement={() =>
-                            onChangeStock(
-                              r.id,
-                              Math.max(0, getDisplayStock(r.id, total) - 1)
-                            )
+                            onChangeStock(r.id, Math.max(0, getDisplayStock(r.id, total) - 1))
                           }
                           onIncrement={() =>
                             onChangeStock(r.id, getDisplayStock(r.id, total) + 1)
                           }
-                          onChange={(v) => onChangeStock(r.id, v)}
+                          onChange={(value) => onChangeStock(r.id, value)}
                         />
                       ) : (
-                        <Badge
-                          quantity={total}
-                          getStockStatus={getStockStatus}
-                        />
+                        <Badge quantity={total} getStockStatus={getStockStatus} />
                       )}
-                    </td>
+                    </TableCell>
                   )}
 
-                  {/* Status Column */}
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <TableCell>
                     {out ? (
-                      <Status
-                        text="Out of Stock"
-                        className="text-red-600"
-                        icon={AlertTriangle}
-                      />
+                      <Status text="Out of Stock" className="text-red-600" icon={AlertTriangle} />
                     ) : low ? (
-                      <Status
-                        text="Low Stock"
-                        className="text-yellow-600"
-                        icon={AlertTriangle}
-                      />
+                      <Status text="Low Stock" className="text-yellow-600" icon={AlertTriangle} />
                     ) : (
-                      <Status
-                        text="Good"
-                        className="text-green-600"
-                        icon={CheckCircle}
-                      />
+                      <Status text="Good" className="text-green-600" icon={CheckCircle} />
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {safeItems.length === 0 && (
         <div className="text-center py-12">
@@ -155,49 +136,51 @@ export default function StockTable({
   );
 }
 
-/* --- Helper components --- */
+function QuantityEditor({ value, onDecrement, onIncrement, onChange }) {
+  return (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <IconButton
+        size="small"
+        onClick={onDecrement}
+        sx={{ bgcolor: "error.50", color: "error.main", "&:hover": { bgcolor: "error.100" } }}
+      >
+        <Minus size={16} />
+      </IconButton>
+      <TextField
+        type="number"
+        size="small"
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value, 10) || 0)}
+        slotProps={{ htmlInput: { min: 0, style: { textAlign: "center", width: 56 } } }}
+      />
+      <IconButton
+        size="small"
+        onClick={onIncrement}
+        sx={{ bgcolor: "success.50", color: "success.main", "&:hover": { bgcolor: "success.100" } }}
+      >
+        <Plus size={16} />
+      </IconButton>
+    </Stack>
+  );
+}
+
 function Badge({ quantity, getStockStatus }) {
   const s = getStockStatus(quantity);
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${s.bg} ${s.color}`}
-    >
-      {quantity}
-    </span>
+    <Chip
+      size="small"
+      label={quantity}
+      color={s.color?.includes("red") ? "error" : s.color?.includes("yellow") ? "warning" : "success"}
+      variant="outlined"
+    />
   );
 }
 
 function Status({ text, className, icon: Icon }) {
   return (
     <span className={`inline-flex items-center space-x-1 ${className}`}>
-      <Icon className="w-4 h-4" />
+      {Icon && <Icon className="w-4 h-4" />}
       <span className="text-xs font-medium">{text}</span>
     </span>
-  );
-}
-
-function QuantityEditor({ value, onDecrement, onIncrement, onChange }) {
-  return (
-    <div className="flex items-center space-x-2">
-      <button
-        onClick={onDecrement}
-        className="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center"
-      >
-        <Minus className="w-4 h-4" />
-      </button>
-      <input
-        type="number"
-        min="0"
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value, 10) || 0)}
-        className="w-20 px-3 py-1 border border-gray-300 rounded text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      />
-      <button
-        onClick={onIncrement}
-        className="w-8 h-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
-    </div>
   );
 }

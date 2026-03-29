@@ -1,6 +1,6 @@
 // src/components/auth/Login.jsx
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/auth-context';
 import { useNavigate } from 'react-router-dom';
 import authService from '../../api/authService';
 
@@ -58,13 +58,11 @@ const Login = () => {
       const result = await login(credentials.username.trim(), credentials.password);
       
       if (result.success) {
-        console.log('✅ Login successful, redirecting to dashboard');
         navigate('/dashboard', { replace: true });
       } else {
         setError(result.error || 'Sign in failed. Please try again.');
       }
-    } catch (err) {
-      console.error('❌ Login error:', err);
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);

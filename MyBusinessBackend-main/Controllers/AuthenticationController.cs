@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using RadiatorStockAPI.DTOs.Auth;
 using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Services.Auth;
@@ -31,17 +30,9 @@ public class AuthController : BaseController
 
     [HttpPost("change-password"), Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto dto)
-    {
-        Guid.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId);
-        return Run(await _handler.ChangePasswordAsync(userId, dto));
-    }
+        => Run(await _handler.ChangePasswordAsync(GetUserId(), dto));
 
     [HttpGet("me"), Authorize]
-    public IActionResult Me() => Run(Result<object>.Ok(new
-    {
-        id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
-        username = User.FindFirst(ClaimTypes.Name)?.Value,
-        email = User.FindFirst(ClaimTypes.Email)?.Value,
-        role = User.FindFirst(ClaimTypes.Role)?.Value
-    }));
+    public IActionResult Me()
+        => Run(Result<object>.Ok(new { id = GetUserId(), username = GetUsername(), email = GetEmail(), role = GetRole() }));
 }

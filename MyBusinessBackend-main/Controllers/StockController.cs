@@ -35,7 +35,7 @@ public class StockController : BaseController
         => Run(await _get.GetAllRadiatorsWithStockAsync(search, lowStockOnly, warehouseCode, pageNumber, pageSize));
 
     [HttpGet("stock/low-stock")]
-    public async Task<IActionResult> GetLowStock([FromQuery] int threshold = 5)
+    public async Task<IActionResult> GetLowStock([FromQuery] int threshold = StockAlertSettings.LowStockThreshold)
         => Run(await _get.GetLowStockItemsAsync(threshold));
 
     [HttpGet("stock/out-of-stock")]
@@ -58,6 +58,18 @@ public class StockController : BaseController
     [HttpPost("stock/adjust"), Authorize(Roles = "Admin,Staff")]
     public async Task<IActionResult> Adjust([FromBody] StockAdjustmentDto dto)
         => Run(await _update.AdjustStockAsync(dto));
+
+    [HttpPost("stock/in"), Authorize(Roles = "Admin,Staff")]
+    public async Task<IActionResult> StockIn([FromBody] StockInDto dto)
+        => Run(await _update.RecordStockInAsync(dto));
+
+    [HttpPost("stock/transfer"), Authorize(Roles = "Admin,Staff")]
+    public async Task<IActionResult> Transfer([FromBody] StockTransferDto dto)
+        => Run(await _update.TransferStockAsync(dto));
+
+    [HttpPost("stock/sell"), Authorize(Roles = "Admin,Staff")]
+    public async Task<IActionResult> Sell([FromBody] StockSaleDto dto)
+        => Run(await _update.RecordSaleAsync(dto));
 
     [HttpGet("stock/movements")]
     public async Task<IActionResult> GetMovements([FromQuery] Guid? radiatorId, [FromQuery] string? warehouseCode,
