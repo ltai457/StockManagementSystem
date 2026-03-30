@@ -1,9 +1,17 @@
 import React from "react";
-import { Plus } from "lucide-react";
+import { LayoutGrid, List, Plus } from "lucide-react";
 import { Button } from "../common/ui/Button";
 import LowStockAlert from "./LowStockAlert";
 
-const InventoryHeader = ({ sortBy, onSortChange, isAdmin, onAddProduct, radiators }) => (
+const InventoryHeader = ({
+  sortBy,
+  onSortChange,
+  isAdmin,
+  onAddProduct,
+  radiators,
+  viewMode,
+  onViewModeChange,
+}) => (
   <div className="flex justify-between items-center gap-4">
     <div>
       <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
@@ -14,6 +22,35 @@ const InventoryHeader = ({ sortBy, onSortChange, isAdmin, onAddProduct, radiator
 
     <div className="flex gap-2 items-center">
       <LowStockAlert radiators={radiators} />
+
+      <div className="flex items-center rounded-lg border border-gray-300 bg-white p-1">
+        <button
+          type="button"
+          onClick={() => onViewModeChange("cards")}
+          className={`rounded-md px-3 py-1.5 text-sm transition ${
+            viewMode === "cards" ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"
+          }`}
+          aria-label="Card view"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <LayoutGrid className="h-4 w-4" />
+            Cards
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onViewModeChange("table")}
+          className={`rounded-md px-3 py-1.5 text-sm transition ${
+            viewMode === "table" ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"
+          }`}
+          aria-label="Table view"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <List className="h-4 w-4" />
+            Table
+          </span>
+        </button>
+      </div>
 
       <select
         value={sortBy}

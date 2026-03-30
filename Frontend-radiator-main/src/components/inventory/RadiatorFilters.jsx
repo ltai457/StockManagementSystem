@@ -17,9 +17,9 @@ const RadiatorFilters = ({
     setSearchInput(filters.search || '');
   }, [filters.search]);
 
-  // Get unique brands and years for filter options
+  // Get unique brands and types for filter options
   const brands = [...new Set(radiators.map(r => r.brand))].sort();
-  const years = [...new Set(radiators.map(r => r.year))].sort((a, b) => b - a);
+  const types = [...new Set(radiators.map(r => r.type).filter(Boolean))].sort();
 
   const handleSearchChange = (value) => {
     // Update input immediately for responsive UI
@@ -60,13 +60,13 @@ const RadiatorFilters = ({
             </select>
 
             <select
-              value={filters.year || 'all'}
-              onChange={(e) => onFilterChange('year', e.target.value)}
+              value={filters.type || 'all'}
+              onChange={(e) => onFilterChange('type', e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All Years</option>
-              {years.map(year => (
-                <option key={year} value={year}>{year}</option>
+              <option value="all">All Types</option>
+              {types.map(type => (
+                <option key={type} value={type}>{type}</option>
               ))}
             </select>
 

@@ -183,9 +183,6 @@ export default function WarehouseTable({
                       <Typography variant="body2" fontWeight={500}>
                         {warehouse.name}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        ID: {warehouse.id?.substring(0, 8)}...
-                      </Typography>
                     </Box>
                   </Box>
                 </TableCell>

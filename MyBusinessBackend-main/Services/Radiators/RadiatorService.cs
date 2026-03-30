@@ -22,11 +22,14 @@ public class RadiatorService : IRadiatorService
         var now = DateTime.UtcNow;
         var radiator = new Radiator
         {
-            Id = Guid.NewGuid(), Brand = dto.Brand, Code = dto.Code, Name = dto.Name,
-            Year = dto.Year, RetailPrice = dto.RetailPrice, TradePrice = dto.TradePrice,
+            Id = Guid.NewGuid(), Brand = dto.Brand, Code = dto.Code,
+            Model = dto.Model, Type = dto.Type,
+            RetailPrice = dto.RetailPrice, TradePrice = dto.TradePrice,
             CostPrice = dto.CostPrice, IsPriceOverridable = dto.IsPriceOverridable,
             MaxDiscountPercent = dto.MaxDiscountPercent,
-            Dimensions = dto.Dimensions, Notes = dto.Notes, CreatedAt = now, UpdatedAt = now
+            CoreDimension = dto.CoreDimension, Dimension = dto.Dimension,
+            ImageUrl = dto.ImageUrl, Notes = dto.Notes,
+            CreatedAt = now, UpdatedAt = now
         };
 
         await _dal.AddAsync(radiator);
@@ -67,14 +70,16 @@ public class RadiatorService : IRadiatorService
 
         entity.Brand = dto.Brand ?? entity.Brand;
         entity.Code = dto.Code ?? entity.Code;
-        entity.Name = dto.Name ?? entity.Name;
-        if (dto.Year.HasValue) entity.Year = dto.Year.Value;
+        entity.Model = dto.Model ?? entity.Model;
+        entity.Type = dto.Type ?? entity.Type;
         if (dto.RetailPrice.HasValue) entity.RetailPrice = dto.RetailPrice.Value;
         if (dto.TradePrice.HasValue) entity.TradePrice = dto.TradePrice.Value;
         if (dto.CostPrice.HasValue) entity.CostPrice = dto.CostPrice.Value;
         if (dto.IsPriceOverridable.HasValue) entity.IsPriceOverridable = dto.IsPriceOverridable.Value;
         if (dto.MaxDiscountPercent.HasValue) entity.MaxDiscountPercent = dto.MaxDiscountPercent.Value;
-        entity.Dimensions = dto.Dimensions ?? entity.Dimensions;
+        entity.CoreDimension = dto.CoreDimension ?? entity.CoreDimension;
+        entity.Dimension = dto.Dimension ?? entity.Dimension;
+        entity.ImageUrl = dto.ImageUrl ?? entity.ImageUrl;
         entity.Notes = dto.Notes ?? entity.Notes;
         entity.UpdatedAt = DateTime.UtcNow;
 
@@ -104,6 +109,6 @@ public class RadiatorService : IRadiatorService
         }
 
         await _dal.SaveChangesAsync();
-        return entities.OrderBy(r => r.Brand).ThenBy(r => r.Name).ToList();
+        return entities.OrderBy(r => r.Brand).ThenBy(r => r.Model).ToList();
     }
 }

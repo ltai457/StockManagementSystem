@@ -65,10 +65,10 @@ export default function StockTable({
                   <TableCell>
                     <Box>
                       <Typography variant="body2" fontWeight={500}>
-                        {r.name}
+                        {`${r.brand || ""} ${r.model || ""}`.trim() || r.code}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {r.brand} - {r.code}
+                        {[r.type, r.code].filter(Boolean).join(" - ")}
                       </Typography>
                     </Box>
                   </TableCell>

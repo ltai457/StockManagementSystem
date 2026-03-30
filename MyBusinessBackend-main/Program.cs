@@ -5,6 +5,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using RadiatorStockAPI.Data;
 using RadiatorStockAPI.Services.Auth;
+using RadiatorStockAPI.Services.ProductTypes;
 using RadiatorStockAPI.Services.Radiators;
 using RadiatorStockAPI.Services.Stock;
 using RadiatorStockAPI.Services.Users;
@@ -69,6 +70,10 @@ builder.Services.AddScoped<IUpdateUserHandler, UpdateUserHandler>();
 // Register Handler layer — Stock
 builder.Services.AddScoped<IGetStockHandler, GetStockHandler>();
 builder.Services.AddScoped<IUpdateStockHandler, UpdateStockHandler>();
+
+// Register Handler layer — Product Types
+builder.Services.AddScoped<IGetProductTypeHandler, GetProductTypeHandler>();
+builder.Services.AddScoped<ICreateProductTypeHandler, CreateProductTypeHandler>();
 
 // Register Handler layer — Auth
 builder.Services.AddScoped<IAuthHandler, AuthHandler>();
@@ -182,6 +187,8 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "radiators"));
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -195,6 +202,8 @@ if (app.Environment.IsDevelopment())
 
 // Security headers
 app.UseSecurityHeaders();
+
+app.UseStaticFiles();
 
 // Enable CORS before authentication - THIS IS CRITICAL
 app.UseCors("AllowFrontend");
@@ -259,9 +268,9 @@ app.MapGet("/health", async (HttpContext httpContext, RadiatorDbContext context,
     httpContext.Response.StatusCode = dbHealthy ? 200 : 503;
     
     // Add CORS headers manually for health check
-    httpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
-    httpContext.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    httpContext.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    httpContext.Response.Headers["Access-Control-Allow-Origin"] = "*";
+    httpContext.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    httpContext.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
     
     await httpContext.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response, new System.Text.Json.JsonSerializerOptions
     {
@@ -380,10 +389,10 @@ public static class SecurityHeadersExtensions
     {
         return app.Use(async (context, next) =>
         {
-            context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-            context.Response.Headers.Add("X-Frame-Options", "DENY");
-            context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
-            context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+            context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+            context.Response.Headers["X-Frame-Options"] = "DENY";
+            context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+            context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
             
             await next();
         });

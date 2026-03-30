@@ -11,10 +11,10 @@ public class CreateRadiatorDto
     public string Code { get; set; } = string.Empty;
 
     [Required, StringLength(200)]
-    public string Name { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
 
-    [Range(1900, 2100)]
-    public int Year { get; set; }
+    [Required, StringLength(50)]
+    public string Type { get; set; } = string.Empty;
 
     [Range(0, double.MaxValue)]
     public decimal RetailPrice { get; set; }
@@ -31,7 +31,13 @@ public class CreateRadiatorDto
     public decimal? MaxDiscountPercent { get; set; } = 20;
 
     [StringLength(200)]
-    public string? Dimensions { get; set; }
+    public string? CoreDimension { get; set; }
+
+    [StringLength(200)]
+    public string? Dimension { get; set; }
+
+    [StringLength(500)]
+    public string? ImageUrl { get; set; }
 
     [StringLength(500)]
     public string? Notes { get; set; }

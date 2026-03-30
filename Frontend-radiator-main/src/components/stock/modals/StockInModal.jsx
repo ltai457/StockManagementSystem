@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { PackagePlus } from "lucide-react";
 import radiatorService from "../../../api/radiatorService";
+import ProductTypeSelect from "../../inventory/forms/ProductTypeSelect";
 
 const INITIAL_FORM = {
   radiatorId: "",
@@ -26,9 +27,9 @@ const INITIAL_FORM = {
 
 const INITIAL_NEW_PRODUCT = {
   code: "",
-  name: "",
   brand: "",
-  year: new Date().getFullYear(),
+  model: "",
+  type: "",
 };
 
 export default function StockInModal({
@@ -82,8 +83,8 @@ export default function StockInModal({
   };
 
   const handleCreateProduct = async () => {
-    if (!newProduct.code.trim() || !newProduct.name.trim()) {
-      setError("Product code and name are required.");
+    if (!newProduct.code.trim() || !newProduct.model.trim() || !newProduct.type.trim()) {
+      setError("Product code, model, and type are required.");
       return;
     }
 
@@ -92,9 +93,14 @@ export default function StockInModal({
     try {
       const result = await radiatorService.create({
         code: newProduct.code.trim(),
-        name: newProduct.name.trim(),
         brand: newProduct.brand.trim() || undefined,
-        year: Number.parseInt(newProduct.year, 10) || new Date().getFullYear(),
+        model: newProduct.model.trim(),
+        type: newProduct.type.trim(),
+        retailPrice: 0,
+        tradePrice: null,
+        costPrice: null,
+        isPriceOverridable: false,
+        maxDiscountPercent: null,
       });
 
       if (!result?.success) {
@@ -153,12 +159,12 @@ export default function StockInModal({
             <>
               <Autocomplete
                 options={radiators || []}
-                getOptionLabel={(option) => `${option.name} (${option.code})`}
+                getOptionLabel={(option) => `${option.brand} ${option.model} (${option.code})`}
                 filterOptions={(options, { inputValue }) => {
                   const term = inputValue.toLowerCase();
                   return options.filter(
                     (o) =>
-                      o.name.toLowerCase().includes(term) ||
+                      o.model.toLowerCase().includes(term) ||
                       o.code.toLowerCase().includes(term) ||
                       (o.brand || "").toLowerCase().includes(term)
                   );
@@ -173,7 +179,7 @@ export default function StockInModal({
                   setError("");
                 }}
                 renderInput={(params) => (
-                  <TextField {...params} label="Search product" placeholder="Type name, code, or brand..." />
+                  <TextField {...params} label="Search product" placeholder="Type brand, model, or code..." />
                 )}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
               />
@@ -213,19 +219,18 @@ export default function StockInModal({
                 </Stack>
                 <TextField
                   size="small"
-                  label="Name *"
-                  value={newProduct.name}
-                  onChange={handleNewProductChange("name")}
+                  label="Model *"
+                  value={newProduct.model}
+                  onChange={handleNewProductChange("model")}
                   fullWidth
-                  placeholder="e.g. Radiator Assembly Toyota Corolla"
+                  placeholder="e.g. Workmate Radiator"
                 />
-                <TextField
-                  size="small"
-                  label="Year"
-                  type="number"
-                  value={newProduct.year}
-                  onChange={handleNewProductChange("year")}
-                  fullWidth
+                <ProductTypeSelect
+                  value={newProduct.type}
+                  onChange={(value) =>
+                    setNewProduct((current) => ({ ...current, type: value }))
+                  }
+                  disabled={creating}
                 />
                 <Stack direction="row" spacing={1.5} justifyContent="flex-end">
                   <Button
@@ -288,7 +293,7 @@ export default function StockInModal({
                 Current stock
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {selectedRadiator.name} currently has {currentStock} units in {form.warehouseCode}.
+                {`${selectedRadiator.brand || ""} ${selectedRadiator.model || ""}`.trim() || selectedRadiator.code} currently has {currentStock} units in {form.warehouseCode}.
               </Typography>
             </Box>
           ) : null}

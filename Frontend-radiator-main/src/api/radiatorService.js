@@ -1,5 +1,6 @@
 // src/api/radiatorService.js
-import { compactObject, createCrudService } from "./apiHelpers";
+import { compactObject, createCrudService, handleRequest } from "./apiHelpers";
+import httpClient from "./httpClient";
 
 const radiatorCrud = createCrudService("/radiators", {
   resourceName: "radiator",
@@ -22,6 +23,20 @@ const radiatorService = {
   getById: (id) => radiatorCrud.get(id),
   update: (id, radiatorData) => radiatorCrud.update(id, radiatorData),
   delete: (id) => radiatorCrud.remove(id),
+  uploadImage(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return handleRequest(
+      () =>
+        httpClient.post("/radiators/upload-image", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }),
+      { fallbackMessage: "Failed to upload image" }
+    );
+  },
 };
 
 export default radiatorService;

@@ -71,11 +71,12 @@ const RadiatorList = ({ onNavigate }) => {
   } = useFilters(radiators, {
     search: "",
     brand: "all",
-    year: "all",
+    type: "all",
   });
 
   // Sort order state
   const [sortBy, setSortBy] = useState("newest");
+  const [viewMode, setViewMode] = useState("cards");
 
   // Sort filtered radiators based on selected sort option
   const sortedRadiators = useMemo(() => {
@@ -98,7 +99,7 @@ const RadiatorList = ({ onNavigate }) => {
       
       case "name":
         return sorted.sort((a, b) => 
-          (a.name || "").localeCompare(b.name || "")
+          (a.model || "").localeCompare(b.model || "")
         );
       
       case "brand":
@@ -139,7 +140,7 @@ const RadiatorList = ({ onNavigate }) => {
   const handleDeleteRadiator = async (radiator) => {
     if (
       !window.confirm(
-        `Are you sure you want to delete ${radiator.name}? This action cannot be undone.`
+        `Are you sure you want to delete ${radiator.model || radiator.code}? This action cannot be undone.`
       )
     ) {
       return;
@@ -166,6 +167,8 @@ const RadiatorList = ({ onNavigate }) => {
         isAdmin={isAdmin}
         onAddProduct={addModal.openModal}
         radiators={sortedRadiators}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       <InventoryContent
@@ -183,6 +186,9 @@ const RadiatorList = ({ onNavigate }) => {
         handleDeleteRadiator={handleDeleteRadiator}
         onEditStock={() => onNavigate?.("stock")}
         isAdmin={isAdmin}
+        viewMode={viewMode}
+        warehouses={warehouses || []}
+        searchTerm={filters.search || ""}
       />
 
       <AddRadiatorModal

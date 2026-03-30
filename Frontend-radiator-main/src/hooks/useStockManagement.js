@@ -69,7 +69,7 @@ export function useStockManagement() {
       // Search filter
       const matches =
         !term ||
-        (r?.name || "").toLowerCase().includes(term) ||
+        (r?.model || "").toLowerCase().includes(term) ||
         (r?.code || "").toLowerCase().includes(term) ||
         (r?.brand || "").toLowerCase().includes(term);
       if (!matches) return false;

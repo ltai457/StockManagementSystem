@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RadiatorStockAPI.DTOs.Radiators;
+using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Services.Radiators;
 
 namespace RadiatorStockAPI.Controllers;
@@ -11,12 +12,14 @@ public class RadiatorsController : BaseController
     private readonly IGetRadiatorHandler _get;
     private readonly ICreateRadiatorHandler _create;
     private readonly IUpdateRadiatorHandler _update;
+    private readonly IWebHostEnvironment _environment;
 
-    public RadiatorsController(IGetRadiatorHandler get, ICreateRadiatorHandler create, IUpdateRadiatorHandler update)
+    public RadiatorsController(IGetRadiatorHandler get, ICreateRadiatorHandler create, IUpdateRadiatorHandler update, IWebHostEnvironment environment)
     {
         _get = get;
         _create = create;
         _update = update;
+        _environment = environment;
     }
 
     [HttpGet]
@@ -28,6 +31,41 @@ public class RadiatorsController : BaseController
 
     [HttpPost, Authorize(Roles = "Admin,Staff")]
     public async Task<IActionResult> Create([FromBody] CreateRadiatorDto dto) => Run(await _create.CreateAsync(dto));
+
+    [HttpPost("upload-image"), Authorize(Roles = "Admin,Staff")]
+    [RequestSizeLimit(10_000_000)]
+    public async Task<IActionResult> UploadImage(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Run(Result<ImageUploadResponseDto>.Fail("Image file is required."));
+        }
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(extension))
+        {
+            return Run(Result<ImageUploadResponseDto>.Fail("Only jpg, jpeg, png, webp, and gif files are allowed."));
+        }
+
+        var uploadsDirectory = Path.Combine(_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"), "uploads", "radiators");
+        Directory.CreateDirectory(uploadsDirectory);
+
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(uploadsDirectory, fileName);
+
+        await using (var stream = System.IO.File.Create(filePath))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var imageUrl = $"{Request.Scheme}://{Request.Host}/uploads/radiators/{fileName}";
+        return Run(Result<ImageUploadResponseDto>.Ok(new ImageUploadResponseDto
+        {
+            ImageUrl = imageUrl,
+            FileName = fileName
+        }));
+    }
 
     [HttpPut("{id:guid}"), Authorize(Roles = "Admin,Staff")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRadiatorDto dto) => Run(await _update.UpdateAsync(id, dto));

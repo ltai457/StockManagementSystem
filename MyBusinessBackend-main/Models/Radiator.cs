@@ -17,12 +17,13 @@ namespace RadiatorStockAPI.Models
 
         [Required]
         [StringLength(200)]
-        public string Name { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
 
-        [Range(1900, 2030)]
-        public int Year { get; set; }
+        [Required]
+        [StringLength(50)]
+        public string Type { get; set; } = string.Empty;  // e.g. "Big Car", "Small Car"
 
-        // ===== EXISTING PRICING FIELDS =====
+        // ===== PRICING FIELDS (future use) =====
         [Range(0, double.MaxValue)]
         public decimal RetailPrice { get; set; } = 0;
 
@@ -37,13 +38,18 @@ namespace RadiatorStockAPI.Models
         [Range(0, 100)]
         public decimal? MaxDiscountPercent { get; set; } = 20;
 
-        // ===== NEW FIELDS - ADD THESE =====
+        // ===== DIMENSION FIELDS =====
         [StringLength(200)]
-        public string? Dimensions { get; set; }   // "250x240x40mm" or "500x600"
-        
+        public string? CoreDimension { get; set; }   // Core size e.g. "680x408x16"
+
+        [StringLength(200)]
+        public string? Dimension { get; set; }        // Overall size e.g. "710x440x40"
+
         [StringLength(500)]
-        public string? Notes { get; set; }        // Additional product notes
-        // ==================================
+        public string? ImageUrl { get; set; }
+
+        [StringLength(500)]
+        public string? Notes { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

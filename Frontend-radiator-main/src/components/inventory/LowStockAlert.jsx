@@ -62,9 +62,9 @@ const LowStockAlert = ({ radiators = [] }) => {
                   key={product.id}
                   className="rounded-lg border border-yellow-100 bg-yellow-50 px-3 py-2"
                 >
-                  <p className="text-sm font-medium text-gray-900">{product.name}</p>
+                  <p className="text-sm font-medium text-gray-900">{product.model}</p>
                   <p className="text-xs text-gray-600">
-                    {product.brand} · {product.code}
+                    {product.brand} · {product.code}{product.type ? ` · ${product.type}` : ""}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-yellow-800">
                     {product.totalStock} units left

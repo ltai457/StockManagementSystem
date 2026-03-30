@@ -8,8 +8,10 @@ import {
   Button,
   Alert,
   Box,
+  Typography,
 } from "@mui/material";
 import RadiatorFormFields from "../forms/RadiatorFormFields";
+import radiatorService from "../../../api/radiatorService";
 import {
   EMPTY_RADIATOR_FORM,
   buildRadiatorPayload,
@@ -21,12 +23,14 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
   const [form, setForm] = useState(EMPTY_RADIATOR_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [imageFile, setImageFile] = useState(null);
 
   useEffect(() => {
     if (isOpen && radiator) {
       setForm(mapRadiatorToFormValues(radiator));
       setSaving(false);
       setError("");
+      setImageFile(null);
     }
   }, [isOpen, radiator]);
 
@@ -45,7 +49,16 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
     setSaving(true);
     setError("");
     try {
-      const payload = buildRadiatorPayload(form);
+      let imageUrl = radiator.imageUrl || null;
+      if (imageFile) {
+        const uploadResult = await radiatorService.uploadImage(imageFile);
+        if (!uploadResult?.success) {
+          throw new Error(uploadResult?.error || "Failed to upload image");
+        }
+        imageUrl = uploadResult.data.imageUrl;
+      }
+
+      const payload = buildRadiatorPayload({ ...form, imageUrl });
       const success = await onSuccess(payload);
       if (!success) throw new Error("Failed to update radiator");
     } catch (e) {
@@ -65,7 +78,7 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
 
   return (
     <Dialog open={isOpen} onClose={handleClose} maxWidth="sm" fullWidth scroll="paper">
-      <DialogTitle>Edit Radiator — {radiator.name || ""}</DialogTitle>
+      <DialogTitle>Edit Radiator — {radiator.model || radiator.code || ""}</DialogTitle>
       <DialogContent dividers>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1 }}>
           {error && <Alert severity="error">{error}</Alert>}
@@ -75,6 +88,30 @@ const EditRadiatorModal = ({ isOpen, onClose, onSuccess, radiator }) => {
             onFieldChange={updateField}
             disabled={saving}
           />
+
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>
+              Product Image
+            </Typography>
+            <TextField
+              type="file"
+              fullWidth
+              size="small"
+              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+              slotProps={{ htmlInput: { accept: "image/*" } }}
+              disabled={saving}
+              helperText="Upload a new image to replace the current one."
+            />
+            {imageFile ? (
+              <Typography variant="caption" color="text.secondary">
+                Selected: {imageFile.name}
+              </Typography>
+            ) : radiator.imageUrl ? (
+              <Typography variant="caption" color="text.secondary">
+                Current image saved
+              </Typography>
+            ) : null}
+          </Box>
 
         </Box>
       </DialogContent>

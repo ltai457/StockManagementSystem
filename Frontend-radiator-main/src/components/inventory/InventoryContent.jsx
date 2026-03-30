@@ -2,6 +2,7 @@ import React from "react";
 import { Package } from "lucide-react";
 import { EmptyState } from "../common/layout/EmptyState";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
+import RadiatorCards from "./RadiatorCards";
 import RadiatorFilters from "./RadiatorFilters";
 import RadiatorStats from "./RadiatorStats";
 import RadiatorTable from "./RadiatorTable";
@@ -21,6 +22,9 @@ const InventoryContent = ({
   handleDeleteRadiator,
   onEditStock,
   isAdmin,
+  viewMode,
+  warehouses,
+  searchTerm,
 }) => (
   <>
     <RadiatorStats radiators={radiators} />
@@ -54,13 +58,27 @@ const InventoryContent = ({
       />
     ) : (
       <>
-        <RadiatorTable
-          radiators={sortedRadiators}
-          onEdit={editModal.openModal}
-          onDelete={handleDeleteRadiator}
-          onEditStock={onEditStock}
-          isAdmin={isAdmin}
-        />
+        {viewMode === "cards" ? (
+          <RadiatorCards
+            radiators={sortedRadiators}
+            warehouses={warehouses}
+            searchTerm={searchTerm}
+            onEdit={editModal.openModal}
+            onDelete={handleDeleteRadiator}
+            onEditStock={onEditStock}
+            isAdmin={isAdmin}
+          />
+        ) : (
+          <RadiatorTable
+            radiators={sortedRadiators}
+            warehouses={warehouses}
+            searchTerm={searchTerm}
+            onEdit={editModal.openModal}
+            onDelete={handleDeleteRadiator}
+            onEditStock={onEditStock}
+            isAdmin={isAdmin}
+          />
+        )}
 
         {hasMore && (
           <div

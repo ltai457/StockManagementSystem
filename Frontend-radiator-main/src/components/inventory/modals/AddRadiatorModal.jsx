@@ -13,6 +13,7 @@ import {
   Divider,
 } from "@mui/material";
 import RadiatorFormFields from "../forms/RadiatorFormFields";
+import radiatorService from "../../../api/radiatorService";
 import {
   EMPTY_RADIATOR_FORM,
   buildRadiatorPayload,
@@ -24,6 +25,7 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [initialStock, setInitialStock] = useState({});
+  const [imageFile, setImageFile] = useState(null);
 
   const updateField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -44,15 +46,23 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
     setSaving(true);
     setError("");
     try {
+      let imageUrl = null;
+      if (imageFile) {
+        const uploadResult = await radiatorService.uploadImage(imageFile);
+        if (!uploadResult?.success) {
+          throw new Error(uploadResult?.error || "Failed to upload image");
+        }
+        imageUrl = uploadResult.data.imageUrl;
+      }
+
       const payload = {
-        ...buildRadiatorPayload(form),
+        ...buildRadiatorPayload({ ...form, imageUrl }),
         retailPrice: 0,
         tradePrice: null,
         costPrice: null,
         isPriceOverridable: false,
         maxDiscountPercent: null,
         initialStock,
-        dimensions: form.dimensions.trim() || null,
         notes: form.notes.trim() || null,
       };
       const success = await onSuccess(payload);
@@ -68,6 +78,7 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
   const resetForm = () => {
     setForm(EMPTY_RADIATOR_FORM);
     setInitialStock({});
+    setImageFile(null);
   };
 
   const handleClose = () => {
@@ -90,6 +101,26 @@ const AddRadiatorModal = ({ isOpen, onClose, onSuccess, warehouses = [] }) => {
             onFieldChange={updateField}
             disabled={saving}
           />
+
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>
+              Product Image
+            </Typography>
+            <TextField
+              type="file"
+              fullWidth
+              size="small"
+              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+              slotProps={{ htmlInput: { accept: "image/*" } }}
+              disabled={saving}
+              helperText="Upload an image and the backend will save its link automatically."
+            />
+            {imageFile && (
+              <Typography variant="caption" color="text.secondary">
+                Selected: {imageFile.name}
+              </Typography>
+            )}
+          </Box>
           {/* Initial Stock */}
           {warehouses.length > 0 && (
             <Box>

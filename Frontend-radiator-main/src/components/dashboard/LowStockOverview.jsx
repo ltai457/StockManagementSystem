@@ -44,7 +44,7 @@ export default function LowStockOverview({ radiators = [], onNavigate }) {
                 className="flex items-center gap-3 px-3 py-2 rounded-lg bg-yellow-50 border border-yellow-100"
               >
                 <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-                <span className="text-sm text-gray-900 truncate flex-1">{r.name}</span>
+                <span className="text-sm text-gray-900 truncate flex-1">{`${r.brand || ""} ${r.model || ""}`.trim() || r.code}</span>
                 <span className="text-sm font-medium text-yellow-700">{total}</span>
               </div>
             );

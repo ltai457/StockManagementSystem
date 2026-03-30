@@ -112,12 +112,12 @@ export default function TransferStockModal({
 
           <Autocomplete
             options={radiators || []}
-            getOptionLabel={(option) => `${option.name} (${option.code})`}
+            getOptionLabel={(option) => `${option.brand} ${option.model} (${option.code})`}
             filterOptions={(options, { inputValue }) => {
               const term = inputValue.toLowerCase();
               return options.filter(
                 (o) =>
-                  o.name.toLowerCase().includes(term) ||
+                  o.model.toLowerCase().includes(term) ||
                   o.code.toLowerCase().includes(term) ||
                   (o.brand || "").toLowerCase().includes(term)
               );
@@ -136,7 +136,7 @@ export default function TransferStockModal({
               setError("");
             }}
             renderInput={(params) => (
-              <TextField {...params} label="Search product" placeholder="Type name, code, or brand..." />
+              <TextField {...params} label="Search product" placeholder="Type brand, model, or code..." />
             )}
             isOptionEqualToValue={(option, value) => option.id === value.id}
           />
@@ -196,7 +196,7 @@ export default function TransferStockModal({
                 Available stock
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {selectedRadiator.name} has {availableSourceStock} units in {form.fromWarehouseCode}.
+                {selectedRadiator.brand} {selectedRadiator.model} has {availableSourceStock} units in {form.fromWarehouseCode}.
               </Typography>
             </Box>
           ) : null}

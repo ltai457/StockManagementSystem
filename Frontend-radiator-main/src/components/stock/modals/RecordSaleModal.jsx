@@ -100,12 +100,12 @@ export default function RecordSaleModal({
 
           <Autocomplete
             options={radiators || []}
-            getOptionLabel={(option) => `${option.name} (${option.code})`}
+            getOptionLabel={(option) => `${option.brand} ${option.model} (${option.code})`}
             filterOptions={(options, { inputValue }) => {
               const term = inputValue.toLowerCase();
               return options.filter(
                 (o) =>
-                  o.name.toLowerCase().includes(term) ||
+                  o.model.toLowerCase().includes(term) ||
                   o.code.toLowerCase().includes(term) ||
                   (o.brand || "").toLowerCase().includes(term)
               );
@@ -120,7 +120,7 @@ export default function RecordSaleModal({
               setError("");
             }}
             renderInput={(params) => (
-              <TextField {...params} label="Search product" placeholder="Type name, code, or brand..." />
+              <TextField {...params} label="Search product" placeholder="Type brand, model, or code..." />
             )}
             isOptionEqualToValue={(option, value) => option.id === value.id}
           />
@@ -164,7 +164,7 @@ export default function RecordSaleModal({
                 Available stock
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {selectedRadiator.name} has {availableStock} units in {form.warehouseCode}.
+                {selectedRadiator.brand} {selectedRadiator.model} has {availableStock} units in {form.warehouseCode}.
               </Typography>
             </Box>
           ) : null}
