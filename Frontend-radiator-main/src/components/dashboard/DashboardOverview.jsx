@@ -6,15 +6,13 @@ import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import PageErrorState from '../common/feedback/PageErrorState';
 
 import QuickActions from './QuickActions';
-import RecentActivity from './RecentActivity';
-import radiatorService from '../../api/radiatorService';
+import LowStockOverview from './LowStockOverview';
 import stockService from '../../api/stockService';
 import { LOW_STOCK_THRESHOLD } from '../../utils/stock';
 
 const DashboardOverview = ({ onNavigate }) => {
   const [dashboardData, setDashboardData] = useState({
     radiators: [],
-    stockMovements: [],
     stockSummary: null,
     loading: true,
     error: null
@@ -23,23 +21,13 @@ const DashboardOverview = ({ onNavigate }) => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const toDate = new Date();
-        const fromDate = new Date();
-        fromDate.setDate(fromDate.getDate() - 30);
-
-        const [radiatorsResult, stockMovementsResult, stockSummaryResult] = await Promise.all([
-          radiatorService.getAll(),
-          stockService.getStockMovements({
-            fromDate,
-            toDate,
-            limit: 20
-          }),
+        const [radiatorsResult, stockSummaryResult] = await Promise.all([
+          stockService.getAllRadiatorsWithStock(),
           stockService.getStockSummary()
         ]);
 
         setDashboardData({
           radiators: radiatorsResult.success ? radiatorsResult.data : [],
-          stockMovements: stockMovementsResult.success ? stockMovementsResult.data : [],
           stockSummary: stockSummaryResult.success ? stockSummaryResult.data : null,
           loading: false,
           error: null
@@ -201,8 +189,9 @@ const DashboardOverview = ({ onNavigate }) => {
           <QuickActions onNavigate={onNavigate} />
         </div>
         <div className="lg:col-span-2">
-          <RecentActivity
-            stockMovements={dashboardData.stockMovements}
+          <LowStockOverview
+            radiators={dashboardData.radiators}
+            onNavigate={onNavigate}
           />
         </div>
       </div>

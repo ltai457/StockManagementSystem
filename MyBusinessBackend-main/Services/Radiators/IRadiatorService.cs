@@ -12,5 +12,4 @@ public interface IRadiatorService
     Task<Radiator?> UpdateAsync(Guid id, UpdateRadiatorDto dto);
     Task<bool> DeleteAsync(Guid id);
     Task<bool> ExistsAsync(Guid id);
-    Task<List<Radiator>> UpdateMultiplePricesAsync(List<UpdateRadiatorPriceDto> updates);
 }

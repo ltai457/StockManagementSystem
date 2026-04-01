@@ -11,27 +11,19 @@ public class UpdateRadiatorDto
     public string? Code { get; set; }
 
     [StringLength(200)]
-    public string? Name { get; set; }
+    public string? Model { get; set; }
 
-    [Range(1900, 2100)]
-    public int? Year { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal? RetailPrice { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal? TradePrice { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal? CostPrice { get; set; }
-
-    public bool? IsPriceOverridable { get; set; }
-
-    [Range(0, 100)]
-    public decimal? MaxDiscountPercent { get; set; }
+    [StringLength(50)]
+    public string? Type { get; set; }
 
     [StringLength(200)]
-    public string? Dimensions { get; set; }
+    public string? CoreDimension { get; set; }
+
+    [StringLength(200)]
+    public string? Dimension { get; set; }
+
+    [StringLength(500)]
+    public string? ImageUrl { get; set; }
 
     [StringLength(500)]
     public string? Notes { get; set; }

@@ -17,9 +17,9 @@ const RadiatorFilters = ({
     setSearchInput(filters.search || '');
   }, [filters.search]);
 
-  // Get unique brands and years for filter options
+  // Get unique brands and types for filter options
   const brands = [...new Set(radiators.map(r => r.brand))].sort();
-  const years = [...new Set(radiators.map(r => r.year))].sort((a, b) => b - a);
+  const types = [...new Set(radiators.map(r => r.type).filter(Boolean))].sort();
 
   const handleSearchChange = (value) => {
     // Update input immediately for responsive UI
@@ -35,9 +35,8 @@ const RadiatorFilters = ({
 
   return (
     <div className="space-y-4">
-      {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex flex-col gap-4 lg:flex-row">
           <div className="flex-1">
             <SearchInput
               value={searchInput}
@@ -47,11 +46,11 @@ const RadiatorFilters = ({
             />
           </div>
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2 lg:flex">
             <select
               value={filters.brand || 'all'}
               onChange={(e) => onFilterChange('brand', e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
             >
               <option value="all">All Brands</option>
               {brands.map(brand => (
@@ -60,21 +59,21 @@ const RadiatorFilters = ({
             </select>
 
             <select
-              value={filters.year || 'all'}
-              onChange={(e) => onFilterChange('year', e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={filters.type || 'all'}
+              onChange={(e) => onFilterChange('type', e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
             >
-              <option value="all">All Years</option>
-              {years.map(year => (
-                <option key={year} value={year}>{year}</option>
+              <option value="all">All Types</option>
+              {types.map(type => (
+                <option key={type} value={type}>{type}</option>
               ))}
             </select>
 
-            {hasActiveFilters && (
-              <Button variant="outline" onClick={onClearFilters}>
+            {hasActiveFilters ? (
+              <Button variant="outline" onClick={onClearFilters} className="col-span-2 w-full lg:w-auto">
                 Clear Filters
               </Button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

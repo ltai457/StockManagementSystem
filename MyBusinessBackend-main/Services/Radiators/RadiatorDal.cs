@@ -12,7 +12,7 @@ public class RadiatorDal : IRadiatorDal
     public async Task<List<Radiator>> GetAllWithStockAsync()
         => await _context.Radiators.AsNoTracking()
             .Include(r => r.StockLevels).ThenInclude(sl => sl.Warehouse)
-            .OrderBy(r => r.Brand).ThenBy(r => r.Name).ToListAsync();
+            .OrderBy(r => r.Brand).ThenBy(r => r.Model).ToListAsync();
 
     public async Task<(List<Radiator> Items, int TotalCount)> GetPagedWithStockAsync(int pageNumber, int pageSize)
     {

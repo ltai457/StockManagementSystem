@@ -1,7 +1,6 @@
 import React from "react";
 import { Grid, TextField } from "@mui/material";
-
-const getMaxYear = () => new Date().getFullYear() + 5;
+import ProductTypeSelect from "./ProductTypeSelect";
 
 const RadiatorFormFields = ({ form, onFieldChange, disabled = false }) => (
   <>
@@ -32,38 +31,42 @@ const RadiatorFormFields = ({ form, onFieldChange, disabled = false }) => (
       </Grid>
       <Grid size={12}>
         <TextField
-          label="Name"
+          label="Model"
           required
           fullWidth
           size="small"
-          value={form.name}
-          onChange={(e) => onFieldChange("name", e.target.value)}
-          placeholder="e.g., Toyota Corolla Radiator"
+          value={form.model}
+          onChange={(e) => onFieldChange("model", e.target.value)}
+          placeholder="e.g., Workmate Radiator"
+          disabled={disabled}
+        />
+      </Grid>
+      <Grid size={{ xs: 12, sm: 6 }}>
+        <ProductTypeSelect
+          value={form.type}
+          onChange={(value) => onFieldChange("type", value)}
           disabled={disabled}
         />
       </Grid>
       <Grid size={{ xs: 12, sm: 6 }}>
         <TextField
-          label="Year"
-          required
+          label="Core Dimension"
           fullWidth
           size="small"
-          type="number"
-          value={form.year}
-          onChange={(e) => onFieldChange("year", e.target.value)}
-          placeholder="e.g., 2018"
-          slotProps={{ htmlInput: { min: 1900, max: getMaxYear() } }}
+          value={form.coreDimension}
+          onChange={(e) => onFieldChange("coreDimension", e.target.value)}
+          placeholder="e.g., 400x600"
           disabled={disabled}
         />
       </Grid>
       <Grid size={12}>
         <TextField
-          label="Dimensions"
+          label="Dimension"
           fullWidth
           size="small"
-          value={form.dimensions}
-          onChange={(e) => onFieldChange("dimensions", e.target.value)}
-          placeholder="e.g., 250x240x40mm"
+          value={form.dimension}
+          onChange={(e) => onFieldChange("dimension", e.target.value)}
+          placeholder="e.g., 400x600x32"
           disabled={disabled}
         />
       </Grid>

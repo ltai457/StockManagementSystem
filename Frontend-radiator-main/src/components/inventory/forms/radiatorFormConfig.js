@@ -1,33 +1,30 @@
 export const EMPTY_RADIATOR_FORM = {
   brand: "",
   code: "",
-  name: "",
-  year: "",
-  dimensions: "",
+  model: "",
+  type: "",
+  coreDimension: "",
+  dimension: "",
+  imageUrl: "",
   notes: "",
 };
 
 export const mapRadiatorToFormValues = (radiator) => ({
   brand: radiator?.brand ?? "",
   code: radiator?.code ?? "",
-  name: radiator?.name ?? "",
-  year: radiator?.year?.toString() ?? "",
-  dimensions: radiator?.dimensions ?? "",
+  model: radiator?.model ?? "",
+  type: radiator?.type ?? "",
+  coreDimension: radiator?.coreDimension ?? "",
+  dimension: radiator?.dimension ?? "",
+  imageUrl: radiator?.imageUrl ?? "",
   notes: radiator?.notes ?? "",
 });
 
 export const validateRadiatorForm = (form) => {
   if (!form.brand?.trim()) return "Brand is required.";
   if (!form.code?.trim()) return "Code is required.";
-  if (!form.name?.trim()) return "Name is required.";
-  if (form.year === "" || Number.isNaN(Number(form.year))) {
-    return "Year must be a valid number.";
-  }
-
-  const maxYear = new Date().getFullYear() + 5;
-  if (Number(form.year) < 1900 || Number(form.year) > maxYear) {
-    return `Year must be between 1900 and ${maxYear}`;
-  }
+  if (!form.model?.trim()) return "Model is required.";
+  if (!form.type?.trim()) return "Type is required.";
 
   return "";
 };
@@ -35,8 +32,10 @@ export const validateRadiatorForm = (form) => {
 export const buildRadiatorPayload = (form) => ({
   brand: form.brand.trim(),
   code: form.code.trim(),
-  name: form.name.trim(),
-  year: Number(form.year),
-  dimensions: form.dimensions.trim() || null,
+  model: form.model.trim(),
+  type: form.type.trim(),
+  coreDimension: form.coreDimension.trim() || null,
+  dimension: form.dimension.trim() || null,
+  imageUrl: form.imageUrl?.trim() || null,
   notes: form.notes.trim() || null,
 });

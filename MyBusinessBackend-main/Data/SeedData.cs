@@ -8,42 +8,57 @@ namespace RadiatorStockAPI.Data
     public static class SeedData
     {
         private static readonly string[] LegacyWarehouseCodes = ["WH_AKL", "WH_CHC", "WH_WLG"];
-        private static readonly (string Brand, string Model, int Year, string Dimensions)[] DemoRadiatorTemplates =
+        private static readonly string[] DefaultProductTypes =
         [
-            ("Denso", "Corolla Core", 2018, "680x408x16"),
-            ("Koyo", "Hilux Heavy Duty", 2020, "725x448x26"),
-            ("Nissens", "Civic Compact", 2017, "650x400x16"),
-            ("Valeo", "Ranger Turbo", 2021, "710x440x26"),
-            ("Toyo", "Swift Urban", 2019, "620x378x16"),
-            ("CSF", "Navara MaxFlow", 2022, "740x460x26"),
-            ("Mishimoto", "Accord Performance", 2016, "690x430x26"),
-            ("Denso", "Prius Hybrid", 2015, "640x390x16"),
-            ("Koyo", "BT-50 Utility", 2023, "735x452x26"),
-            ("Nissens", "Outlander Family", 2018, "700x435x26"),
-            ("Valeo", "RAV4 Touring", 2020, "705x430x26"),
-            ("Toyo", "Yaris Compact", 2017, "610x365x16"),
-            ("CSF", "Land Cruiser HD", 2019, "780x498x32"),
-            ("Mishimoto", "WRX Street", 2021, "670x415x26"),
-            ("Denso", "Mazda 3 Daily", 2016, "655x402x16"),
-            ("Koyo", "CR-V Touring", 2022, "710x442x26"),
-            ("Nissens", "Lancer Evo", 2014, "665x405x26"),
-            ("Valeo", "Santa Fe SUV", 2021, "720x450x26"),
-            ("Toyo", "Focus Hatch", 2018, "645x395x16"),
-            ("CSF", "Hiace Van", 2020, "760x470x26"),
-            ("Mishimoto", "Amarok V6", 2023, "748x458x32"),
-            ("Denso", "Elantra Comfort", 2019, "650x400x16"),
-            ("Koyo", "Pajero Sport", 2017, "730x455x26"),
-            ("Nissens", "Astra City", 2015, "635x388x16"),
-            ("Valeo", "Triton Workmate", 2024, "742x460x26"),
+            "Passenger Car",
+            "SUV / 4WD",
+            "Ute / Pickup",
+            "Van",
+            "Performance"
+        ];
+        private static readonly (string Brand, string Model, string Type, string CoreDimension, string Dimension)[] DemoRadiatorTemplates =
+        [
+            ("Denso", "Corolla", "Passenger Car", "680x408x16", "710x440x40"),
+            ("Koyo", "Hilux", "Ute / Pickup", "725x448x26", "755x480x50"),
+            ("Nissens", "Civic", "Passenger Car", "650x400x16", "680x430x40"),
+            ("Valeo", "Ranger", "Ute / Pickup", "710x440x26", "740x470x50"),
+            ("Toyo", "Swift", "Passenger Car", "620x378x16", "650x410x40"),
+            ("CSF", "Navara", "Ute / Pickup", "740x460x26", "770x490x50"),
+            ("Mishimoto", "Accord", "Passenger Car", "690x430x26", "720x460x50"),
+            ("Denso", "Prius", "Passenger Car", "640x390x16", "670x420x40"),
+            ("Koyo", "BT-50", "Ute / Pickup", "735x452x26", "765x480x50"),
+            ("Nissens", "Outlander", "SUV / 4WD", "700x435x26", "730x465x50"),
+            ("Valeo", "RAV4", "SUV / 4WD", "705x430x26", "735x460x50"),
+            ("Toyo", "Yaris", "Passenger Car", "610x365x16", "640x395x40"),
+            ("CSF", "Land Cruiser", "SUV / 4WD", "780x498x32", "810x530x56"),
+            ("Mishimoto", "WRX", "Performance", "670x415x26", "700x445x50"),
+            ("Denso", "Mazda 3", "Passenger Car", "655x402x16", "685x432x40"),
+            ("Koyo", "CR-V", "SUV / 4WD", "710x442x26", "740x472x50"),
+            ("Nissens", "Lancer", "Passenger Car", "665x405x26", "695x435x50"),
+            ("Valeo", "Santa Fe", "SUV / 4WD", "720x450x26", "750x480x50"),
+            ("Toyo", "Focus", "Passenger Car", "645x395x16", "675x425x40"),
+            ("CSF", "Hiace", "Van", "760x470x26", "790x500x50"),
+            ("Mishimoto", "Amarok", "Ute / Pickup", "748x458x32", "778x488x56"),
+            ("Denso", "Elantra", "Passenger Car", "650x400x16", "680x430x40"),
+            ("Koyo", "Pajero", "SUV / 4WD", "730x455x26", "760x485x50"),
+            ("Nissens", "Astra", "Passenger Car", "635x388x16", "665x418x40"),
+            ("Valeo", "Triton", "Ute / Pickup", "742x460x26", "772x490x50"),
         ];
 
-        public static async Task Initialize(RadiatorDbContext context)
+        public static async Task Initialize(
+            RadiatorDbContext context,
+            bool seedDefaultUsers = false,
+            bool seedDemoRadiators = false)
         {
+            await EnsureProductTypesTableAsync(context);
+            await SeedProductTypesAsync(context);
             await CleanupLegacyWarehousesAsync(context);
-            await SeedDemoRadiatorsAsync(context);
+            if (seedDemoRadiators)
+            {
+                await SeedDemoRadiatorsAsync(context);
+            }
 
-            // Seed Default Users
-            if (!await context.Users.AnyAsync())
+            if (seedDefaultUsers && !await context.Users.AnyAsync())
             {
                 var users = new[]
                 {
@@ -77,6 +92,53 @@ namespace RadiatorStockAPI.Data
                 Console.WriteLine("   👑 Admin: username='admin', password='Admin123!'");
                 Console.WriteLine("   👤 Staff: username='staff1', password='Staff123!'");
             }
+        }
+
+        private static async Task EnsureProductTypesTableAsync(RadiatorDbContext context)
+        {
+            await context.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE IF NOT EXISTS product_types (
+                    id uuid PRIMARY KEY,
+                    name varchar(50) NOT NULL UNIQUE,
+                    is_active boolean NOT NULL,
+                    created_at timestamp with time zone NOT NULL,
+                    updated_at timestamp with time zone NOT NULL
+                );");
+        }
+
+        private static async Task SeedProductTypesAsync(RadiatorDbContext context)
+        {
+            var existingNames = (await context.ProductTypes
+                .Select(pt => pt.Name)
+                .ToListAsync())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var candidateNames = DefaultProductTypes
+                .Concat(DemoRadiatorTemplates.Select(t => t.Type))
+                .Concat(await context.Radiators.Select(r => r.Type).ToListAsync())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(name => !existingNames.Contains(name))
+                .ToList();
+
+            if (!candidateNames.Any())
+            {
+                return;
+            }
+
+            context.ProductTypes.AddRange(candidateNames.Select(name => new ProductType
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }));
+
+            await context.SaveChangesAsync();
         }
 
         private static async Task CleanupLegacyWarehousesAsync(RadiatorDbContext context)
@@ -154,15 +216,12 @@ namespace RadiatorStockAPI.Data
                     Id = Guid.NewGuid(),
                     Brand = item.template.Brand,
                     Code = code,
-                    Name = $"{item.template.Model} Radiator",
-                    Year = item.template.Year,
-                    RetailPrice = 0,
-                    TradePrice = null,
-                    CostPrice = null,
-                    IsPriceOverridable = false,
-                    MaxDiscountPercent = null,
-                    Dimensions = item.template.Dimensions,
-                    Notes = $"Demo product {item.index} for UI and stock testing.",
+                    Model = item.template.Model,
+                    Type = item.template.Type,
+                    CoreDimension = item.template.CoreDimension,
+                    Dimension = item.template.Dimension,
+                    ImageUrl = null,
+                    Notes = $"Demo product {item.index} for UI testing. Core: {item.template.CoreDimension}, overall: {item.template.Dimension}.",
                     CreatedAt = now,
                     UpdatedAt = now,
                 };

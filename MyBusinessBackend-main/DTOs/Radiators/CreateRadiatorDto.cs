@@ -11,27 +11,19 @@ public class CreateRadiatorDto
     public string Code { get; set; } = string.Empty;
 
     [Required, StringLength(200)]
-    public string Name { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
 
-    [Range(1900, 2100)]
-    public int Year { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal RetailPrice { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal? TradePrice { get; set; }
-
-    [Range(0, double.MaxValue)]
-    public decimal? CostPrice { get; set; }
-
-    public bool IsPriceOverridable { get; set; } = true;
-
-    [Range(0, 100)]
-    public decimal? MaxDiscountPercent { get; set; } = 20;
+    [Required, StringLength(50)]
+    public string Type { get; set; } = string.Empty;
 
     [StringLength(200)]
-    public string? Dimensions { get; set; }
+    public string? CoreDimension { get; set; }
+
+    [StringLength(200)]
+    public string? Dimension { get; set; }
+
+    [StringLength(500)]
+    public string? ImageUrl { get; set; }
 
     [StringLength(500)]
     public string? Notes { get; set; }

@@ -3,31 +3,26 @@ import { Plus } from "lucide-react";
 import { Button } from "../common/ui/Button";
 import LowStockAlert from "./LowStockAlert";
 
-const InventoryHeader = ({ sortBy, onSortChange, isAdmin, onAddProduct, radiators }) => (
-  <div className="flex justify-between items-center gap-4">
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-      <p className="text-sm text-gray-600 mt-1">
-        Manage your product list and stock levels
-      </p>
+const InventoryHeader = ({
+  isAdmin,
+  onAddProduct,
+  radiators,
+}) => (
+  <div className="space-y-4">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Inventory Management</h1>
+        <p className="mt-1 text-sm text-gray-600">Manage your product list and stock levels</p>
+      </div>
+
+      <div className="flex flex-none items-center">
+        <LowStockAlert radiators={radiators} />
+      </div>
     </div>
 
-    <div className="flex gap-2 items-center">
-      <LowStockAlert radiators={radiators} />
-
-      <select
-        value={sortBy}
-        onChange={(e) => onSortChange(e.target.value)}
-        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-      >
-        <option value="newest">Newest First</option>
-        <option value="oldest">Oldest First</option>
-        <option value="name">Name (A-Z)</option>
-        <option value="brand">Brand (A-Z)</option>
-      </select>
-
+    <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       {isAdmin && (
-        <Button onClick={onAddProduct} icon={Plus}>
+        <Button onClick={onAddProduct} icon={Plus} className="w-full sm:w-auto flex-shrink-0">
           Add Product
         </Button>
       )}

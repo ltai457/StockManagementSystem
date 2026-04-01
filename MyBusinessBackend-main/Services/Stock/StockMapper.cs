@@ -10,9 +10,8 @@ public static class StockMapper
         var stockDict = r.StockLevels.ToDictionary(sl => sl.Warehouse.Code, sl => sl.Quantity);
         return new RadiatorWithStockDto
         {
-            Id = r.Id, Name = r.Name, Code = r.Code, Brand = r.Brand, Year = r.Year,
-            RetailPrice = r.RetailPrice, TradePrice = r.TradePrice, CostPrice = r.CostPrice,
-            IsPriceOverridable = r.IsPriceOverridable, MaxDiscountPercent = r.MaxDiscountPercent,
+            Id = r.Id, Brand = r.Brand, Code = r.Code, Model = r.Model, Type = r.Type,
+            CoreDimension = r.CoreDimension, Dimension = r.Dimension, ImageUrl = r.ImageUrl,
             Stock = stockDict, TotalStock = stockDict.Values.Sum(),
             HasLowStock = stockDict.Values.Any(q => q > 0 && q <= StockAlertSettings.LowStockThreshold),
             HasOutOfStock = stockDict.Values.Any(q => q == 0),
@@ -23,7 +22,8 @@ public static class StockMapper
     public static StockMovementDto ToMovement(StockHistory sh) => new()
     {
         Id = sh.Id, Date = sh.CreatedAt, RadiatorId = sh.RadiatorId,
-        ProductName = sh.Radiator.Name, ProductCode = sh.Radiator.Code, Brand = sh.Radiator.Brand,
+        ProductName = $"{sh.Radiator.Brand} {sh.Radiator.Model}",
+        ProductCode = sh.Radiator.Code, Brand = sh.Radiator.Brand,
         WarehouseId = sh.WarehouseId, WarehouseCode = sh.Warehouse.Code, WarehouseName = sh.Warehouse.Name,
         MovementType = sh.MovementType, Quantity = Math.Abs(sh.QuantityChange),
         OldQuantity = sh.OldQuantity, NewQuantity = sh.NewQuantity,
@@ -32,7 +32,7 @@ public static class StockMapper
 
     public static LowStockItemDto ToLowStockItem(StockLevel sl, int threshold) => new()
     {
-        RadiatorId = sl.RadiatorId, RadiatorName = sl.Radiator.Name,
+        RadiatorId = sl.RadiatorId, RadiatorName = $"{sl.Radiator.Brand} {sl.Radiator.Model}",
         RadiatorCode = sl.Radiator.Code, Brand = sl.Radiator.Brand,
         WarehouseCode = sl.Warehouse.Code, WarehouseName = sl.Warehouse.Name,
         CurrentStock = sl.Quantity, Threshold = threshold, LastUpdated = sl.UpdatedAt
@@ -40,7 +40,7 @@ public static class StockMapper
 
     public static OutOfStockItemDto ToOutOfStockItem(StockLevel sl) => new()
     {
-        RadiatorId = sl.RadiatorId, RadiatorName = sl.Radiator.Name,
+        RadiatorId = sl.RadiatorId, RadiatorName = $"{sl.Radiator.Brand} {sl.Radiator.Model}",
         RadiatorCode = sl.Radiator.Code, Brand = sl.Radiator.Brand,
         WarehouseCode = sl.Warehouse.Code, WarehouseName = sl.Warehouse.Name,
         LastStockDate = sl.UpdatedAt
@@ -66,7 +66,7 @@ public static class StockMapper
 
             return new WarehouseStockItemDto
             {
-                RadiatorId = sl.RadiatorId, RadiatorName = sl.Radiator.Name,
+                RadiatorId = sl.RadiatorId, RadiatorName = $"{sl.Radiator.Brand} {sl.Radiator.Model}",
                 RadiatorCode = sl.Radiator.Code, Brand = sl.Radiator.Brand,
                 Quantity = sl.Quantity,
                 Status = status,

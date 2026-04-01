@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using RadiatorStockAPI.Data;
 using RadiatorStockAPI.Services.Auth;
+using RadiatorStockAPI.Services.ProductTypes;
 using RadiatorStockAPI.Services.Radiators;
 using RadiatorStockAPI.Services.Stock;
 using RadiatorStockAPI.Services.Users;
@@ -69,6 +71,10 @@ builder.Services.AddScoped<IUpdateUserHandler, UpdateUserHandler>();
 // Register Handler layer — Stock
 builder.Services.AddScoped<IGetStockHandler, GetStockHandler>();
 builder.Services.AddScoped<IUpdateStockHandler, UpdateStockHandler>();
+
+// Register Handler layer — Product Types
+builder.Services.AddScoped<IGetProductTypeHandler, GetProductTypeHandler>();
+builder.Services.AddScoped<ICreateProductTypeHandler, CreateProductTypeHandler>();
 
 // Register Handler layer — Auth
 builder.Services.AddScoped<IAuthHandler, AuthHandler>();
@@ -182,6 +188,18 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+var uploadRootPath =
+    Environment.GetEnvironmentVariable("UPLOADS_ROOT_PATH")
+    ?? builder.Configuration["Uploads:RootPath"]
+    ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");
+
+var uploadRequestPath =
+    Environment.GetEnvironmentVariable("UPLOADS_REQUEST_PATH")
+    ?? builder.Configuration["Uploads:RequestPath"]
+    ?? "/uploads";
+
+Directory.CreateDirectory(Path.Combine(uploadRootPath, "radiators"));
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -195,6 +213,13 @@ if (app.Environment.IsDevelopment())
 
 // Security headers
 app.UseSecurityHeaders();
+
+app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadRootPath),
+    RequestPath = uploadRequestPath
+});
 
 // Enable CORS before authentication - THIS IS CRITICAL
 app.UseCors("AllowFrontend");
@@ -259,9 +284,9 @@ app.MapGet("/health", async (HttpContext httpContext, RadiatorDbContext context,
     httpContext.Response.StatusCode = dbHealthy ? 200 : 503;
     
     // Add CORS headers manually for health check
-    httpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
-    httpContext.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    httpContext.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    httpContext.Response.Headers["Access-Control-Allow-Origin"] = "*";
+    httpContext.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    httpContext.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
     
     await httpContext.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response, new System.Text.Json.JsonSerializerOptions
     {
@@ -326,8 +351,16 @@ try
         logger.LogInformation("✅ Database is up to date, no migrations needed");
     }
     
+    var seedDefaultUsers =
+        Environment.GetEnvironmentVariable("SEED_DEFAULT_USERS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+        || builder.Configuration.GetValue<bool>("Seeding:DefaultUsers");
+
+    var seedDemoRadiators =
+        Environment.GetEnvironmentVariable("SEED_DEMO_RADIATORS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+        || builder.Configuration.GetValue<bool>("Seeding:DemoRadiators");
+
     // Seed initial data
-    await SeedData.Initialize(context);
+    await SeedData.Initialize(context, seedDefaultUsers, seedDemoRadiators);
     logger.LogInformation("✅ Database seeding completed successfully");
     
     // Log connection info (without sensitive details)
@@ -380,10 +413,10 @@ public static class SecurityHeadersExtensions
     {
         return app.Use(async (context, next) =>
         {
-            context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-            context.Response.Headers.Add("X-Frame-Options", "DENY");
-            context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
-            context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+            context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+            context.Response.Headers["X-Frame-Options"] = "DENY";
+            context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+            context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
             
             await next();
         });

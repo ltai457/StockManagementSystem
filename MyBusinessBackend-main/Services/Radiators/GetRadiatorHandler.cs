@@ -1,3 +1,6 @@
+
+
+
 using RadiatorStockAPI.DTOs.Radiators;
 using RadiatorStockAPI.DTOs.Common;
 
@@ -12,6 +15,9 @@ public interface IGetRadiatorHandler
 public class GetRadiatorHandler : IGetRadiatorHandler
 {
     private readonly IRadiatorService _service;
+ 
+ 
+ 
     public GetRadiatorHandler(IRadiatorService service) => _service = service;
 
     public async Task<Result<object>> GetAllAsync(int? pageNumber, int? pageSize)

@@ -5,15 +5,12 @@ public class RadiatorResponseDto
     public Guid Id { get; set; }
     public string Brand { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public int Year { get; set; }
-    public decimal RetailPrice { get; set; }
-    public decimal? TradePrice { get; set; }
-    public decimal? CostPrice { get; set; }
-    public bool IsPriceOverridable { get; set; }
-    public decimal? MaxDiscountPercent { get; set; }
+    public string Model { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
     public Dictionary<string, int> Stock { get; set; } = new();
-    public string? Dimensions { get; set; }
+    public string? CoreDimension { get; set; }
+    public string? Dimension { get; set; }
+    public string? ImageUrl { get; set; }
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

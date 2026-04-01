@@ -71,11 +71,12 @@ export const filterArray = (array, filters) => {
       if (key === 'search') {
         const searchTerm = value.toLowerCase();
         return (
-          item.name?.toLowerCase().includes(searchTerm) ||
+          item.model?.toLowerCase().includes(searchTerm) ||
           item.code?.toLowerCase().includes(searchTerm) ||
           item.brand?.toLowerCase().includes(searchTerm) ||
-          item.year?.toString().includes(searchTerm) ||
-          item.dimensions?.toLowerCase().includes(searchTerm) ||
+          item.type?.toLowerCase().includes(searchTerm) ||
+          item.coreDimension?.toLowerCase().includes(searchTerm) ||
+          item.dimension?.toLowerCase().includes(searchTerm) ||
           item.notes?.toLowerCase().includes(searchTerm)
         );
       }
@@ -169,5 +170,4 @@ export const isDateInRange = (date, startDate, endDate) => {
   
   return true;
 };
-
 

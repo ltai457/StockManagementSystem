@@ -12,6 +12,7 @@ namespace RadiatorStockAPI.Data
 
         public DbSet<Radiator> Radiators { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
+        public DbSet<ProductType> ProductTypes { get; set; }
         public DbSet<StockLevel> StockLevels { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -28,14 +29,17 @@ namespace RadiatorStockAPI.Data
                 entity.HasIndex(r => r.Code).IsUnique();
                 entity.Property(r => r.Brand).IsRequired().HasMaxLength(100);
                 entity.Property(r => r.Code).IsRequired().HasMaxLength(50);
-                entity.Property(r => r.Name).IsRequired().HasMaxLength(200);
+                entity.Property(r => r.Model).IsRequired().HasMaxLength(200);
+                entity.Property(r => r.Type).IsRequired().HasMaxLength(50);
 
                 // DateTime fields - use timestamp with time zone for UTC
                 entity.Property(r => r.CreatedAt).IsRequired();
                 entity.Property(r => r.UpdatedAt).IsRequired();
 
                 // Optional fields
-                entity.Property(r => r.Dimensions).HasMaxLength(200);
+                entity.Property(r => r.CoreDimension).HasMaxLength(200);
+                entity.Property(r => r.Dimension).HasMaxLength(200);
+                entity.Property(r => r.ImageUrl).HasMaxLength(500);
                 entity.Property(r => r.Notes).HasMaxLength(500);
             });
 
@@ -50,6 +54,13 @@ namespace RadiatorStockAPI.Data
                 entity.Property(w => w.Email).HasMaxLength(150);
                 entity.Property(w => w.Phone).HasMaxLength(20);
                 entity.Property(w => w.Location).HasMaxLength(200);
+            });
+
+            modelBuilder.Entity<ProductType>(entity =>
+            {
+                entity.HasKey(pt => pt.Id);
+                entity.HasIndex(pt => pt.Name).IsUnique();
+                entity.Property(pt => pt.Name).IsRequired().HasMaxLength(50);
             });
 
             // Configure StockLevel

@@ -2,9 +2,11 @@ import React from "react";
 import { Package } from "lucide-react";
 import { EmptyState } from "../common/layout/EmptyState";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
+import RadiatorCards from "./RadiatorCards";
 import RadiatorFilters from "./RadiatorFilters";
 import RadiatorStats from "./RadiatorStats";
 import RadiatorTable from "./RadiatorTable";
+import RadiatorDetailModal from "./MobileRadiatorDetailModal";
 
 const InventoryContent = ({
   radiators,
@@ -21,6 +23,10 @@ const InventoryContent = ({
   handleDeleteRadiator,
   onEditStock,
   isAdmin,
+  viewMode,
+  warehouses,
+  searchTerm,
+  detailModal,
 }) => (
   <>
     <RadiatorStats radiators={radiators} />
@@ -54,13 +60,35 @@ const InventoryContent = ({
       />
     ) : (
       <>
-        <RadiatorTable
-          radiators={sortedRadiators}
-          onEdit={editModal.openModal}
-          onDelete={handleDeleteRadiator}
-          onEditStock={onEditStock}
-          isAdmin={isAdmin}
-        />
+        {/* Force cards view on mobile */}
+        <div className="sm:hidden">
+          <RadiatorCards
+            radiators={sortedRadiators}
+            searchTerm={searchTerm}
+            onViewDetails={detailModal.openModal}
+          />
+        </div>
+        {/* Desktop: respect viewMode toggle */}
+        <div className="hidden sm:block">
+          {viewMode === "cards" ? (
+            <RadiatorCards
+              radiators={sortedRadiators}
+              searchTerm={searchTerm}
+              onViewDetails={detailModal.openModal}
+            />
+          ) : (
+            <RadiatorTable
+              radiators={sortedRadiators}
+              warehouses={warehouses}
+              searchTerm={searchTerm}
+              onViewDetails={detailModal.openModal}
+              onEdit={editModal.openModal}
+              onDelete={handleDeleteRadiator}
+              onEditStock={onEditStock}
+              isAdmin={isAdmin}
+            />
+          )}
+        </div>
 
         {hasMore && (
           <div
@@ -82,6 +110,26 @@ const InventoryContent = ({
         )}
       </>
     )}
+
+    <RadiatorDetailModal
+      isOpen={detailModal.isOpen}
+      radiator={detailModal.data}
+      isAdmin={isAdmin}
+      searchTerm={searchTerm}
+      onClose={detailModal.closeModal}
+      onEdit={(radiator) => {
+        detailModal.closeModal();
+        editModal.openModal(radiator);
+      }}
+      onDelete={(radiator) => {
+        detailModal.closeModal();
+        handleDeleteRadiator(radiator);
+      }}
+      onEditStock={(radiator) => {
+        detailModal.closeModal();
+        onEditStock(radiator);
+      }}
+    />
   </>
 );
 

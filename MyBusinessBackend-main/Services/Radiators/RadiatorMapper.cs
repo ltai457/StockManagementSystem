@@ -12,18 +12,18 @@ public static class RadiatorMapper
 
     public static RadiatorListDto ToListDto(Radiator r) => new()
     {
-        Id = r.Id, Brand = r.Brand, Code = r.Code, Name = r.Name, Year = r.Year,
-        RetailPrice = r.RetailPrice, TradePrice = r.TradePrice,
-        IsPriceOverridable = r.IsPriceOverridable, MaxDiscountPercent = r.MaxDiscountPercent,
-        Stock = BuildStockDict(r.StockLevels), Dimensions = r.Dimensions, Notes = r.Notes
+        Id = r.Id, Brand = r.Brand, Code = r.Code, Model = r.Model, Type = r.Type,
+        Stock = BuildStockDict(r.StockLevels),
+        CoreDimension = r.CoreDimension, Dimension = r.Dimension,
+        ImageUrl = r.ImageUrl, Notes = r.Notes
     };
 
     public static RadiatorResponseDto ToResponseDto(Radiator r) => new()
     {
-        Id = r.Id, Brand = r.Brand, Code = r.Code, Name = r.Name, Year = r.Year,
-        RetailPrice = r.RetailPrice, TradePrice = r.TradePrice, CostPrice = r.CostPrice,
-        IsPriceOverridable = r.IsPriceOverridable, MaxDiscountPercent = r.MaxDiscountPercent,
-        Stock = BuildStockDict(r.StockLevels), Dimensions = r.Dimensions, Notes = r.Notes,
+        Id = r.Id, Brand = r.Brand, Code = r.Code, Model = r.Model, Type = r.Type,
+        Stock = BuildStockDict(r.StockLevels),
+        CoreDimension = r.CoreDimension, Dimension = r.Dimension,
+        ImageUrl = r.ImageUrl, Notes = r.Notes,
         CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt
     };
 }

@@ -88,7 +88,7 @@ public class StockDal : IStockDal
         if (!string.IsNullOrEmpty(search))
         {
             var searchLower = search.ToLower();
-            query = query.Where(r => r.Name.ToLower().Contains(searchLower) || r.Code.ToLower().Contains(searchLower) || r.Brand.ToLower().Contains(searchLower));
+            query = query.Where(r => r.Model.ToLower().Contains(searchLower) || r.Code.ToLower().Contains(searchLower) || r.Brand.ToLower().Contains(searchLower) || r.Type.ToLower().Contains(searchLower));
         }
         if (!string.IsNullOrEmpty(warehouseCode))
         {
