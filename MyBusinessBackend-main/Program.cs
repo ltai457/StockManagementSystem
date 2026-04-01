@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -187,7 +188,17 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "radiators"));
+var uploadRootPath =
+    Environment.GetEnvironmentVariable("UPLOADS_ROOT_PATH")
+    ?? builder.Configuration["Uploads:RootPath"]
+    ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");
+
+var uploadRequestPath =
+    Environment.GetEnvironmentVariable("UPLOADS_REQUEST_PATH")
+    ?? builder.Configuration["Uploads:RequestPath"]
+    ?? "/uploads";
+
+Directory.CreateDirectory(Path.Combine(uploadRootPath, "radiators"));
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
@@ -204,6 +215,11 @@ if (app.Environment.IsDevelopment())
 app.UseSecurityHeaders();
 
 app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadRootPath),
+    RequestPath = uploadRequestPath
+});
 
 // Enable CORS before authentication - THIS IS CRITICAL
 app.UseCors("AllowFrontend");
@@ -335,8 +351,16 @@ try
         logger.LogInformation("✅ Database is up to date, no migrations needed");
     }
     
+    var seedDefaultUsers =
+        Environment.GetEnvironmentVariable("SEED_DEFAULT_USERS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+        || builder.Configuration.GetValue<bool>("Seeding:DefaultUsers");
+
+    var seedDemoRadiators =
+        Environment.GetEnvironmentVariable("SEED_DEMO_RADIATORS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+        || builder.Configuration.GetValue<bool>("Seeding:DemoRadiators");
+
     // Seed initial data
-    await SeedData.Initialize(context);
+    await SeedData.Initialize(context, seedDefaultUsers, seedDemoRadiators);
     logger.LogInformation("✅ Database seeding completed successfully");
     
     // Log connection info (without sensitive details)

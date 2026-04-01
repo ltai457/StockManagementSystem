@@ -24,9 +24,6 @@ public class RadiatorService : IRadiatorService
         {
             Id = Guid.NewGuid(), Brand = dto.Brand, Code = dto.Code,
             Model = dto.Model, Type = dto.Type,
-            RetailPrice = dto.RetailPrice, TradePrice = dto.TradePrice,
-            CostPrice = dto.CostPrice, IsPriceOverridable = dto.IsPriceOverridable,
-            MaxDiscountPercent = dto.MaxDiscountPercent,
             CoreDimension = dto.CoreDimension, Dimension = dto.Dimension,
             ImageUrl = dto.ImageUrl, Notes = dto.Notes,
             CreatedAt = now, UpdatedAt = now
@@ -72,11 +69,6 @@ public class RadiatorService : IRadiatorService
         entity.Code = dto.Code ?? entity.Code;
         entity.Model = dto.Model ?? entity.Model;
         entity.Type = dto.Type ?? entity.Type;
-        if (dto.RetailPrice.HasValue) entity.RetailPrice = dto.RetailPrice.Value;
-        if (dto.TradePrice.HasValue) entity.TradePrice = dto.TradePrice.Value;
-        if (dto.CostPrice.HasValue) entity.CostPrice = dto.CostPrice.Value;
-        if (dto.IsPriceOverridable.HasValue) entity.IsPriceOverridable = dto.IsPriceOverridable.Value;
-        if (dto.MaxDiscountPercent.HasValue) entity.MaxDiscountPercent = dto.MaxDiscountPercent.Value;
         entity.CoreDimension = dto.CoreDimension ?? entity.CoreDimension;
         entity.Dimension = dto.Dimension ?? entity.Dimension;
         entity.ImageUrl = dto.ImageUrl ?? entity.ImageUrl;
@@ -89,26 +81,4 @@ public class RadiatorService : IRadiatorService
 
     public async Task<bool> DeleteAsync(Guid id) => await _dal.RemoveAsync(id);
     public async Task<bool> ExistsAsync(Guid id) => await _dal.ExistsAsync(id);
-
-    public async Task<List<Radiator>> UpdateMultiplePricesAsync(List<UpdateRadiatorPriceDto> updates)
-    {
-        if (updates == null || updates.Count == 0) return new List<Radiator>();
-
-        var ids = updates.Select(u => u.Id).Distinct().ToList();
-        var now = DateTime.UtcNow;
-        var entities = await _dal.GetByIdsWithStockAsync(ids);
-
-        foreach (var r in entities)
-        {
-            var change = updates.FirstOrDefault(u => u.Id == r.Id);
-            if (change == null) continue;
-            if (change.RetailPrice.HasValue) r.RetailPrice = change.RetailPrice.Value;
-            if (change.TradePrice.HasValue) r.TradePrice = change.TradePrice.Value;
-            if (change.CostPrice.HasValue) r.CostPrice = change.CostPrice.Value;
-            r.UpdatedAt = now;
-        }
-
-        await _dal.SaveChangesAsync();
-        return entities.OrderBy(r => r.Brand).ThenBy(r => r.Model).ToList();
-    }
 }

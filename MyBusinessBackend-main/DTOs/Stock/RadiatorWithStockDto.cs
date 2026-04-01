@@ -8,12 +8,6 @@ public class RadiatorWithStockDto
     public string Model { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
 
-    public decimal RetailPrice { get; set; }
-    public decimal? TradePrice { get; set; }
-    public decimal? CostPrice { get; set; }
-    public bool IsPriceOverridable { get; set; } = true;
-    public decimal? MaxDiscountPercent { get; set; }
-
     public string? CoreDimension { get; set; }
     public string? Dimension { get; set; }
     public string? ImageUrl { get; set; }

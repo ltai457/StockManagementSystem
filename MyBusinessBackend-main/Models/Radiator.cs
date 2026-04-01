@@ -23,21 +23,6 @@ namespace RadiatorStockAPI.Models
         [StringLength(50)]
         public string Type { get; set; } = string.Empty;  // e.g. "Big Car", "Small Car"
 
-        // ===== PRICING FIELDS (future use) =====
-        [Range(0, double.MaxValue)]
-        public decimal RetailPrice { get; set; } = 0;
-
-        [Range(0, double.MaxValue)]
-        public decimal? TradePrice { get; set; }
-
-        [Range(0, double.MaxValue)]
-        public decimal? CostPrice { get; set; }
-
-        public bool IsPriceOverridable { get; set; } = true;
-
-        [Range(0, 100)]
-        public decimal? MaxDiscountPercent { get; set; } = 20;
-
         // ===== DIMENSION FIELDS =====
         [StringLength(200)]
         public string? CoreDimension { get; set; }   // Core size e.g. "680x408x16"

@@ -1,5 +1,6 @@
 import React from "react";
-import { Edit3, Filter, Save, Search, X } from "lucide-react";
+import { Edit3, Filter, Save, X } from "lucide-react";
+import { SearchInput } from "../../common/ui/SearchInput";
 
 export default function StockToolbar({
   searchTerm,
@@ -15,41 +16,41 @@ export default function StockToolbar({
   selectedWarehouse,
 }) {
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-6">
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-        {/* Search + Filter */}
-        <div className="flex flex-col sm:flex-row gap-4 flex-1">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search radiators by name, code, or brand..."
+    <div className="bg-white rounded-lg shadow p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-1 gap-2 sm:gap-3">
+          <div className="w-full sm:flex-1">
+            <SearchInput
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={setSearchTerm}
+              onClear={() => setSearchTerm("")}
+              placeholder="Search radiators by name, code, or brand..."
             />
           </div>
 
           <button
             onClick={() => setFilterLowStock(!filterLowStock)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+            className={`hidden min-h-[44px] rounded-lg border px-2 py-2 text-xs font-medium transition-colors sm:inline-flex sm:w-auto sm:px-4 sm:text-sm ${
               filterLowStock
                 ? "bg-yellow-100 border-yellow-300 text-yellow-700"
                 : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
             }`}
           >
-            <Filter className="w-4 h-4" />
-            <span>Low Stock Only</span>
+            <span className="inline-flex items-center justify-center gap-1 sm:gap-2">
+              <Filter className="w-4 h-4" />
+              <span className="hidden sm:inline">Low Stock Only</span>
+              <span className="sm:hidden">Low Stock</span>
+            </span>
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           {editMode ? (
             <>
               <button
                 onClick={onCancel}
                 disabled={updating}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                className="min-h-[44px] w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 sm:w-auto"
               >
                 <span className="inline-flex items-center gap-2">
                   <X className="w-4 h-4" /> Cancel
@@ -58,7 +59,7 @@ export default function StockToolbar({
               <button
                 onClick={onSave}
                 disabled={updating || editingCount === 0}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="min-h-[44px] w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 sm:w-auto"
               >
                 <span className="inline-flex items-center gap-2">
                   {updating ? (
@@ -74,7 +75,7 @@ export default function StockToolbar({
             selectedWarehouse !== "all" && (
               <button
                 onClick={onEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="min-h-[44px] w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 sm:w-auto"
               >
                 <span className="inline-flex items-center gap-2">
                   <Edit3 className="w-4 h-4" /> Edit Stock

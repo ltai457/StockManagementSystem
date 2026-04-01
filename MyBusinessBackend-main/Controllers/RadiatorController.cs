@@ -13,13 +13,20 @@ public class RadiatorsController : BaseController
     private readonly ICreateRadiatorHandler _create;
     private readonly IUpdateRadiatorHandler _update;
     private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
 
-    public RadiatorsController(IGetRadiatorHandler get, ICreateRadiatorHandler create, IUpdateRadiatorHandler update, IWebHostEnvironment environment)
+    public RadiatorsController(
+        IGetRadiatorHandler get,
+        ICreateRadiatorHandler create,
+        IUpdateRadiatorHandler update,
+        IWebHostEnvironment environment,
+        IConfiguration configuration)
     {
         _get = get;
         _create = create;
         _update = update;
         _environment = environment;
+        _configuration = configuration;
     }
 
     [HttpGet]
@@ -48,7 +55,17 @@ public class RadiatorsController : BaseController
             return Run(Result<ImageUploadResponseDto>.Fail("Only jpg, jpeg, png, webp, and gif files are allowed."));
         }
 
-        var uploadsDirectory = Path.Combine(_environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot"), "uploads", "radiators");
+        var uploadRootPath =
+            Environment.GetEnvironmentVariable("UPLOADS_ROOT_PATH")
+            ?? _configuration["Uploads:RootPath"]
+            ?? Path.Combine(_environment.ContentRootPath, "wwwroot", "uploads");
+
+        var uploadRequestPath =
+            Environment.GetEnvironmentVariable("UPLOADS_REQUEST_PATH")
+            ?? _configuration["Uploads:RequestPath"]
+            ?? "/uploads";
+
+        var uploadsDirectory = Path.Combine(uploadRootPath, "radiators");
         Directory.CreateDirectory(uploadsDirectory);
 
         var fileName = $"{Guid.NewGuid():N}{extension}";
@@ -59,7 +76,11 @@ public class RadiatorsController : BaseController
             await file.CopyToAsync(stream);
         }
 
-        var imageUrl = $"{Request.Scheme}://{Request.Host}/uploads/radiators/{fileName}";
+        var normalizedRequestPath = uploadRequestPath.StartsWith('/')
+            ? uploadRequestPath
+            : $"/{uploadRequestPath}";
+
+        var imageUrl = $"{Request.Scheme}://{Request.Host}{normalizedRequestPath}/radiators/{fileName}";
         return Run(Result<ImageUploadResponseDto>.Ok(new ImageUploadResponseDto
         {
             ImageUrl = imageUrl,

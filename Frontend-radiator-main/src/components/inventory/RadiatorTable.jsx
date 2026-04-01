@@ -1,5 +1,5 @@
 import React from "react";
-import { Edit, Package, Trash2 } from "lucide-react";
+import { Eye } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -17,7 +17,11 @@ import {
 import { LOW_STOCK_THRESHOLD } from "../../utils/stock";
 import HighlightedText from "../common/ui/HighlightedText";
 
-const RadiatorTable = ({ radiators, warehouses, onEdit, onDelete, onEditStock, isAdmin, searchTerm }) => {
+const RadiatorTable = ({
+  radiators,
+  onViewDetails,
+  searchTerm,
+}) => {
   const getTotalStock = (stock) => {
     if (!stock) return 0;
     return Object.values(stock).reduce((total, qty) => total + (qty || 0), 0);
@@ -29,12 +33,9 @@ const RadiatorTable = ({ radiators, warehouses, onEdit, onDelete, onEditStock, i
     return "success";
   };
 
-  const userIsAdmin = !!isAdmin;
-  const orderedWarehouses = Array.isArray(warehouses) ? warehouses : [];
-
   return (
     <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, overflow: "auto" }}>
-      <Table stickyHeader size="small" sx={{ minWidth: 1080 }}>
+      <Table stickyHeader size="small" sx={{ minWidth: 840 }}>
         <TableHead>
           <TableRow>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Product</TableCell>
@@ -43,7 +44,6 @@ const RadiatorTable = ({ radiators, warehouses, onEdit, onDelete, onEditStock, i
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Type</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Dimension</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Total</TableCell>
-            <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }}>Stock by Warehouse</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50" }} align="center">Actions</TableCell>
           </TableRow>
         </TableHead>
@@ -108,56 +108,17 @@ const RadiatorTable = ({ radiators, warehouses, onEdit, onDelete, onEditStock, i
                   />
                 </TableCell>
 
-                <TableCell>
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-                    {orderedWarehouses.map((warehouse) => {
-                      const quantity = radiator.stock?.[warehouse.code] || 0;
-                      return (
-                        <Chip
-                          key={warehouse.id}
-                          size="small"
-                          label={`${warehouse.code}: ${quantity}`}
-                          color={getStockChipColor(quantity)}
-                          variant="outlined"
-                        />
-                      );
-                    })}
-                  </Box>
-                </TableCell>
-
                 <TableCell align="center">
-                  <Box sx={{ display: "flex", justifyContent: "center", gap: 0.5 }}>
-                    <Tooltip title="Edit Stock">
+                  <Box sx={{ display: "flex", justifyContent: "center" }}>
+                    <Tooltip title="View Details">
                       <IconButton
                         size="small"
-                        color="primary"
-                        onClick={() => onEditStock?.(radiator)}
+                        color="default"
+                        onClick={() => onViewDetails?.(radiator)}
                       >
-                        <Package size={18} />
+                        <Eye size={18} />
                       </IconButton>
                     </Tooltip>
-                    {userIsAdmin && (
-                      <>
-                        <Tooltip title="Edit Product">
-                          <IconButton
-                            size="small"
-                            color="warning"
-                            onClick={() => onEdit(radiator)}
-                          >
-                            <Edit size={18} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete Product">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => onDelete(radiator)}
-                          >
-                            <Trash2 size={18} />
-                          </IconButton>
-                        </Tooltip>
-                      </>
-                    )}
                   </Box>
                 </TableCell>
               </TableRow>

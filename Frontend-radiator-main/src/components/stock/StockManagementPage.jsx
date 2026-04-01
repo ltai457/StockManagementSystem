@@ -11,6 +11,36 @@ import RecordSaleModal from "./modals/RecordSaleModal";
 import PageLoadingState from "../common/feedback/PageLoadingState";
 import PageErrorState from "../common/feedback/PageErrorState";
 
+const QUICK_ACTIONS = [
+  {
+    key: "transfer",
+    label: "Transfer Stock",
+    description: "Move units between warehouses",
+    icon: ArrowRightLeft,
+    onOpen: "transfer",
+    className:
+      "border-blue-200 bg-white text-blue-700 hover:border-blue-400 hover:bg-blue-50",
+  },
+  {
+    key: "stock-in",
+    label: "Receive Stock",
+    description: "Add supplier deliveries",
+    icon: PackagePlus,
+    onOpen: "stockIn",
+    className:
+      "border-green-200 bg-white text-green-700 hover:border-green-400 hover:bg-green-50",
+  },
+  {
+    key: "sale",
+    label: "Record Sale",
+    description: "Reduce stock for customer orders",
+    icon: ShoppingCart,
+    onOpen: "sale",
+    className:
+      "border-red-200 bg-white text-red-700 hover:border-red-400 hover:bg-red-50",
+  },
+];
+
 export default function StockManagement() {
   const sm = useStockManagement();
 
@@ -37,33 +67,34 @@ export default function StockManagement() {
   };
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <StockHeader radiators={sm.filteredRadiators} />
 
-        {/* 3 Action Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button
-            onClick={() => setTransferOpen(true)}
-            className="flex items-center justify-center gap-3 px-5 py-4 bg-white border-2 border-blue-200 rounded-xl text-blue-700 font-semibold hover:bg-blue-50 hover:border-blue-400 transition-all shadow-sm"
-          >
-            <ArrowRightLeft className="w-5 h-5" />
-            Transfer Stock
-          </button>
-          <button
-            onClick={() => setStockInOpen(true)}
-            className="flex items-center justify-center gap-3 px-5 py-4 bg-white border-2 border-green-200 rounded-xl text-green-700 font-semibold hover:bg-green-50 hover:border-green-400 transition-all shadow-sm"
-          >
-            <PackagePlus className="w-5 h-5" />
-            Receive from Supplier
-          </button>
-          <button
-            onClick={() => setSaleOpen(true)}
-            className="flex items-center justify-center gap-3 px-5 py-4 bg-white border-2 border-red-200 rounded-xl text-red-700 font-semibold hover:bg-red-50 hover:border-red-400 transition-all shadow-sm"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            Sell to Customer
-          </button>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          {QUICK_ACTIONS.map(({ key, label, description, icon: Icon, onOpen, className }) => (
+            <button
+              key={key}
+              onClick={() => {
+                if (onOpen === "transfer") setTransferOpen(true);
+                if (onOpen === "stockIn") setStockInOpen(true);
+                if (onOpen === "sale") setSaleOpen(true);
+              }}
+              className={`flex min-h-[60px] flex-col items-center justify-center gap-2 rounded-xl border-2 px-2 py-3 text-center shadow-sm transition-all sm:min-h-[64px] sm:flex-row sm:justify-start sm:gap-3 sm:px-4 sm:text-left ${className}`}
+            >
+              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-gray-50">
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold leading-tight sm:text-base">
+                  {label}
+                </span>
+                <span className="mt-0.5 hidden text-xs text-gray-500 sm:block sm:text-sm">
+                  {description}
+                </span>
+              </span>
+            </button>
+          ))}
         </div>
 
         {/* Warehouse Overview Cards */}
@@ -99,7 +130,7 @@ export default function StockManagement() {
                   sm.selectedWarehouse
                 }`}
             {sm.editMode && sm.selectedWarehouse !== "all" && (
-              <span className="ml-2 text-blue-600 font-medium">• Edit Mode Active</span>
+              <span className="ml-2 font-medium text-blue-600">• Edit Mode Active</span>
             )}
           </p>
         </div>

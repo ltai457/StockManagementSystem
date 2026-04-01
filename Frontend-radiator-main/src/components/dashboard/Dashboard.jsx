@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import {
   LayoutDashboard, Package,
-  Warehouse, Box, UserCog, Menu, X, LogOut,
+  Warehouse, Box, UserCog, LogOut,
   TrendingUp, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../contexts/auth-context';
@@ -20,11 +20,11 @@ import { isAdminUser } from '../../utils/roles';
 const TESTING_MODE = false; // Should match AuthContext
 
 const navConfig = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard, color: 'blue' },
-  { id: 'inventory', label: 'Inventory', icon: Package, color: 'orange' },
-  { id: 'stock', label: 'Stock Management', icon: Box, color: 'indigo' },
-  { id: 'activity', label: 'Activity Log', icon: ClipboardList, color: 'green' },
-  { id: 'warehouses', label: 'Warehouses', icon: Warehouse, color: 'cyan' },
+  { id: 'overview', label: 'Overview', shortLabel: 'Home', icon: LayoutDashboard, color: 'blue' },
+  { id: 'inventory', label: 'Inventory', shortLabel: 'Inventory', icon: Package, color: 'orange' },
+  { id: 'stock', label: 'Stock Management', shortLabel: 'Stock', icon: Box, color: 'indigo' },
+  { id: 'activity', label: 'Activity Log', shortLabel: 'Activity', icon: ClipboardList, color: 'green' },
+  { id: 'warehouses', label: 'Warehouses', shortLabel: 'Warehouse', icon: Warehouse, color: 'cyan' },
 ];
 
 const getColorClasses = (color, isActive) => {
@@ -39,12 +39,22 @@ const getColorClasses = (color, isActive) => {
   return colors[color];
 };
 
+const getBottomNavColor = (color, isActive) => {
+  const colors = {
+    blue: isActive ? 'text-blue-600' : 'text-gray-400',
+    green: isActive ? 'text-green-600' : 'text-gray-400',
+    orange: isActive ? 'text-orange-600' : 'text-gray-400',
+    indigo: isActive ? 'text-indigo-600' : 'text-gray-400',
+    cyan: isActive ? 'text-cyan-600' : 'text-gray-400',
+    red: isActive ? 'text-red-600' : 'text-gray-400',
+  };
+  return colors[color];
+};
+
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  // Default sidebar state: closed on mobile, open on desktop
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
 
   // Detect admin (matches your logic)
   const isAdmin = isAdminUser(user);
@@ -53,7 +63,7 @@ const Dashboard = () => {
   const navItems = [
     ...navConfig,
     ...(isAdmin ?
-      [{ id: 'users', label: 'User Management', icon: UserCog, color: 'red' }] : []),
+      [{ id: 'users', label: 'User Management', shortLabel: 'Users', icon: UserCog, color: 'red' }] : []),
   ];
 
   // Handle logout with testing mode
@@ -95,36 +105,16 @@ const Dashboard = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside className={`${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-64 ${
-        !sidebarOpen && 'lg:w-20'
-      } bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}>
+      {/* Desktop Sidebar - hidden on mobile */}
+      <aside className={`hidden lg:flex lg:translate-x-0 lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transition-all duration-300 flex-col`}>
         {/* Logo & Toggle */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          {(sidebarOpen || window.innerWidth >= 1024) && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <span className={`font-bold text-gray-900 ${!sidebarOpen && 'lg:hidden'}`}>Chan Mary 333</span>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
             </div>
-          )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-          >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+            <span className="font-bold text-gray-900">Chan Mary 333</span>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -135,24 +125,14 @@ const Dashboard = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  // Close sidebar on mobile after selection
-                  if (window.innerWidth < 1024) {
-                    setSidebarOpen(false);
-                  }
-                }}
+                onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
                   isActive ? 'border-l-4' : 'border-l-4 border-transparent'
                 } ${getColorClasses(item.color, isActive)}`}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
-                {(sidebarOpen || window.innerWidth >= 1024) && (
-                  <>
-                    <span className={`flex-1 text-left font-medium ${!sidebarOpen && 'lg:hidden'}`}>{item.label}</span>
-                    {isActive && sidebarOpen && <ChevronRight className="w-4 h-4" />}
-                  </>
-                )}
+                <span className="flex-1 text-left font-medium">{item.label}</span>
+                {isActive && <ChevronRight className="w-4 h-4" />}
               </button>
             );
           })}
@@ -160,51 +140,55 @@ const Dashboard = () => {
 
         {/* User Profile */}
         <div className="p-3 border-t border-gray-200">
-          <div className={`flex items-center gap-3 px-3 py-2 ${!sidebarOpen && 'lg:justify-center'}`}>
+          <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-9 h-9 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
               {userInitials}
             </div>
-            {(sidebarOpen || window.innerWidth >= 1024) && (
-              <div className={`flex-1 ${!sidebarOpen && 'lg:hidden'}`}>
-                <p className="text-sm font-medium text-gray-900">{user?.username || 'User'}</p>
-                <p className="text-xs text-gray-500">{isAdmin ? 'Admin' : (user?.role || 'User')}</p>
-              </div>
-            )}
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">{user?.username || 'User'}</p>
+              <p className="text-xs text-gray-500">{isAdmin ? 'Admin' : (user?.role || 'User')}</p>
+            </div>
           </div>
-          {(sidebarOpen || window.innerWidth >= 1024) && (
-            <button
-              onClick={handleLogout}
-              className={`w-full mt-2 flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] ${!sidebarOpen && 'lg:hidden'}`}
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </button>
-          )}
+          <button
+            onClick={handleLogout}
+            className="w-full mt-2 flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px]"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto w-full">
+      <main className="flex-1 overflow-auto w-full pb-16 lg:pb-0">
         {/* Top Bar */}
-        <header className="min-h-[64px] bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 py-3">
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
+        <header className="min-h-[64px] bg-white border-b border-gray-200 flex items-center justify-between gap-3 px-3 sm:px-4 md:px-6 py-3">
+          {/* Mobile: Logo */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+          </div>
 
-          <div className="flex-1">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
               {navItems.find(item => item.id === activeTab)?.label || 'Overview'}
             </h1>
             <p className="text-xs md:text-sm text-gray-500 hidden sm:block">Manage your radiator inventory and stock</p>
           </div>
+
           <div className="flex items-center gap-2 md:gap-3">
             <div className="px-2 md:px-3 py-1 md:py-1.5 bg-green-100 text-green-700 rounded-full text-xs md:text-sm font-medium">
               <span className="hidden sm:inline">System </span>Online
             </div>
+            {/* Mobile: Logout button */}
+            <button
+              onClick={handleLogout}
+              className="lg:hidden p-2 hover:bg-red-50 text-red-500 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
@@ -216,9 +200,43 @@ const Dashboard = () => {
         </div>
       </main>
 
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-area-bottom">
+        <div className="flex items-center justify-around px-1 py-1">
+          {navItems.filter((item) => item.id !== 'users').map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-all duration-200 min-h-[52px] ${
+                  isActive ? 'bg-gray-50' : ''
+                } ${getBottomNavColor(item.color, isActive)}`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'scale-110' : ''} transition-transform`} />
+                <span className={`text-[10px] mt-0.5 leading-tight ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                  {item.shortLabel}
+                </span>
+                {isActive && (
+                  <div className={`w-1 h-1 rounded-full mt-0.5 ${
+                    item.color === 'blue' ? 'bg-blue-600' :
+                    item.color === 'orange' ? 'bg-orange-600' :
+                    item.color === 'indigo' ? 'bg-indigo-600' :
+                    item.color === 'green' ? 'bg-green-600' :
+                    item.color === 'cyan' ? 'bg-cyan-600' :
+                    'bg-red-600'
+                  }`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
       {/* Testing Mode Info Box */}
       {TESTING_MODE && (
-        <div className="fixed bottom-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg shadow-lg max-w-xs z-50">
+        <div className="fixed bottom-20 lg:bottom-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg shadow-lg max-w-xs z-50">
           <div className="flex items-start">
             <svg className="w-5 h-5 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />

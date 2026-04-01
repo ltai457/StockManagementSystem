@@ -62,6 +62,7 @@ const RadiatorList = ({ onNavigate }) => {
 
   const addModal = useModal();
   const editModal = useModal();
+  const detailModal = useModal();
   const {
     filteredData: filteredRadiators,
     filters,
@@ -189,6 +190,7 @@ const RadiatorList = ({ onNavigate }) => {
         viewMode={viewMode}
         warehouses={warehouses || []}
         searchTerm={filters.search || ""}
+        detailModal={detailModal}
       />
 
       <AddRadiatorModal

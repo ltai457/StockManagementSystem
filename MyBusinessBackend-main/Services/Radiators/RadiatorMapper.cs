@@ -13,8 +13,6 @@ public static class RadiatorMapper
     public static RadiatorListDto ToListDto(Radiator r) => new()
     {
         Id = r.Id, Brand = r.Brand, Code = r.Code, Model = r.Model, Type = r.Type,
-        RetailPrice = r.RetailPrice, TradePrice = r.TradePrice,
-        IsPriceOverridable = r.IsPriceOverridable, MaxDiscountPercent = r.MaxDiscountPercent,
         Stock = BuildStockDict(r.StockLevels),
         CoreDimension = r.CoreDimension, Dimension = r.Dimension,
         ImageUrl = r.ImageUrl, Notes = r.Notes
@@ -23,8 +21,6 @@ public static class RadiatorMapper
     public static RadiatorResponseDto ToResponseDto(Radiator r) => new()
     {
         Id = r.Id, Brand = r.Brand, Code = r.Code, Model = r.Model, Type = r.Type,
-        RetailPrice = r.RetailPrice, TradePrice = r.TradePrice, CostPrice = r.CostPrice,
-        IsPriceOverridable = r.IsPriceOverridable, MaxDiscountPercent = r.MaxDiscountPercent,
         Stock = BuildStockDict(r.StockLevels),
         CoreDimension = r.CoreDimension, Dimension = r.Dimension,
         ImageUrl = r.ImageUrl, Notes = r.Notes,

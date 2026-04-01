@@ -7,11 +7,6 @@ public class RadiatorResponseDto
     public string Code { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
-    public decimal RetailPrice { get; set; }
-    public decimal? TradePrice { get; set; }
-    public decimal? CostPrice { get; set; }
-    public bool IsPriceOverridable { get; set; }
-    public decimal? MaxDiscountPercent { get; set; }
     public Dictionary<string, int> Stock { get; set; } = new();
     public string? CoreDimension { get; set; }
     public string? Dimension { get; set; }

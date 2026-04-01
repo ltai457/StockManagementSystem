@@ -11,8 +11,6 @@ public static class StockMapper
         return new RadiatorWithStockDto
         {
             Id = r.Id, Brand = r.Brand, Code = r.Code, Model = r.Model, Type = r.Type,
-            RetailPrice = r.RetailPrice, TradePrice = r.TradePrice, CostPrice = r.CostPrice,
-            IsPriceOverridable = r.IsPriceOverridable, MaxDiscountPercent = r.MaxDiscountPercent,
             CoreDimension = r.CoreDimension, Dimension = r.Dimension, ImageUrl = r.ImageUrl,
             Stock = stockDict, TotalStock = stockDict.Values.Sum(),
             HasLowStock = stockDict.Values.Any(q => q > 0 && q <= StockAlertSettings.LowStockThreshold),

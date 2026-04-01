@@ -45,15 +45,20 @@ namespace RadiatorStockAPI.Data
             ("Valeo", "Triton", "Ute / Pickup", "742x460x26", "772x490x50"),
         ];
 
-        public static async Task Initialize(RadiatorDbContext context)
+        public static async Task Initialize(
+            RadiatorDbContext context,
+            bool seedDefaultUsers = false,
+            bool seedDemoRadiators = false)
         {
             await EnsureProductTypesTableAsync(context);
             await SeedProductTypesAsync(context);
             await CleanupLegacyWarehousesAsync(context);
-            await SeedDemoRadiatorsAsync(context);
+            if (seedDemoRadiators)
+            {
+                await SeedDemoRadiatorsAsync(context);
+            }
 
-            // Seed Default Users
-            if (!await context.Users.AnyAsync())
+            if (seedDefaultUsers && !await context.Users.AnyAsync())
             {
                 var users = new[]
                 {
@@ -213,11 +218,6 @@ namespace RadiatorStockAPI.Data
                     Code = code,
                     Model = item.template.Model,
                     Type = item.template.Type,
-                    RetailPrice = 0,
-                    TradePrice = null,
-                    CostPrice = null,
-                    IsPriceOverridable = false,
-                    MaxDiscountPercent = null,
                     CoreDimension = item.template.CoreDimension,
                     Dimension = item.template.Dimension,
                     ImageUrl = null,

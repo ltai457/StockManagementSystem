@@ -4,10 +4,10 @@ import React from 'react';
 
 export const StatsGrid = ({ stats, columns = 4 }) => {
   const gridCols = {
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-3',
-    4: 'grid-cols-1 md:grid-cols-4',
-    5: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-5'
+    2: 'grid-cols-2',
+    3: 'grid-cols-2 md:grid-cols-3',
+    4: 'grid-cols-2 md:grid-cols-4',
+    5: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
   };
   
   return (
@@ -45,13 +45,13 @@ const StatCard = ({ title, value, change, icon: Icon, color = 'blue' }) => {
   const bgColor = bgColors[color] || bgColors.blue;
   
   return (
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-white rounded-lg shadow p-3 sm:p-4">
       <div className="flex items-center justify-between">
         <div>
-          <div className={`text-2xl font-bold ${textColor}`}>
+          <div className={`text-xl sm:text-2xl font-bold ${textColor}`}>
             {value}
           </div>
-          <div className="text-sm text-gray-600">{title}</div>
+          <div className="text-xs sm:text-sm text-gray-600">{title}</div>
           {change !== undefined && (
             <div className={`text-xs ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
               {change > 0 ? '+' : ''}{change}%
@@ -59,8 +59,8 @@ const StatCard = ({ title, value, change, icon: Icon, color = 'blue' }) => {
           )}
         </div>
         {Icon && (
-          <div className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center`}>
-            <Icon className={`w-5 h-5 ${textColor}`} />
+          <div className={`w-8 h-8 sm:w-10 sm:h-10 ${bgColor} rounded-lg flex items-center justify-center`}>
+            <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${textColor}`} />
           </div>
         )}
       </div>

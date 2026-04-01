@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { ChevronDown, Search } from "lucide-react";
 import {
   Alert,
   Button,
@@ -124,36 +125,58 @@ const StockMovementsTab = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-1 flex-col gap-3 sm:flex-row">
-          <TextField
-            size="small"
-            placeholder="Filter by product"
+      {/* Direction chips */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+          {[
+            { value: "all", label: "All" },
+            { value: "INCOMING", label: "Incoming" },
+            { value: "OUTGOING", label: "Outgoing" },
+          ].map((d) => (
+            <button
+              key={d.value}
+              onClick={() => setMovementTypeFilter(d.value)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                movementTypeFilter === d.value
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button size="small" variant="outlined" onClick={() => setStockInOpen(true)}>
+            Stock In
+          </Button>
+          <Button size="small" variant="contained" onClick={() => setMovementOpen(true)}>
+            Move Stock
+          </Button>
+        </div>
+      </div>
+
+      {/* Search & filters */}
+      <div className="rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search product..."
             value={productFilter}
             onChange={(event) => setProductFilter(event.target.value)}
-            fullWidth
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[40px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
+        </div>
 
-          <TextField
-            select
-            size="small"
-            label="Direction"
-            value={movementTypeFilter}
-            onChange={(event) => setMovementTypeFilter(event.target.value)}
-            sx={{ minWidth: 120 }}
-          >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="INCOMING">Incoming</MenuItem>
-            <MenuItem value="OUTGOING">Outgoing</MenuItem>
-          </TextField>
-
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
           <TextField
             select
             size="small"
             label="Warehouse"
             value={warehouseFilter}
             onChange={(event) => setWarehouseFilter(event.target.value)}
-            sx={{ minWidth: 150 }}
+            fullWidth
           >
             <MenuItem value="all">All Warehouses</MenuItem>
             {(warehouses || []).map((warehouse) => (
@@ -169,7 +192,7 @@ const StockMovementsTab = ({
             label="Range"
             value={dateRange}
             onChange={(event) => setDateRange(event.target.value)}
-            sx={{ minWidth: 130 }}
+            fullWidth
           >
             <MenuItem value="7">Last 7 days</MenuItem>
             <MenuItem value="30">Last 30 days</MenuItem>
@@ -177,109 +200,125 @@ const StockMovementsTab = ({
             <MenuItem value="180">Last 6 months</MenuItem>
           </TextField>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Button size="small" variant="outlined" onClick={() => setStockInOpen(true)}>
-            Stock In
-          </Button>
-          <Button size="small" variant="contained" onClick={() => setMovementOpen(true)}>
-            Move Stock
-          </Button>
-        </div>
       </div>
 
       {filteredMovements.length === 0 ? (
         <Alert severity="info">No stock movements found for the selected filters.</Alert>
       ) : (
-        <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
-          <Table size="small" sx={{ minWidth: 980 }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>Product</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>From</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>To</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }} align="center">
-                    Action
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }} align="center">
-                    Qty
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>Note</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredMovements.map((movement) => {
-                  const route = getMovementRoute(movement);
-                  const isStockIn = isStockInEvent(movement);
-                  const isManualAdjustment = isManualAdjustmentEvent(movement);
-                  const typeLabel = isStockIn
-                    ? "Stock In"
-                    : isManualAdjustment
-                      ? "Manual Adjustment"
-                      : "Stock Movement";
+        <>
+          {/* Mobile: Collapsible cards */}
+          <div className="md:hidden space-y-2">
+            {filteredMovements.map((movement) => {
+              const route = getMovementRoute(movement);
+              const isStockIn = isStockInEvent(movement);
+              const isManualAdj = isManualAdjustmentEvent(movement);
+              const typeLabel = isStockIn ? "Stock In" : isManualAdj ? "Manual Adjustment" : "Stock Movement";
 
-                  return (
-                    <TableRow key={movement.id} hover>
-                      <TableCell sx={{ py: 1, px: 1.5, whiteSpace: "nowrap" }}>
-                        <Typography variant="caption">{formatDate(movement.date)}</Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: 1, px: 1.5 }}>
-                        <Typography variant="body2" fontWeight={500} noWrap>
-                          {movement.productName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap>
-                          {movement.productCode}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: 1, px: 1.5 }}>
-                        <Typography variant="caption" fontWeight={500} noWrap>
-                          {route.fromWarehouseCode || "-"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: 1, px: 1.5 }}>
-                        <Typography variant="caption" fontWeight={500} noWrap>
-                          {route.toWarehouseCode || "-"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: 1, px: 1.5 }} align="center">
-                        <Chip
-                          size="small"
-                          label={typeLabel}
-                          color={movement.movementType === "INCOMING" ? "success" : "error"}
-                          variant="filled"
-                          sx={{ height: 22, "& .MuiChip-label": { px: 1, fontSize: 11 } }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ py: 1, px: 1.5 }} align="center">
-                        <Chip
-                          size="small"
-                          label={`${movement.movementType === "INCOMING" ? "+" : "-"}${movement.quantity}`}
-                          color={movement.movementType === "INCOMING" ? "success" : "error"}
-                          variant="outlined"
-                          sx={{ height: 22, "& .MuiChip-label": { px: 1, fontSize: 11 } }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ py: 1, px: 1.5, maxWidth: 220 }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{
-                            display: "block",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {movement.notes || "Stock movement"}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              return (
+                <MovementCard
+                  key={movement.id}
+                  movement={movement}
+                  route={route}
+                  typeLabel={typeLabel}
+                  formatDate={formatDate}
+                />
+              );
+            })}
+          </div>
+
+          {/* Desktop: Table */}
+          <div className="hidden md:block">
+            <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
+              <Table size="small" sx={{ minWidth: 980 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>Product</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>From</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>To</TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }} align="center">
+                      Action
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }} align="center">
+                      Qty
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600, bgcolor: "grey.50", py: 1, px: 1.5 }}>Note</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredMovements.map((movement) => {
+                    const route = getMovementRoute(movement);
+                    const isStockIn2 = isStockInEvent(movement);
+                    const isManualAdj2 = isManualAdjustmentEvent(movement);
+                    const typeLabel = isStockIn2
+                      ? "Stock In"
+                      : isManualAdj2
+                        ? "Manual Adjustment"
+                        : "Stock Movement";
+
+                    return (
+                      <TableRow key={movement.id} hover>
+                        <TableCell sx={{ py: 1, px: 1.5, whiteSpace: "nowrap" }}>
+                          <Typography variant="caption">{formatDate(movement.date)}</Typography>
+                        </TableCell>
+                        <TableCell sx={{ py: 1, px: 1.5 }}>
+                          <Typography variant="body2" fontWeight={500} noWrap>
+                            {movement.productName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" noWrap>
+                            {movement.productCode}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ py: 1, px: 1.5 }}>
+                          <Typography variant="caption" fontWeight={500} noWrap>
+                            {route.fromWarehouseCode || "-"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ py: 1, px: 1.5 }}>
+                          <Typography variant="caption" fontWeight={500} noWrap>
+                            {route.toWarehouseCode || "-"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ py: 1, px: 1.5 }} align="center">
+                          <Chip
+                            size="small"
+                            label={typeLabel}
+                            color={movement.movementType === "INCOMING" ? "success" : "error"}
+                            variant="filled"
+                            sx={{ height: 22, "& .MuiChip-label": { px: 1, fontSize: 11 } }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ py: 1, px: 1.5 }} align="center">
+                          <Chip
+                            size="small"
+                            label={`${movement.movementType === "INCOMING" ? "+" : "-"}${movement.quantity}`}
+                            color={movement.movementType === "INCOMING" ? "success" : "error"}
+                            variant="outlined"
+                            sx={{ height: 22, "& .MuiChip-label": { px: 1, fontSize: 11 } }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ py: 1, px: 1.5, maxWidth: 220 }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              display: "block",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {movement.notes || "Stock movement"}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </div>
+        </>
       )}
 
       <TransferStockModal
@@ -325,5 +364,69 @@ const StockMovementsTab = ({
     </div>
   );
 };
+
+function MovementCard({ movement, route, typeLabel, formatDate }) {
+  const [expanded, setExpanded] = useState(false);
+  const isIncoming = movement.movementType === "INCOMING";
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full p-3 flex items-center gap-3 text-left"
+      >
+        <Chip
+          size="small"
+          label={`${isIncoming ? "+" : "-"}${movement.quantity}`}
+          color={isIncoming ? "success" : "error"}
+          variant="outlined"
+          sx={{ height: 24, "& .MuiChip-label": { px: 1, fontSize: 12, fontWeight: 600 } }}
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">{movement.productName}</p>
+          <p className="text-xs text-gray-500">{formatDate(movement.date)}</p>
+        </div>
+        <Chip
+          size="small"
+          label={typeLabel}
+          color={isIncoming ? "success" : "error"}
+          variant="filled"
+          sx={{ height: 22, "& .MuiChip-label": { px: 1, fontSize: 10 } }}
+        />
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+
+      {expanded && (
+        <div className="px-3 pb-3 pt-0 border-t border-gray-100 space-y-1.5">
+          <div className="grid grid-cols-2 gap-2 text-xs pt-2">
+            <div>
+              <span className="text-gray-500">Code</span>
+              <p className="font-medium text-gray-900">{movement.productCode}</p>
+            </div>
+            <div>
+              <span className="text-gray-500">Direction</span>
+              <p className="font-medium text-gray-900">{isIncoming ? "Incoming" : "Outgoing"}</p>
+            </div>
+            {route.fromWarehouseCode && (
+              <div>
+                <span className="text-gray-500">From</span>
+                <p className="font-medium text-gray-900">{route.fromWarehouseCode}</p>
+              </div>
+            )}
+            {route.toWarehouseCode && (
+              <div>
+                <span className="text-gray-500">To</span>
+                <p className="font-medium text-gray-900">{route.toWarehouseCode}</p>
+              </div>
+            )}
+          </div>
+          {movement.notes && (
+            <p className="text-xs text-gray-500 pt-1">{movement.notes}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default StockMovementsTab;

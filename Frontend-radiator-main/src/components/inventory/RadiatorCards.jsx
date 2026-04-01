@@ -1,6 +1,5 @@
 import React from "react";
-import { Edit, Package, Trash2 } from "lucide-react";
-import { Chip, IconButton, Tooltip } from "@mui/material";
+import { Chip } from "@mui/material";
 import { LOW_STOCK_THRESHOLD } from "../../utils/stock";
 import HighlightedText from "../common/ui/HighlightedText";
 
@@ -13,11 +12,13 @@ const getStockChipColor = (totalStock) => {
   return "success";
 };
 
-const RadiatorCards = ({ radiators, warehouses, onEdit, onDelete, onEditStock, isAdmin, searchTerm }) => {
-  const orderedWarehouses = Array.isArray(warehouses) ? warehouses : [];
-
+const RadiatorCards = ({
+  radiators,
+  onViewDetails,
+  searchTerm,
+}) => {
   return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
       {radiators.map((radiator) => {
         const totalStock = getTotalStock(radiator.stock);
         const title = `${radiator.brand || ""} ${radiator.model || ""}`.trim() || radiator.code;
@@ -25,9 +26,9 @@ const RadiatorCards = ({ radiators, warehouses, onEdit, onDelete, onEditStock, i
         return (
           <div
             key={radiator.id}
-            className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md md:rounded-2xl"
           >
-            <div className="aspect-[4/3] overflow-hidden bg-gray-100">
+            <div className="aspect-square overflow-hidden bg-gray-100 md:aspect-[4/3]">
               {radiator.imageUrl ? (
                 <img
                   src={radiator.imageUrl}
@@ -41,72 +42,50 @@ const RadiatorCards = ({ radiators, warehouses, onEdit, onDelete, onEditStock, i
               )}
             </div>
 
-            <div className="space-y-4 p-4">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900">
+            <div className="flex flex-1 flex-col space-y-3 p-3 md:space-y-4 md:p-4">
+              <div className="min-h-[44px] md:min-h-[48px]">
+                <h3 className="line-clamp-2 text-sm font-medium leading-5 text-gray-900 md:text-[15px]">
                   <HighlightedText text={title} query={searchTerm} />
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  <HighlightedText
-                    text={[radiator.type, radiator.code].filter(Boolean).join(" · ")}
-                    query={searchTerm}
-                  />
-                </p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex min-h-[32px] flex-wrap gap-2">
+                <Chip
+                  size="small"
+                  label={<HighlightedText text={radiator.code || "-"} query={searchTerm} />}
+                  variant="outlined"
+                  sx={{ "& .MuiChip-label": { px: 1, fontSize: { xs: 11, md: 13 } } }}
+                />
                 <Chip
                   size="small"
                   label={`${totalStock} units`}
                   color={getStockChipColor(totalStock)}
                   variant="filled"
+                  sx={{ "& .MuiChip-label": { px: 1, fontSize: { xs: 11, md: 13 } } }}
                 />
-                {radiator.dimension ? (
-                  <Chip size="small" label={radiator.dimension} variant="outlined" />
-                ) : null}
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {orderedWarehouses.map((warehouse) => {
-                  const quantity = radiator.stock?.[warehouse.code] || 0;
-                  return (
-                    <Chip
-                      key={warehouse.id}
-                      size="small"
-                      label={`${warehouse.code}: ${quantity}`}
-                      color={getStockChipColor(quantity)}
-                      variant="outlined"
-                    />
-                  );
-                })}
+              <div className="grid min-h-[88px] grid-cols-1 gap-2">
+                <SpecPill label="Dimension" value={radiator.dimension || "-"} searchTerm={searchTerm} />
+                <SpecPill label="Core" value={radiator.coreDimension || "-"} searchTerm={searchTerm} />
               </div>
 
               {radiator.notes ? (
-                <p className="line-clamp-2 text-sm text-gray-600">
+                <p className="hidden line-clamp-2 text-sm text-gray-600 md:block">
                   <HighlightedText text={radiator.notes} query={searchTerm} />
                 </p>
               ) : null}
 
-              <div className="flex items-center justify-end gap-1 border-t border-gray-100 pt-3">
-                <Tooltip title="Edit Stock">
-                  <IconButton size="small" color="primary" onClick={() => onEditStock?.(radiator)}>
-                    <Package size={18} />
-                  </IconButton>
-                </Tooltip>
-                {isAdmin ? (
-                  <>
-                    <Tooltip title="Edit Product">
-                      <IconButton size="small" color="warning" onClick={() => onEdit(radiator)}>
-                        <Edit size={18} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Product">
-                      <IconButton size="small" color="error" onClick={() => onDelete(radiator)}>
-                        <Trash2 size={18} />
-                      </IconButton>
-                    </Tooltip>
-                  </>
-                ) : null}
+              <div className="mt-auto border-t border-gray-100 pt-3">
+                <div className="mb-3">
+                  <button
+                    type="button"
+                    onClick={() => onViewDetails?.(radiator)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  >
+                    View Details
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -115,5 +94,16 @@ const RadiatorCards = ({ radiators, warehouses, onEdit, onDelete, onEditStock, i
     </div>
   );
 };
+
+function SpecPill({ label, value, searchTerm }) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5">
+      <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-gray-500">{label}</p>
+      <p className="truncate text-xs font-medium text-gray-900">
+        <HighlightedText text={value} query={searchTerm} />
+      </p>
+    </div>
+  );
+}
 
 export default RadiatorCards;
