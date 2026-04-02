@@ -198,6 +198,11 @@ var uploadRequestPath =
     ?? builder.Configuration["Uploads:RequestPath"]
     ?? "/uploads";
 
+if (!Path.IsPathRooted(uploadRootPath))
+{
+    uploadRootPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, uploadRootPath));
+}
+
 Directory.CreateDirectory(Path.Combine(uploadRootPath, "radiators"));
 
 // Configure the HTTP request pipeline
