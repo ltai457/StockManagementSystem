@@ -14,19 +14,22 @@ public class RadiatorsController : BaseController
     private readonly IUpdateRadiatorHandler _update;
     private readonly IWebHostEnvironment _environment;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<RadiatorsController> _logger;
 
     public RadiatorsController(
         IGetRadiatorHandler get,
         ICreateRadiatorHandler create,
         IUpdateRadiatorHandler update,
         IWebHostEnvironment environment,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<RadiatorsController> logger)
     {
         _get = get;
         _create = create;
         _update = update;
         _environment = environment;
         _configuration = configuration;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -37,7 +40,20 @@ public class RadiatorsController : BaseController
     public async Task<IActionResult> GetById(Guid id) => Run(await _get.GetByIdAsync(id));
 
     [HttpPost, Authorize(Roles = "Admin,Staff")]
-    public async Task<IActionResult> Create([FromBody] CreateRadiatorDto dto) => Run(await _create.CreateAsync(dto));
+    public async Task<IActionResult> Create([FromBody] CreateRadiatorDto dto)
+    {
+        try
+        {
+            return Run(await _create.CreateAsync(dto));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create radiator with code {Code}", dto.Code);
+
+            var message = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, new { message = $"Failed to create radiator: {message}" });
+        }
+    }
 
     [HttpPost("upload-image"), Authorize(Roles = "Admin,Staff")]
     [RequestSizeLimit(10_000_000)]
