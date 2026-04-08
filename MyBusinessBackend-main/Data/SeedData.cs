@@ -8,14 +8,6 @@ namespace RadiatorStockAPI.Data
     public static class SeedData
     {
         private static readonly string[] LegacyWarehouseCodes = ["WH_AKL", "WH_CHC", "WH_WLG"];
-        private static readonly string[] DefaultProductTypes =
-        [
-            "Passenger Car",
-            "SUV / 4WD",
-            "Ute / Pickup",
-            "Van",
-            "Performance"
-        ];
         private static readonly (string Brand, string Model, string Type, string CoreDimension, string Dimension)[] DemoRadiatorTemplates =
         [
             ("Denso", "Corolla", "Passenger Car", "680x408x16", "710x440x40"),
@@ -51,7 +43,6 @@ namespace RadiatorStockAPI.Data
             bool seedDemoRadiators = false)
         {
             await EnsureProductTypesTableAsync(context);
-            await SeedProductTypesAsync(context);
             await CleanupLegacyWarehousesAsync(context);
             if (seedDemoRadiators)
             {
@@ -104,41 +95,6 @@ namespace RadiatorStockAPI.Data
                     created_at timestamp with time zone NOT NULL,
                     updated_at timestamp with time zone NOT NULL
                 );");
-        }
-
-        private static async Task SeedProductTypesAsync(RadiatorDbContext context)
-        {
-            var existingNames = (await context.ProductTypes
-                .Select(pt => pt.Name)
-                .ToListAsync())
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Select(name => name.Trim())
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var candidateNames = DefaultProductTypes
-                .Concat(DemoRadiatorTemplates.Select(t => t.Type))
-                .Concat(await context.Radiators.Select(r => r.Type).ToListAsync())
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Select(name => name!.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Where(name => !existingNames.Contains(name))
-                .ToList();
-
-            if (!candidateNames.Any())
-            {
-                return;
-            }
-
-            context.ProductTypes.AddRange(candidateNames.Select(name => new ProductType
-            {
-                Id = Guid.NewGuid(),
-                Name = name,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            }));
-
-            await context.SaveChangesAsync();
         }
 
         private static async Task CleanupLegacyWarehousesAsync(RadiatorDbContext context)
