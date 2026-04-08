@@ -13,8 +13,8 @@ public class CreateRadiatorDto
     [Required, StringLength(200)]
     public string Model { get; set; } = string.Empty;
 
-    [Required, StringLength(50)]
-    public string Type { get; set; } = string.Empty;
+    [StringLength(50)]
+    public string? Type { get; set; }
 
     [StringLength(200)]
     public string? CoreDimension { get; set; }

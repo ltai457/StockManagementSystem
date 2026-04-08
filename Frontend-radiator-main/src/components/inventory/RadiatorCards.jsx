@@ -1,6 +1,7 @@
 import React from "react";
 import { Chip } from "@mui/material";
 import { LOW_STOCK_THRESHOLD } from "../../utils/stock";
+import { resolveImageUrl } from "../../utils/image";
 import HighlightedText from "../common/ui/HighlightedText";
 
 const getTotalStock = (stock) =>
@@ -22,6 +23,7 @@ const RadiatorCards = ({
       {radiators.map((radiator) => {
         const totalStock = getTotalStock(radiator.stock);
         const title = `${radiator.brand || ""} ${radiator.model || ""}`.trim() || radiator.code;
+        const imageSrc = resolveImageUrl(radiator.imageUrl);
 
         return (
           <div
@@ -29,9 +31,9 @@ const RadiatorCards = ({
             className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md md:rounded-2xl"
           >
             <div className="aspect-square overflow-hidden bg-gray-100 md:aspect-[4/3]">
-              {radiator.imageUrl ? (
+              {imageSrc ? (
                 <img
-                  src={radiator.imageUrl}
+                  src={imageSrc}
                   alt={title}
                   className="h-full w-full object-cover"
                 />

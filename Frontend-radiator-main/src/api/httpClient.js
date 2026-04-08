@@ -1,19 +1,5 @@
-// src/api/httpClient.js
 import axios from "axios";
-
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_BASE) {
-    return import.meta.env.VITE_API_BASE;
-  }
-
-  if (import.meta.env.VITE_NGROK_URL) {
-    return `${import.meta.env.VITE_NGROK_URL}/api/v1`;
-  }
-
-  return "http://localhost:5128/api/v1";
-};
-
-const API_BASE_URL = getApiBaseUrl();
+import { API_BASE_URL } from "../config/api";
 
 const httpClient = axios.create({
   baseURL: API_BASE_URL,

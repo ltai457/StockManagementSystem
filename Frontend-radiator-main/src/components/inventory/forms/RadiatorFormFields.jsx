@@ -13,7 +13,6 @@ const RadiatorFormFields = ({ form, onFieldChange, disabled = false }) => (
           size="small"
           value={form.brand}
           onChange={(e) => onFieldChange("brand", e.target.value)}
-          placeholder="e.g., Denso"
           disabled={disabled}
         />
       </Grid>
@@ -25,7 +24,6 @@ const RadiatorFormFields = ({ form, onFieldChange, disabled = false }) => (
           size="small"
           value={form.code}
           onChange={(e) => onFieldChange("code", e.target.value)}
-          placeholder="Unique product code"
           disabled={disabled}
         />
       </Grid>
@@ -37,7 +35,6 @@ const RadiatorFormFields = ({ form, onFieldChange, disabled = false }) => (
           size="small"
           value={form.model}
           onChange={(e) => onFieldChange("model", e.target.value)}
-          placeholder="e.g., Workmate Radiator"
           disabled={disabled}
         />
       </Grid>
@@ -55,7 +52,6 @@ const RadiatorFormFields = ({ form, onFieldChange, disabled = false }) => (
           size="small"
           value={form.coreDimension}
           onChange={(e) => onFieldChange("coreDimension", e.target.value)}
-          placeholder="e.g., 400x600"
           disabled={disabled}
         />
       </Grid>
@@ -66,7 +62,6 @@ const RadiatorFormFields = ({ form, onFieldChange, disabled = false }) => (
           size="small"
           value={form.dimension}
           onChange={(e) => onFieldChange("dimension", e.target.value)}
-          placeholder="e.g., 400x600x32"
           disabled={disabled}
         />
       </Grid>
@@ -79,7 +74,6 @@ const RadiatorFormFields = ({ form, onFieldChange, disabled = false }) => (
           rows={2}
           value={form.notes}
           onChange={(e) => onFieldChange("notes", e.target.value)}
-          placeholder="Additional product information..."
           disabled={disabled}
         />
       </Grid>

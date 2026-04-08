@@ -19,9 +19,8 @@ namespace RadiatorStockAPI.Models
         [StringLength(200)]
         public string Model { get; set; } = string.Empty;
 
-        [Required]
         [StringLength(50)]
-        public string Type { get; set; } = string.Empty;  // e.g. "Big Car", "Small Car"
+        public string? Type { get; set; }  // Optional — e.g. "Big Car", "Small Car"
 
         // ===== DIMENSION FIELDS =====
         [StringLength(200)]

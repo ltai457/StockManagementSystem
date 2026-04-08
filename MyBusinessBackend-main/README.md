@@ -36,7 +36,7 @@ ASP.NET Core 8 REST API that powers the Chan Mary 333 radiator stock platform. I
 
 2. **Create environment configuration**
 
-   The app reads from `appsettings*.json`, environment variables, and a `.env` file (thanks to DotNetEnv). Create a `.env` file in the project root:
+   The app reads from `appsettings*.json`, environment variables, and a `.env` file (thanks to DotNetEnv). Copy `.env.example` to `.env` in the project root:
 
    ```bash
    # Database
@@ -56,11 +56,9 @@ ASP.NET Core 8 REST API that powers the Chan Mary 333 radiator stock platform. I
    # CORS (comma-separated list)
    ALLOWED_ORIGINS=http://localhost:5173
 
-   # AWS (optional for image uploads)
-   AWS__Region=us-east-2
-   AWS__S3__BucketName=my-radiator-images
-   AWS__AccessKeyId=YOUR_ACCESS_KEY
-   AWS__SecretAccessKey=YOUR_SECRET_KEY
+   # Persistent image storage
+   UPLOADS_ROOT_PATH=wwwroot/uploads
+   UPLOADS_REQUEST_PATH=/uploads
    ```
 
    Alternatively, override `ConnectionStrings:DefaultConnection` directly via an environment variable (`ConnectionStrings__DefaultConnection`) if you prefer a full connection string.
@@ -90,7 +88,7 @@ ASP.NET Core 8 REST API that powers the Chan Mary 333 radiator stock platform. I
 ## Key Endpoints
 
 - `POST /api/v1/auth/login` – Issue access + refresh tokens. Supports `/register`, `/refresh`, `/logout`, `/change-password`, and `/me`.
-- `GET /api/v1/radiators` – CRUD for radiators, including image upload to S3. `Admin` can delete; `Admin` and `Staff` can create/update.
+- `GET /api/v1/radiators` – CRUD for radiators, including image upload to the API's `/uploads/radiators` storage. `Admin` can delete; `Admin` and `Staff` can create/update.
 - `GET /api/v1/warehouses` – Manage warehouses; includes stock level aggregation.
 - `GET /api/v1/stock/movements` – Track transfers, adjustments, and audit history.
 - `GET /api/v1/customers` – Manage customer records.
@@ -105,15 +103,16 @@ Inspect `Controllers/` and `Services/` for full request/response contracts. `Rad
 - Set production secrets through environment variables or a secure secret store (do **not** ship credentials in `appsettings.json`).
 - Provide the PostgreSQL CA certificate or set `SSL Mode=Require` as needed for managed services.
 - Configure `ALLOWED_ORIGINS` with your hosted frontend URL(s).
+- Mount `UPLOADS_ROOT_PATH` on persistent disk storage so uploaded images survive redeploys and restarts.
 - Ensure the hosting environment exposes port `5128` (or override `ASPNETCORE_URLS`).
-- For S3 uploads, grant the IAM user `s3:PutObject`, `s3:GetObject`, and `s3:DeleteObject` on the chosen bucket.
+- Keep `UPLOADS_REQUEST_PATH` aligned with the frontend image URLs. The default `/uploads` works with the current UI.
 
 ## Troubleshooting
 
 - **Cannot connect to database** – verify `DB_*` settings and that PostgreSQL accepts connections from your machine. Startup logs print the connection string (without the password) to aid debugging.
 - **401 errors in client** – confirm the JWT secret/issuer/audience match between API and frontend, and that tokens are refreshed before expiry.
 - **CORS failures** – double-check `ALLOWED_ORIGINS` in production or ensure you're running with `Development` environment locally (which allows any origin).
-- **Image upload errors** – set AWS credentials in the environment or configure a shared credentials profile (`AWS:Profile`). Check that the bucket exists in the configured region.
+- **Images missing after deploy** – confirm `UPLOADS_ROOT_PATH` points to persistent storage and that your reverse proxy/app host serves the API's `/uploads` path publicly.
 
 ---
 

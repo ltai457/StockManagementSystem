@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -75,6 +76,7 @@ builder.Services.AddScoped<IUpdateStockHandler, UpdateStockHandler>();
 // Register Handler layer — Product Types
 builder.Services.AddScoped<IGetProductTypeHandler, GetProductTypeHandler>();
 builder.Services.AddScoped<ICreateProductTypeHandler, CreateProductTypeHandler>();
+builder.Services.AddScoped<IUpdateProductTypeHandler, UpdateProductTypeHandler>();
 
 // Register Handler layer — Auth
 builder.Services.AddScoped<IAuthHandler, AuthHandler>();
@@ -102,9 +104,13 @@ builder.Services.AddCors(options =>
             var allowedOrigins = new List<string>();
             
             // Add production URLs from environment variables
-            var prodOrigins = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS")?.Split(',') 
+            var prodOrigins = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS")?.Split(',')
                 ?? Array.Empty<string>();
-            allowedOrigins.AddRange(prodOrigins.Where(o => !string.IsNullOrWhiteSpace(o)));
+            allowedOrigins.AddRange(
+                prodOrigins
+                    .Select(o => o.Trim())
+                    .Where(o => !string.IsNullOrWhiteSpace(o))
+            );
             
             policy.WithOrigins(allowedOrigins.ToArray())
                   .AllowAnyMethod()
@@ -187,6 +193,19 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+// Honor X-Forwarded-* headers from the reverse proxy (nginx / DO load balancer)
+// so Request.Scheme/Host reflect the public URL instead of the internal http hop.
+// Must run before any middleware that reads scheme/host (UseStaticFiles, controllers, etc.).
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor
+                     | ForwardedHeaders.XForwardedProto
+                     | ForwardedHeaders.XForwardedHost
+};
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
 
 var uploadRootPath =
     Environment.GetEnvironmentVariable("UPLOADS_ROOT_PATH")

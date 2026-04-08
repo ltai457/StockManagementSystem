@@ -1,9 +1,7 @@
 // src/api/authService.js
 import axios from "axios";
 import { setAuthTokenProvider } from "./httpClient";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE || "http://localhost:5128/api/v1";
+import { API_BASE_URL } from "../config/api";
 
 // Session timeout in milliseconds (30 minutes)
 const SESSION_TIMEOUT = 30 * 60 * 1000;

@@ -42,7 +42,7 @@ StockManagementSystem/
 cd MyBusinessBackend-main
 ```
 
-Create `.env`:
+Copy `.env.example` or create `.env`:
 
 ```env
 DB_HOST=localhost
@@ -115,13 +115,14 @@ npm run dev    # http://localhost:5173
 
 ## Deployment
 
-- **Backend**: Publish to Azure App Service, AWS ECS, DigitalOcean App Platform, or Docker. Set DB connection, JWT secrets, and `ALLOWED_ORIGINS` via environment variables. Use `SSL Mode=Require` for managed PostgreSQL.
+- **Backend**: Publish to Azure App Service, AWS ECS, DigitalOcean App Platform, or Docker. Set DB connection, JWT secrets, `ALLOWED_ORIGINS`, and a persistent `UPLOADS_ROOT_PATH` via environment variables. Use `SSL Mode=Require` for managed PostgreSQL.
 - **Frontend**: `npm run build` outputs `dist/`. Deploy to Netlify, Vercel, S3+CloudFront, or DigitalOcean Apps. Set `VITE_API_BASE` to the production API URL before building.
 - **Database**: Managed PostgreSQL recommended. Migrations run automatically on API startup.
-- **Images**: Optional AWS S3 bucket for radiator images. IAM needs `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`.
+- **Images**: The API serves uploaded images from `/uploads`. Back that directory with persistent storage or images will disappear on restart/redeploy.
 
 ## Project Documentation
 
 - [`Frontend-radiator-main/README.md`](Frontend-radiator-main/README.md) -- Frontend scripts, structure, and troubleshooting
 - [`MyBusinessBackend-main/README.md`](MyBusinessBackend-main/README.md) -- Backend config, full endpoint docs, and ops guidance
+- [`deploy/deploy-droplet.md`](deploy/deploy-droplet.md) -- nginx, `systemd`, and single-droplet deployment steps
 - [`CLAUDE.md`](CLAUDE.md) -- AI assistant quick-reference for codebase navigation

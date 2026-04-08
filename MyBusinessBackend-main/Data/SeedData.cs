@@ -119,7 +119,7 @@ namespace RadiatorStockAPI.Data
                 .Concat(DemoRadiatorTemplates.Select(t => t.Type))
                 .Concat(await context.Radiators.Select(r => r.Type).ToListAsync())
                 .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Select(name => name.Trim())
+                .Select(name => name!.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Where(name => !existingNames.Contains(name))
                 .ToList();

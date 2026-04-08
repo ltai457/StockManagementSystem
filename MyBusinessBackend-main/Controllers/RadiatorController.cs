@@ -96,7 +96,9 @@ public class RadiatorsController : BaseController
             ? uploadRequestPath
             : $"/{uploadRequestPath}";
 
-        var imageUrl = $"{Request.Scheme}://{Request.Host}{normalizedRequestPath}/radiators/{fileName}";
+        // Store a relative path so the value survives domain/scheme/proxy changes.
+        // The frontend prepends the API origin at render time.
+        var imageUrl = $"{normalizedRequestPath}/radiators/{fileName}";
         return Run(Result<ImageUploadResponseDto>.Ok(new ImageUploadResponseDto
         {
             ImageUrl = imageUrl,
