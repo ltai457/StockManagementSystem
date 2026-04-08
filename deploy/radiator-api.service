@@ -1,0 +1,20 @@
+[Unit]
+Description=Radiator Stock API
+After=network.target postgresql.service
+
+[Service]
+WorkingDirectory=/home/deploy/api
+ExecStart=/usr/bin/dotnet /home/deploy/api/RadiatorStockAPI.dll
+Restart=always
+RestartSec=10
+User=deploy
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://localhost:5000
+
+# All secrets and runtime config (DB creds, JWT secret, ALLOWED_ORIGINS,
+# UPLOADS_ROOT_PATH, etc.) live in /home/deploy/api/.env on the droplet
+# and are loaded by DotNetEnv at startup. See deploy/env.example for the
+# expected keys. Do NOT add Environment= lines with secrets here.
+
+[Install]
+WantedBy=multi-user.target
