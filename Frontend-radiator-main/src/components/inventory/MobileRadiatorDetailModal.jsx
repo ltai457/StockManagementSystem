@@ -2,6 +2,7 @@ import React from "react";
 import { Edit, Package, Trash2 } from "lucide-react";
 import { IconButton, Tooltip } from "@mui/material";
 import { Modal } from "../common/ui/Modal";
+import { resolveImageUrl } from "../../utils/image";
 import HighlightedText from "../common/ui/HighlightedText";
 
 const getTotalStock = (stock) =>
@@ -21,15 +22,16 @@ export default function MobileRadiatorDetailModal({
 
   const totalStock = getTotalStock(radiator.stock);
   const title = `${radiator.brand || ""} ${radiator.model || ""}`.trim() || radiator.code;
+  const imageSrc = resolveImageUrl(radiator.imageUrl);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg">
       <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
           <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
-            {radiator.imageUrl ? (
+            {imageSrc ? (
               <img
-                src={radiator.imageUrl}
+                src={imageSrc}
                 alt={title}
                 className="h-52 w-full object-cover md:h-56"
               />

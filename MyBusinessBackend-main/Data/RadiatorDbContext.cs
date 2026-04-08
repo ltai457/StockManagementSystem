@@ -30,7 +30,7 @@ namespace RadiatorStockAPI.Data
                 entity.Property(r => r.Brand).IsRequired().HasMaxLength(100);
                 entity.Property(r => r.Code).IsRequired().HasMaxLength(50);
                 entity.Property(r => r.Model).IsRequired().HasMaxLength(200);
-                entity.Property(r => r.Type).IsRequired().HasMaxLength(50);
+                entity.Property(r => r.Type).HasMaxLength(50);
 
                 // DateTime fields - use timestamp with time zone for UTC
                 entity.Property(r => r.CreatedAt).IsRequired();

@@ -33,7 +33,7 @@ npm install
 
 ### 3. Configure environment
 
-Create `.env` (or `.env.local`) in the project root:
+Copy `.env.example` to `.env` (or `.env.local`) in the project root:
 
 ```bash
 # REST API base URL
@@ -91,7 +91,7 @@ The frontend expects a running API that exposes endpoints for authentication, cu
 npm run build
 ```
 
-Deploy the generated `dist/` folder to any static hosting provider (Netlify, Vercel, S3 + CDN, etc.) and configure `VITE_API_BASE` to point at the production API. Ensure the API supports CORS for the deployed origin.
+Deploy the generated `dist/` folder to any static hosting provider (Netlify, Vercel, S3 + CDN, etc.) and configure `VITE_API_BASE` to point at the production API before building. Radiator images are loaded from the API origin, so the backend must expose `/uploads` and keep that directory on persistent storage. Ensure the API also allows the deployed frontend origin through CORS.
 
 ## Troubleshooting
 
