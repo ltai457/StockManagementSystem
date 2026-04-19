@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Edit, Package, Trash2 } from "lucide-react";
 import { IconButton, Tooltip } from "@mui/material";
 import { Modal } from "../common/ui/Modal";
+import ImagePreviewModal from "../common/ui/ImagePreviewModal";
 import { resolveImageUrl } from "../../utils/image";
 import HighlightedText from "../common/ui/HighlightedText";
 
@@ -18,6 +19,8 @@ export default function MobileRadiatorDetailModal({
   onEditStock,
   searchTerm,
 }) {
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
+
   if (!radiator) return null;
 
   const totalStock = getTotalStock(radiator.stock);
@@ -28,12 +31,15 @@ export default function MobileRadiatorDetailModal({
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg">
       <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+          <div
+            className={`overflow-hidden rounded-lg border border-gray-200 bg-gray-100${imageSrc ? " cursor-pointer" : ""}`}
+            onClick={() => imageSrc && setImagePreviewOpen(true)}
+          >
             {imageSrc ? (
               <img
                 src={imageSrc}
                 alt={title}
-                className="h-52 w-full object-cover md:h-56"
+                className="h-52 w-full object-contain md:h-56"
               />
             ) : (
               <div className="flex h-52 items-center justify-center text-sm font-medium text-gray-500 md:h-56">
@@ -66,28 +72,44 @@ export default function MobileRadiatorDetailModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-1 border-t border-gray-100 pt-3">
-          <Tooltip title="Edit Stock">
-            <IconButton size="small" color="primary" onClick={() => onEditStock?.(radiator)}>
-              <Package size={18} />
-            </IconButton>
-          </Tooltip>
+        <div className="flex flex-col gap-2 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
+          <button
+            type="button"
+            onClick={() => onEditStock?.(radiator)}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 sm:w-auto"
+          >
+            <Package size={16} />
+            Edit Stock
+          </button>
           {isAdmin ? (
             <>
-              <Tooltip title="Edit Product">
-                <IconButton size="small" color="warning" onClick={() => onEdit?.(radiator)}>
-                  <Edit size={18} />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete Product">
-                <IconButton size="small" color="error" onClick={() => onDelete?.(radiator)}>
-                  <Trash2 size={18} />
-                </IconButton>
-              </Tooltip>
+              <button
+                type="button"
+                onClick={() => onEdit?.(radiator)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100 sm:w-auto"
+              >
+                <Edit size={16} />
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete?.(radiator)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100 sm:w-auto"
+              >
+                <Trash2 size={16} />
+                Delete
+              </button>
             </>
           ) : null}
         </div>
       </div>
+
+      <ImagePreviewModal
+        isOpen={imagePreviewOpen}
+        src={imageSrc}
+        alt={title}
+        onClose={() => setImagePreviewOpen(false)}
+      />
     </Modal>
   );
 }

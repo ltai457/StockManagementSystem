@@ -125,10 +125,7 @@ const InventoryContent = ({
         detailModal.closeModal();
         handleDeleteRadiator(radiator);
       }}
-      onEditStock={(radiator) => {
-        detailModal.closeModal();
-        onEditStock(radiator);
-      }}
+      onEditStock={onEditStock}
     />
   </>
 );
