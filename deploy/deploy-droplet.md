@@ -1,117 +1,267 @@
-# DigitalOcean Droplet Deploy
+# DigitalOcean Droplet Deploy (Manual)
 
-This project can run cleanly on one droplet with:
+This is the actual production deployment for **`http://157.245.206.102`** (Chan Mary 333 stock system). There is no CI/CD — every change ships by hand over SSH from a developer Mac.
 
-- frontend static files served by nginx
-- ASP.NET API behind nginx on `127.0.0.1:5128`
-- uploaded images served from `/var/www/stock-app/uploads`
-- PostgreSQL either on the same droplet or managed externally
+> **Read this whole file before touching the droplet.** Some of the paths and names look generic but are not — the running site has its own opinionated layout.
 
-## Recommended paths
+---
 
-```text
-/var/www/stock-app/
-  frontend/dist/         # built Vite app
-  backend/               # published ASP.NET output
-  uploads/               # persistent image storage
-```
+## Production layout (as it actually is on the droplet)
 
-## 1. Build locally
+| Thing | Where / value |
+|---|---|
+| Public URL | `http://157.245.206.102` (HTTP only, no domain, no HTTPS) |
+| OS | Ubuntu 24.04, root SSH via key |
+| Frontend bundle | `/var/www/radiator/` (Vite `dist/` contents, served directly by nginx) |
+| Backend bundle | `/home/deploy/api/` (`dotnet publish` output, run by systemd) |
+| Backend DLL | `/home/deploy/api/RadiatorStockAPI.dll` |
+| Backend port | `127.0.0.1:5000` (loopback only, fronted by nginx) |
+| systemd unit | `radiator-api.service` (user `deploy`) |
+| Backend env | `/home/deploy/api/.env` (loaded by DotNetEnv — see [`env.example`](./env.example)) |
+| Uploaded images | `/home/deploy/api/wwwroot/uploads/radiators/` |
+| nginx site | `/etc/nginx/sites-available/radiator` (symlinked into `sites-enabled/`) |
+| PostgreSQL | Same droplet, db `radiatorstockdb`, user `radiator_user` |
 
-Frontend env:
+The two repo files [`deploy/nginx.radiator.conf`](./nginx.radiator.conf) and [`deploy/radiator-api.service`](./radiator-api.service) are kept in sync with the real `/etc/nginx/sites-available/radiator` and `/etc/systemd/system/radiator-api.service` (with secrets stripped). If you change one, change the other.
 
-```env
-VITE_API_BASE=https://your-domain.com/api/v1
-VITE_DEBUG=false
-```
+---
 
-Build commands:
+## The 90% case — redeploying code changes
+
+This is what you run almost every time. The droplet is already set up.
+
+### Frontend only
 
 ```bash
 cd Frontend-radiator-main
-npm install
 npm run build
+scp -r dist/* root@157.245.206.102:/var/www/radiator/
+```
 
+No service restart needed — nginx serves the new files immediately. Hard-refresh the browser (`Cmd+Shift+R`).
+
+### Backend only
+
+```bash
+cd MyBusinessBackend-main
+dotnet publish -c Release -o ../deploy/publish
+
+# Stage on the droplet, then sync into place preserving .env and wwwroot/
+ssh root@157.245.206.102 'rm -rf /tmp/api-new && mkdir /tmp/api-new'
+scp -r ../deploy/publish/* root@157.245.206.102:/tmp/api-new/
+
+ssh root@157.245.206.102 '
+  set -e
+  systemctl stop radiator-api
+  cp -a /home/deploy/api /home/deploy/api.bak.$(date +%s)
+  rsync -a --exclude=".env" --exclude="wwwroot" /tmp/api-new/ /home/deploy/api/
+  chown -R deploy:deploy /home/deploy/api
+  systemctl start radiator-api
+  sleep 3
+  systemctl status radiator-api --no-pager | head -15
+'
+```
+
+Then tail the logs to confirm a clean boot (and that any new EF migrations applied):
+
+```bash
+ssh root@157.245.206.102 'journalctl -u radiator-api -n 80 --no-pager'
+```
+
+### Both
+
+Frontend first, then backend. That order means the new API is live by the time the new bundle starts calling it.
+
+### Why we exclude `.env` and `wwwroot/` from the rsync
+
+- `/home/deploy/api/.env` holds the real DB password, JWT secret, etc. It must never be overwritten by a `dotnet publish` output that doesn't contain it.
+- `/home/deploy/api/wwwroot/uploads/` is the persistent image store. Wiping it would lose every uploaded radiator photo.
+
+---
+
+## Smoke test after every deploy
+
+Always run these three. If any fail, jump to the troubleshooting section.
+
+```bash
+# 1. API is up
+curl -sf http://157.245.206.102/health | head -c 200; echo
+
+# 2. Uploaded images still serve (replace with any real filename)
+ssh root@157.245.206.102 'ls /home/deploy/api/wwwroot/uploads/radiators/ | head -1'
+curl -sI http://157.245.206.102/uploads/radiators/<that-filename> | head -3
+
+# 3. Backend logs show clean startup, no migration errors
+ssh root@157.245.206.102 'journalctl -u radiator-api -n 50 --no-pager'
+```
+
+Then in a real browser: hard-refresh the site, log in, open the inventory page, and confirm you can see existing images and upload a new one.
+
+---
+
+## First-time droplet setup (only for a brand new droplet)
+
+You almost never do this. Skip to the next section if `radiator-api.service` is already running on the droplet.
+
+### 1. Create the droplet
+
+DigitalOcean → Create Droplet → Ubuntu 24.04 LTS, 2 GB RAM minimum, paste your SSH key. Note the public IP.
+
+### 2. Base packages, firewall, swap
+
+```bash
+ssh root@<droplet-ip>
+apt update && apt upgrade -y
+apt install -y curl wget gnupg2 ca-certificates lsb-release ufw rsync
+
+ufw allow OpenSSH
+ufw allow 'Nginx Full'
+ufw --force enable
+
+fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+```
+
+### 3. nginx, .NET 8 runtime, PostgreSQL
+
+```bash
+apt install -y nginx postgresql postgresql-contrib
+
+wget https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O /tmp/ms.deb
+dpkg -i /tmp/ms.deb
+apt update
+apt install -y aspnetcore-runtime-8.0
+```
+
+### 4. Create the deploy user, the database, and the directories
+
+```bash
+adduser --disabled-password --gecos "" deploy
+
+sudo -u postgres psql <<'SQL'
+CREATE USER radiator_user WITH PASSWORD 'CHANGE_ME_STRONG';
+CREATE DATABASE radiatorstockdb OWNER radiator_user;
+GRANT ALL PRIVILEGES ON DATABASE radiatorstockdb TO radiator_user;
+SQL
+
+mkdir -p /home/deploy/api/wwwroot/uploads/radiators
+mkdir -p /var/www/radiator
+chown -R deploy:deploy /home/deploy
+chown -R www-data:www-data /var/www/radiator
+```
+
+### 5. Build locally on your Mac and ship
+
+```bash
+# Frontend
+cd Frontend-radiator-main
+cat > .env.production <<'ENV'
+VITE_API_BASE=http://<droplet-ip>/api/v1
+VITE_DEBUG=false
+ENV
+npm install && npm run build
+scp -r dist/* root@<droplet-ip>:/var/www/radiator/
+
+# Backend
 cd ../MyBusinessBackend-main
 dotnet publish -c Release -o ../deploy/publish
+scp -r ../deploy/publish/* root@<droplet-ip>:/home/deploy/api/
+ssh root@<droplet-ip> 'chown -R deploy:deploy /home/deploy/api'
 ```
 
-## 2. Copy files to droplet
+### 6. Backend `.env`
+
+Copy [`deploy/env.example`](./env.example) to the droplet and fill in real secrets:
 
 ```bash
-scp -r Frontend-radiator-main/dist root@your-droplet-ip:/var/www/stock-app/frontend/
-scp -r deploy/publish root@your-droplet-ip:/var/www/stock-app/backend/
-scp deploy/nginx.stock-management.conf root@your-droplet-ip:/etc/nginx/sites-available/stock-management
-scp deploy/stock-management-api.service root@your-droplet-ip:/etc/systemd/system/stock-management-api.service
+scp deploy/env.example root@<droplet-ip>:/home/deploy/api/.env
+ssh root@<droplet-ip> '
+  chown deploy:deploy /home/deploy/api/.env
+  chmod 600 /home/deploy/api/.env
+  nano /home/deploy/api/.env   # set DB_PASSWORD, JWT__Secret, ALLOWED_ORIGINS
+'
 ```
 
-Create the uploads directory on the droplet:
+Generate the JWT secret with: `openssl rand -base64 48`
+
+### 7. systemd unit
 
 ```bash
-mkdir -p /var/www/stock-app/uploads
-chown -R www-data:www-data /var/www/stock-app
+scp deploy/radiator-api.service root@<droplet-ip>:/etc/systemd/system/radiator-api.service
+ssh root@<droplet-ip> '
+  systemctl daemon-reload
+  systemctl enable radiator-api
+  systemctl start radiator-api
+  sleep 3
+  systemctl status radiator-api --no-pager
+'
 ```
 
-## 3. Enable nginx site
+Migrations run automatically on first boot — watch `journalctl -u radiator-api -f` for `✅ Database seeding completed successfully`.
+
+### 8. nginx site
 
 ```bash
-ln -s /etc/nginx/sites-available/stock-management /etc/nginx/sites-enabled/stock-management
-nginx -t
-systemctl reload nginx
+scp deploy/nginx.radiator.conf root@<droplet-ip>:/etc/nginx/sites-available/radiator
+ssh root@<droplet-ip> '
+  rm -f /etc/nginx/sites-enabled/default
+  ln -sf /etc/nginx/sites-available/radiator /etc/nginx/sites-enabled/radiator
+  nginx -t && systemctl reload nginx
+'
 ```
 
-Update `server_name` in [`nginx.stock-management.conf`](/Users/lk333/Desktop/StockManagementSystem/deploy/nginx.stock-management.conf) before enabling it.
-
-## 4. Configure backend service
-
-Edit the environment values in [`stock-management-api.service`](/Users/lk333/Desktop/StockManagementSystem/deploy/stock-management-api.service):
-
-- `DB_HOST`
-- `DB_PORT`
-- `DB_NAME`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `JWT__Secret`
-- `ALLOWED_ORIGINS`
-
-Then enable the service:
+If you point a real domain at the droplet later, also run:
 
 ```bash
-systemctl daemon-reload
-systemctl enable stock-management-api
-systemctl restart stock-management-api
-systemctl status stock-management-api
-```
-
-## 5. Optional HTTPS with Certbot
-
-```bash
-apt update
 apt install -y certbot python3-certbot-nginx
-certbot --nginx -d your-domain.com -d www.your-domain.com
+certbot --nginx -d <domain> -d www.<domain>
 ```
 
-After HTTPS is enabled, keep:
+…and rebuild the frontend with `VITE_API_BASE=https://<domain>/api/v1`, and update `ALLOWED_ORIGINS` in `/home/deploy/api/.env`, then restart `radiator-api`.
 
-```env
-VITE_API_BASE=https://your-domain.com/api/v1
-ALLOWED_ORIGINS=https://your-domain.com
+---
+
+## Backups
+
+Daily Postgres dump and weekly DO snapshots:
+
+```bash
+mkdir -p /var/backups/radiator
+cat > /etc/cron.daily/radiator-db <<'CRON'
+#!/bin/bash
+TS=$(date +\%Y\%m\%d)
+sudo -u postgres pg_dump radiatorstockdb | gzip > /var/backups/radiator/db-$TS.sql.gz
+find /var/backups/radiator -name 'db-*.sql.gz' -mtime +14 -delete
+CRON
+chmod +x /etc/cron.daily/radiator-db
 ```
 
-## 6. Smoke test
+Also enable weekly droplet snapshots in the DigitalOcean control panel.
 
-Open:
+---
 
-- `https://your-domain.com`
-- `https://your-domain.com/health`
+## Troubleshooting cheatsheet
 
-Check image URLs directly:
+| Symptom | Where to look |
+|---|---|
+| 502 Bad Gateway | `journalctl -u radiator-api -n 100` — API crashed or didn't start |
+| API up but login fails | `JWT__Secret` is too short, or `ALLOWED_ORIGINS` doesn't match the URL the browser loaded the site from |
+| CORS errors in browser console | `ALLOWED_ORIGINS` in `/home/deploy/api/.env`, then `systemctl restart radiator-api` |
+| Migrations fail on boot | `journalctl -u radiator-api -n 200` — usually wrong DB creds in `.env` or DB doesn't exist |
+| Images 404 / broken icon | nginx is missing the `location /uploads/` block, OR `UPLOADS_ROOT_PATH` is empty/relative (which exposes the whole working dir — see note below), OR the file isn't on disk |
+| `/uploads/appsettings.json` returns 200 | **SECURITY BUG** — `UPLOADS_ROOT_PATH` resolved to `/home/deploy/api`. Set it to `/home/deploy/api/wwwroot/uploads` in `.env` and restart |
+| `nginx -t` fails | Check the file you copied — `server_name` not set or duplicate `default_server` |
+| Frontend changes don't appear | Browser cache. Hard-refresh `Cmd+Shift+R`. Or you forgot to rebuild before scp'ing |
+| `VITE_API_BASE` is wrong (calls go to `localhost:5128`) | The frontend was built without `.env.production`. Recreate `Frontend-radiator-main/.env.production`, rebuild, scp again |
 
-- `https://your-domain.com/uploads/radiators/<file-name>`
+### The `UPLOADS_ROOT_PATH` security note
 
-If the app loads but images do not:
+`MyBusinessBackend-main/Program.cs` resolves `UPLOADS_ROOT_PATH` like this:
 
-- confirm backend writes to `/var/www/stock-app/uploads`
-- confirm nginx `location /uploads/` points to the same directory
-- confirm uploaded DB values look like `/uploads/radiators/<file>`
-- confirm the frontend was built with the correct `VITE_API_BASE`
+```
+env var → appsettings.json "Uploads:RootPath" → default "wwwroot/uploads"
+```
+
+If `appsettings.json` has `"Uploads": { "RootPath": "" }` (empty string, not null) and the env var is unset, the empty string wins, then `Path.Combine(ContentRootPath, "")` resolves to `ContentRootPath` itself = `/home/deploy/api`. The static file middleware then happily serves `/uploads/appsettings.json`, `/uploads/RadiatorStockAPI.dll`, etc.
+
+**Always set `UPLOADS_ROOT_PATH` to a real absolute path in `.env`.** This is enforced by [`env.example`](./env.example).

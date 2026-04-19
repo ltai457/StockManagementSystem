@@ -1,18 +1,15 @@
 import React from "react";
 import { Grid, TextField } from "@mui/material";
+import BrandSelect from "./BrandSelect";
 import ProductTypeSelect from "./ProductTypeSelect";
 
 const RadiatorFormFields = ({ form, onFieldChange, disabled = false }) => (
   <>
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, sm: 6 }}>
-        <TextField
-          label="Brand"
-          required
-          fullWidth
-          size="small"
+        <BrandSelect
           value={form.brand}
-          onChange={(e) => onFieldChange("brand", e.target.value)}
+          onChange={(value) => onFieldChange("brand", value)}
           disabled={disabled}
         />
       </Grid>

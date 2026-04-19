@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using RadiatorStockAPI.Data;
 using RadiatorStockAPI.Services.Auth;
+using RadiatorStockAPI.Services.Brands;
 using RadiatorStockAPI.Services.ProductTypes;
 using RadiatorStockAPI.Services.Radiators;
 using RadiatorStockAPI.Services.Stock;
@@ -77,6 +78,11 @@ builder.Services.AddScoped<IUpdateStockHandler, UpdateStockHandler>();
 builder.Services.AddScoped<IGetProductTypeHandler, GetProductTypeHandler>();
 builder.Services.AddScoped<ICreateProductTypeHandler, CreateProductTypeHandler>();
 builder.Services.AddScoped<IUpdateProductTypeHandler, UpdateProductTypeHandler>();
+
+// Register Handler layer — Brands
+builder.Services.AddScoped<IGetBrandHandler, GetBrandHandler>();
+builder.Services.AddScoped<ICreateBrandHandler, CreateBrandHandler>();
+builder.Services.AddScoped<IUpdateBrandHandler, UpdateBrandHandler>();
 
 // Register Handler layer — Auth
 builder.Services.AddScoped<IAuthHandler, AuthHandler>();

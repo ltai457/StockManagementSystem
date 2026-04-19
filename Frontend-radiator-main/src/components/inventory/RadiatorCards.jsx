@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Chip } from "@mui/material";
 import { LOW_STOCK_THRESHOLD } from "../../utils/stock";
 import { resolveImageUrl } from "../../utils/image";
+import ImagePreviewModal from "../common/ui/ImagePreviewModal";
 import HighlightedText from "../common/ui/HighlightedText";
 
 const getTotalStock = (stock) =>
@@ -18,7 +19,10 @@ const RadiatorCards = ({
   onViewDetails,
   searchTerm,
 }) => {
+  const [previewImage, setPreviewImage] = useState(null);
+
   return (
+    <>
     <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
       {radiators.map((radiator) => {
         const totalStock = getTotalStock(radiator.stock);
@@ -30,12 +34,15 @@ const RadiatorCards = ({
             key={radiator.id}
             className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md md:rounded-2xl"
           >
-            <div className="aspect-square overflow-hidden bg-gray-100 md:aspect-[4/3]">
+            <div
+              className={`aspect-square overflow-hidden bg-gray-100 md:aspect-[4/3]${imageSrc ? " cursor-pointer" : ""}`}
+              onClick={() => imageSrc && setPreviewImage({ src: imageSrc, alt: title })}
+            >
               {imageSrc ? (
                 <img
                   src={imageSrc}
                   alt={title}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-sm font-medium text-gray-500">
@@ -94,6 +101,14 @@ const RadiatorCards = ({
         );
       })}
     </div>
+
+    <ImagePreviewModal
+      isOpen={!!previewImage}
+      src={previewImage?.src}
+      alt={previewImage?.alt}
+      onClose={() => setPreviewImage(null)}
+    />
+    </>
   );
 };
 

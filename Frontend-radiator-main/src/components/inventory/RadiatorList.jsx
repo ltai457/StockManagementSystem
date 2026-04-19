@@ -1,5 +1,5 @@
 // src/components/inventory/RadiatorList.jsx
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../../contexts/auth-context";
 import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
 import { useWarehouses } from "../../hooks/useWarehouses";
@@ -10,10 +10,11 @@ import InventoryHeader from "./InventoryHeader";
 import InventoryContent from "./InventoryContent";
 import AddRadiatorModal from "./modals/AddRadiatorModal";
 import EditRadiatorModal from "./modals/EditRadiatorModal";
+import AdjustStockModal from "./modals/AdjustStockModal";
 import radiatorService from "../../api/radiatorService";
 import { isAdminUser } from "../../utils/roles";
 
-const RadiatorList = ({ onNavigate }) => {
+const RadiatorList = () => {
   const { user } = useAuth();
 
   // Use infinite scroll hook with auto-scroll enabled
@@ -63,6 +64,16 @@ const RadiatorList = ({ onNavigate }) => {
   const addModal = useModal();
   const editModal = useModal();
   const detailModal = useModal();
+  const adjustStockModal = useModal();
+
+  useEffect(() => {
+    if (!detailModal.isOpen || !detailModal.data?.id) return;
+    const fresh = radiators.find((r) => r.id === detailModal.data.id);
+    if (fresh && fresh !== detailModal.data) {
+      detailModal.openModal(fresh);
+    }
+  }, [radiators, detailModal]);
+
   const {
     filteredData: filteredRadiators,
     filters,
@@ -185,7 +196,7 @@ const RadiatorList = ({ onNavigate }) => {
         observerRef={observerRef}
         editModal={editModal}
         handleDeleteRadiator={handleDeleteRadiator}
-        onEditStock={() => onNavigate?.("stock")}
+        onEditStock={adjustStockModal.openModal}
         isAdmin={isAdmin}
         viewMode={viewMode}
         warehouses={warehouses || []}
@@ -205,6 +216,14 @@ const RadiatorList = ({ onNavigate }) => {
         onClose={editModal.closeModal}
         onSuccess={handleEditRadiator}
         radiator={editModal.data}
+      />
+
+      <AdjustStockModal
+        isOpen={adjustStockModal.isOpen}
+        radiator={adjustStockModal.data}
+        warehouses={warehouses || []}
+        onClose={adjustStockModal.closeModal}
+        onSaved={refetch}
       />
     </div>
   );

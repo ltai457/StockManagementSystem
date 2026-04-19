@@ -13,6 +13,7 @@ namespace RadiatorStockAPI.Data
         public DbSet<Radiator> Radiators { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
         public DbSet<ProductType> ProductTypes { get; set; }
+        public DbSet<Brand> Brands { get; set; }
         public DbSet<StockLevel> StockLevels { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -61,6 +62,13 @@ namespace RadiatorStockAPI.Data
                 entity.HasKey(pt => pt.Id);
                 entity.HasIndex(pt => pt.Name).IsUnique();
                 entity.Property(pt => pt.Name).IsRequired().HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<Brand>(entity =>
+            {
+                entity.HasKey(b => b.Id);
+                entity.HasIndex(b => b.Name).IsUnique();
+                entity.Property(b => b.Name).IsRequired().HasMaxLength(100);
             });
 
             // Configure StockLevel
