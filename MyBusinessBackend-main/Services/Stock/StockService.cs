@@ -1,6 +1,7 @@
 using RadiatorStockAPI.DTOs.Stock;
 using RadiatorStockAPI.Models;
 using RadiatorStockAPI.Services.Warehouses;
+using Microsoft.EntityFrameworkCore;
 
 namespace RadiatorStockAPI.Services.Stock;
 
@@ -8,13 +9,11 @@ public class StockService : IStockService
 {
     private readonly IStockDal _dal;
     private readonly IWarehouseService _warehouseService;
-    private readonly ILogger<StockService> _logger;
 
-    public StockService(IStockDal dal, IWarehouseService warehouseService, ILogger<StockService> logger)
+    public StockService(IStockDal dal, IWarehouseService warehouseService)
     {
         _dal = dal;
         _warehouseService = warehouseService;
-        _logger = logger;
     }
 
     public async Task<Dictionary<string, int>?> GetRadiatorStockAsync(Guid radiatorId)
@@ -24,31 +23,12 @@ public class StockService : IStockService
         return stockLevels.ToDictionary(sl => sl.Warehouse.Code, sl => sl.Quantity);
     }
 
-    public async Task<bool> UpdateStockAsync(Guid radiatorId, string warehouseCode, int quantity)
+    public async Task<bool> UpdateStockAsync(Guid radiatorId, string warehouseCode, int quantity, Guid? updatedBy = null, string? reason = null)
     {
-        if (!await _dal.RadiatorExistsAsync(radiatorId)) return false;
-        var warehouse = await _warehouseService.GetByCodeAsync(warehouseCode);
-        if (warehouse == null) return false;
+        if (!await PrepareStockUpdateAsync(radiatorId, warehouseCode, quantity, updatedBy, reason))
+            return false;
 
-        var stockLevel = await _dal.GetStockLevelAsync(radiatorId, warehouse.Id);
-        var oldQuantity = stockLevel?.Quantity ?? 0;
-
-        if (stockLevel == null)
-        {
-            await _dal.AddStockLevelAsync(new StockLevel
-            {
-                Id = Guid.NewGuid(), RadiatorId = radiatorId, WarehouseId = warehouse.Id,
-                Quantity = quantity, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
-            });
-        }
-        else
-        {
-            stockLevel.Quantity = quantity;
-            stockLevel.UpdatedAt = DateTime.UtcNow;
-        }
-
-        await LogStockHistoryAsync(radiatorId, warehouse, oldQuantity, quantity, "Manual Adjustment", null);
-        await _dal.SaveChangesAsync();
+        await SaveStockChangesAsync();
         return true;
     }
 
@@ -74,32 +54,23 @@ public class StockService : IStockService
 
     public async Task<List<StockLevel>> GetOutOfStockItemsAsync() => await _dal.GetOutOfStockLevelsAsync();
 
-    public async Task<(bool Success, string? Error, int SuccessCount, int ErrorCount, List<(Guid RadiatorId, string WarehouseCode, string Error)> Errors)> BulkUpdateStockAsync(List<StockUpdateItemDto> updates)
+    public async Task<(bool Success, string? Error, int SuccessCount, int ErrorCount, List<(Guid RadiatorId, string WarehouseCode, string Error)> Errors)> BulkUpdateStockAsync(List<StockUpdateItemDto> updates, Guid? updatedBy = null, string? reason = null)
     {
-        var successCount = 0;
-        var errorCount = 0;
         var errors = new List<(Guid RadiatorId, string WarehouseCode, string Error)>();
 
         foreach (var update in updates)
         {
-            try
+            if (!await PrepareStockUpdateAsync(update.RadiatorId, update.WarehouseCode, update.Quantity, updatedBy, reason))
             {
-                if (await UpdateStockAsync(update.RadiatorId, update.WarehouseCode, update.Quantity))
-                    successCount++;
-                else
-                {
-                    errorCount++;
-                    errors.Add((update.RadiatorId, update.WarehouseCode, "Failed to update stock"));
-                }
-            }
-            catch (Exception ex)
-            {
-                errorCount++;
-                errors.Add((update.RadiatorId, update.WarehouseCode, ex.Message));
+                errors.Add((update.RadiatorId, update.WarehouseCode, "Radiator or warehouse was not found."));
             }
         }
 
-        return (errorCount == 0, errorCount > 0 ? "Some updates failed" : null, successCount, errorCount, errors);
+        if (errors.Count > 0)
+            return (false, "No stock was changed because one or more updates were invalid.", 0, errors.Count, errors);
+
+        await SaveStockChangesAsync();
+        return (true, null, updates.Count, 0, errors);
     }
 
     public async Task<(Warehouse Warehouse, List<StockLevel> StockLevels)?> GetWarehouseStockDataAsync(string warehouseCode)
@@ -111,14 +82,18 @@ public class StockService : IStockService
     }
 
     public async Task<(bool Success, string? Error, Guid RadiatorId, string WarehouseCode, int OldQuantity, int NewQuantity, string? Reason)> AdjustStockAsync(
-        Guid radiatorId, string warehouseCode, int newQuantity, string? reason)
+        Guid radiatorId, string warehouseCode, int newQuantity, string? reason, Guid? updatedBy = null)
     {
         try
         {
             var currentStock = await GetRadiatorStockAsync(radiatorId);
             var oldQuantity = currentStock?.GetValueOrDefault(warehouseCode.ToUpper(), 0) ?? 0;
-            var success = await UpdateStockAsync(radiatorId, warehouseCode, newQuantity);
+            var success = await UpdateStockAsync(radiatorId, warehouseCode, newQuantity, updatedBy, reason);
             return (success, success ? null : "Failed to adjust stock", radiatorId, warehouseCode, oldQuantity, newQuantity, reason);
+        }
+        catch (StockConcurrencyException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -159,7 +134,7 @@ public class StockService : IStockService
             string.IsNullOrWhiteSpace(reason) ? "Stock received." : reason.Trim()
         );
 
-        await _dal.SaveChangesAsync();
+        await SaveStockChangesAsync();
         return (true, null, radiatorId, warehouse.Code, quantity, stockLevel.Quantity, reason);
     }
 
@@ -228,7 +203,7 @@ public class StockService : IStockService
             BuildTransferNote("from", fromWarehouse.Code, reason)
         );
 
-        await _dal.SaveChangesAsync();
+        await SaveStockChangesAsync();
         return (true, null, radiatorId, fromWarehouse.Code, toWarehouse.Code, quantity);
     }
 
@@ -271,7 +246,7 @@ public class StockService : IStockService
             string.IsNullOrWhiteSpace(reason) ? "Sale recorded manually." : reason.Trim()
         );
 
-        await _dal.SaveChangesAsync();
+        await SaveStockChangesAsync();
         return (true, null, radiatorId, warehouse.Code, quantity, stockLevel.Quantity, reason);
     }
 
@@ -302,21 +277,75 @@ public class StockService : IStockService
 
     private async Task LogStockHistoryAsync(Guid radiatorId, Warehouse warehouse, int oldQuantity, int newQuantity, string changeType, Guid? updatedBy, string? notes = null)
     {
-        try
+        var quantityChange = newQuantity - oldQuantity;
+        await _dal.AddStockHistoryAsync(new StockHistory
         {
-            var quantityChange = newQuantity - oldQuantity;
-            await _dal.AddStockHistoryAsync(new StockHistory
+            Id = Guid.NewGuid(), RadiatorId = radiatorId, WarehouseId = warehouse.Id,
+            OldQuantity = oldQuantity, NewQuantity = newQuantity, QuantityChange = quantityChange,
+            MovementType = quantityChange >= 0 ? "INCOMING" : "OUTGOING",
+            ChangeType = changeType, UpdatedBy = updatedBy, CreatedAt = DateTime.UtcNow,
+            Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim()
+        });
+    }
+
+    private async Task<bool> PrepareStockUpdateAsync(
+        Guid radiatorId,
+        string warehouseCode,
+        int quantity,
+        Guid? updatedBy,
+        string? reason)
+    {
+        if (!await _dal.RadiatorExistsAsync(radiatorId))
+            return false;
+
+        var warehouse = await _warehouseService.GetByCodeAsync(warehouseCode);
+        if (warehouse == null)
+            return false;
+
+        var stockLevel = await _dal.GetStockLevelAsync(radiatorId, warehouse.Id);
+        var oldQuantity = stockLevel?.Quantity ?? 0;
+
+        if (stockLevel == null)
+        {
+            await _dal.AddStockLevelAsync(new StockLevel
             {
-                Id = Guid.NewGuid(), RadiatorId = radiatorId, WarehouseId = warehouse.Id,
-                OldQuantity = oldQuantity, NewQuantity = newQuantity, QuantityChange = quantityChange,
-                MovementType = quantityChange >= 0 ? "INCOMING" : "OUTGOING",
-                ChangeType = changeType, UpdatedBy = updatedBy, CreatedAt = DateTime.UtcNow,
-                Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim()
+                Id = Guid.NewGuid(),
+                RadiatorId = radiatorId,
+                WarehouseId = warehouse.Id,
+                Quantity = quantity,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             });
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, "Error logging stock history for radiator {RadiatorId}", radiatorId);
+            stockLevel.Quantity = quantity;
+            stockLevel.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await LogStockHistoryAsync(
+            radiatorId,
+            warehouse,
+            oldQuantity,
+            quantity,
+            "Manual Adjustment",
+            updatedBy,
+            reason);
+
+        return true;
+    }
+
+    private async Task SaveStockChangesAsync()
+    {
+        try
+        {
+            // EF Core wraps all changes in this SaveChanges call in one transaction,
+            // so the quantity and audit history either both commit or both fail.
+            await _dal.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new StockConcurrencyException(ex);
         }
     }
 

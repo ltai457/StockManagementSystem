@@ -65,17 +65,19 @@ ASP.NET Core 8 REST API that powers the Chan Mary 333 radiator stock platform. I
 
 3. **Apply database migrations**
 
-   The API runs `context.Database.Migrate()` on startup. If the `Migrations/` folder is missing on a fresh clone, generate it before updating the database:
+   Development can apply migrations on startup. Production fails closed when migrations are pending, so apply them as a controlled deployment step:
 
    ```bash
    dotnet ef migrations add InitialCreate
    dotnet ef database update
    ```
 
-   Startup seeding will create default warehouses and the following users:
+   Development startup seeding can create the following users:
 
    - Admin — `admin` / `Admin123!`
    - Staff — `staff1` / `Staff123!`
+
+   These known credentials are never seeded in production. For a new empty production database, temporarily configure all three `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_EMAIL`, and `BOOTSTRAP_ADMIN_PASSWORD` variables. Remove them after the first administrator is created.
 
 4. **Run the API**
 
@@ -87,7 +89,7 @@ ASP.NET Core 8 REST API that powers the Chan Mary 333 radiator stock platform. I
 
 ## Key Endpoints
 
-- `POST /api/v1/auth/login` – Issue access + refresh tokens. Supports `/register`, `/refresh`, `/logout`, `/change-password`, and `/me`.
+- `POST /api/v1/auth/login` – Issue access + rotating refresh tokens. Registration is administrator-only; `/refresh`, `/logout`, `/change-password`, and `/me` are also supported.
 - `GET /api/v1/radiators` – CRUD for radiators, including image upload to the API's `/uploads/radiators` storage. `Admin` can delete; `Admin` and `Staff` can create/update.
 - `GET /api/v1/warehouses` – Manage warehouses; includes stock level aggregation.
 - `GET /api/v1/stock/movements` – Track transfers, adjustments, and audit history.
@@ -103,6 +105,7 @@ Inspect `Controllers/` and `Services/` for full request/response contracts. `Rad
 - Set production secrets through environment variables or a secure secret store (do **not** ship credentials in `appsettings.json`).
 - Provide the PostgreSQL CA certificate or set `SSL Mode=Require` as needed for managed services.
 - Configure `ALLOWED_ORIGINS` with your hosted frontend URL(s).
+- Apply EF migrations before starting the production release. Do not run migrations concurrently from every API replica.
 - Mount `UPLOADS_ROOT_PATH` on persistent disk storage so uploaded images survive redeploys and restarts.
 - Ensure the hosting environment exposes port `5128` (or override `ASPNETCORE_URLS`).
 - Keep `UPLOADS_REQUEST_PATH` aligned with the frontend image URLs. The default `/uploads` works with the current UI.

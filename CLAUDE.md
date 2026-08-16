@@ -155,9 +155,9 @@ Stock operations go through `StockController` → `StockService` → creates `St
 
 ## Important Notes
 
-- Migrations run automatically on API startup (`context.Database.Migrate()` in `Program.cs`)
+- Development may run migrations automatically. Production expects migrations as a release step and fails startup when migrations are pending.
 - The frontend Vite dev server proxies `/api` requests to the backend (configured in `vite.config.ts`)
 - CORS is open in Development, restricted to `ALLOWED_ORIGINS` in Production
 - Security headers are set in middleware (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
-- No test suite exists yet -- use Swagger UI and `RadiatorStockAPI.http` for manual testing
+- Backend production-control regression tests live in `MyBusinessBackend.Tests` and run through `dotnet test StockManagementSystem.sln`.
 - The `DigitalOcean` branch contains deployment-specific configuration for DigitalOcean App Platform

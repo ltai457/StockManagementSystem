@@ -21,5 +21,4 @@ public class StockTransferDto
     [StringLength(250)]
     public string? Reason { get; set; }
 
-    public Guid? UpdatedBy { get; set; }
 }

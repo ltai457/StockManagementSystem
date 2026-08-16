@@ -10,7 +10,8 @@ public class StockDal : IStockDal
     public StockDal(RadiatorDbContext context) => _context = context;
 
     public async Task<StockLevel?> GetStockLevelAsync(Guid radiatorId, Guid warehouseId)
-        => await _context.StockLevels.FirstOrDefaultAsync(sl => sl.RadiatorId == radiatorId && sl.WarehouseId == warehouseId);
+        => _context.StockLevels.Local.FirstOrDefault(sl => sl.RadiatorId == radiatorId && sl.WarehouseId == warehouseId)
+            ?? await _context.StockLevels.FirstOrDefaultAsync(sl => sl.RadiatorId == radiatorId && sl.WarehouseId == warehouseId);
 
     public async Task<List<StockLevel>> GetStockLevelsForRadiatorAsync(Guid radiatorId)
         => await _context.StockLevels.Include(sl => sl.Warehouse).Where(sl => sl.RadiatorId == radiatorId).ToListAsync();
@@ -56,7 +57,7 @@ public class StockDal : IStockDal
     public async Task AddStockHistoryAsync(StockHistory history)
     {
         _context.StockHistories.Add(history);
-        await _context.SaveChangesAsync();
+        await Task.CompletedTask;
     }
 
     public async Task<List<StockHistory>> GetStockMovementsAsync(

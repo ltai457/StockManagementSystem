@@ -6,12 +6,12 @@ namespace RadiatorStockAPI.Services.Stock;
 
 public interface IUpdateStockHandler
 {
-    Task<Result<object>> UpdateStockAsync(Guid radiatorId, UpdateStockDto dto);
-    Task<Result<BulkUpdateResultDto>> BulkUpdateStockAsync(BulkUpdateStockDto dto);
-    Task<Result<object>> AdjustStockAsync(StockAdjustmentDto dto);
-    Task<Result<object>> RecordStockInAsync(StockInDto dto);
-    Task<Result<object>> TransferStockAsync(StockTransferDto dto);
-    Task<Result<object>> RecordSaleAsync(StockSaleDto dto);
+    Task<Result<object>> UpdateStockAsync(Guid radiatorId, UpdateStockDto dto, Guid actorId);
+    Task<Result<BulkUpdateResultDto>> BulkUpdateStockAsync(BulkUpdateStockDto dto, Guid actorId);
+    Task<Result<object>> AdjustStockAsync(StockAdjustmentDto dto, Guid actorId);
+    Task<Result<object>> RecordStockInAsync(StockInDto dto, Guid actorId);
+    Task<Result<object>> TransferStockAsync(StockTransferDto dto, Guid actorId);
+    Task<Result<object>> RecordSaleAsync(StockSaleDto dto, Guid actorId);
 }
 
 public class UpdateStockHandler : IUpdateStockHandler
@@ -25,14 +25,14 @@ public class UpdateStockHandler : IUpdateStockHandler
         _radiatorService = radiatorService;
     }
 
-    public async Task<Result<object>> UpdateStockAsync(Guid radiatorId, UpdateStockDto dto)
+    public async Task<Result<object>> UpdateStockAsync(Guid radiatorId, UpdateStockDto dto, Guid actorId)
     {
         if (!await _radiatorService.ExistsAsync(radiatorId))
         {
             return Result<object>.NotFound($"Radiator {radiatorId} not found.");
         }
 
-        var success = await _service.UpdateStockAsync(radiatorId, dto.WarehouseCode, dto.Quantity);
+        var success = await _service.UpdateStockAsync(radiatorId, dto.WarehouseCode, dto.Quantity, actorId);
         if (success)
         {
             return Result<object>.Ok(new { message = $"Stock updated for warehouse {dto.WarehouseCode}.", radiatorId, dto.WarehouseCode, dto.Quantity });
@@ -40,12 +40,14 @@ public class UpdateStockHandler : IUpdateStockHandler
         return Result<object>.Fail($"Failed to update stock. Check warehouse code '{dto.WarehouseCode}'.");
     }
 
-    public async Task<Result<BulkUpdateResultDto>> BulkUpdateStockAsync(BulkUpdateStockDto dto)
+    public async Task<Result<BulkUpdateResultDto>> BulkUpdateStockAsync(BulkUpdateStockDto dto, Guid actorId)
     {
-        var (_, _, successCount, errorCount, errors) = await _service.BulkUpdateStockAsync(dto.Updates);
+        var (success, error, successCount, errorCount, errors) = await _service.BulkUpdateStockAsync(dto.Updates, actorId, dto.Reason);
 
         return Result<BulkUpdateResultDto>.Ok(new BulkUpdateResultDto
         {
+            Committed = success,
+            Message = success ? "All stock updates were committed." : error,
             SuccessCount = successCount, ErrorCount = errorCount,
             Errors = errors.Select(e => new BulkUpdateErrorDto
             {
@@ -54,10 +56,10 @@ public class UpdateStockHandler : IUpdateStockHandler
         });
     }
 
-    public async Task<Result<object>> AdjustStockAsync(StockAdjustmentDto dto)
+    public async Task<Result<object>> AdjustStockAsync(StockAdjustmentDto dto, Guid actorId)
     {
         var (success, error, radiatorId, warehouseCode, oldQty, newQty, reason) =
-            await _service.AdjustStockAsync(dto.RadiatorId, dto.WarehouseCode, dto.NewQuantity, dto.Reason);
+            await _service.AdjustStockAsync(dto.RadiatorId, dto.WarehouseCode, dto.NewQuantity, dto.Reason, actorId);
 
         if (success)
         {
@@ -66,7 +68,7 @@ public class UpdateStockHandler : IUpdateStockHandler
         return Result<object>.Fail(error ?? "Adjustment failed.");
     }
 
-    public async Task<Result<object>> RecordStockInAsync(StockInDto dto)
+    public async Task<Result<object>> RecordStockInAsync(StockInDto dto, Guid actorId)
     {
         if (!await _radiatorService.ExistsAsync(dto.RadiatorId))
         {
@@ -79,7 +81,7 @@ public class UpdateStockHandler : IUpdateStockHandler
                 dto.WarehouseCode,
                 dto.Quantity,
                 dto.Reason,
-                dto.UpdatedBy
+                actorId
             );
 
         if (success)
@@ -98,7 +100,7 @@ public class UpdateStockHandler : IUpdateStockHandler
         return Result<object>.Fail(error ?? "Stock in failed.");
     }
 
-    public async Task<Result<object>> TransferStockAsync(StockTransferDto dto)
+    public async Task<Result<object>> TransferStockAsync(StockTransferDto dto, Guid actorId)
     {
         if (!await _radiatorService.ExistsAsync(dto.RadiatorId))
         {
@@ -112,7 +114,7 @@ public class UpdateStockHandler : IUpdateStockHandler
                 dto.ToWarehouseCode,
                 dto.Quantity,
                 dto.Reason,
-                dto.UpdatedBy
+                actorId
             );
 
         if (success)
@@ -130,7 +132,7 @@ public class UpdateStockHandler : IUpdateStockHandler
         return Result<object>.Fail(error ?? "Transfer failed.");
     }
 
-    public async Task<Result<object>> RecordSaleAsync(StockSaleDto dto)
+    public async Task<Result<object>> RecordSaleAsync(StockSaleDto dto, Guid actorId)
     {
         if (!await _radiatorService.ExistsAsync(dto.RadiatorId))
         {
@@ -143,7 +145,7 @@ public class UpdateStockHandler : IUpdateStockHandler
                 dto.WarehouseCode,
                 dto.Quantity,
                 dto.Reason,
-                dto.UpdatedBy
+                actorId
             );
 
         if (success)

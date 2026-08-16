@@ -23,7 +23,7 @@ public class StockController : BaseController
 
     [HttpPost("radiators/{radiatorId:guid}/stock"), Authorize(Roles = "Admin,Staff")]
     public async Task<IActionResult> UpdateStock(Guid radiatorId, [FromBody] UpdateStockDto dto)
-        => Run(await _update.UpdateStockAsync(radiatorId, dto));
+        => Run(await _update.UpdateStockAsync(radiatorId, dto, GetUserId()));
 
     [HttpGet("stock/summary")]
     public async Task<IActionResult> GetSummary()
@@ -44,7 +44,7 @@ public class StockController : BaseController
 
     [HttpPost("stock/bulk-update"), Authorize(Roles = "Admin,Staff")]
     public async Task<IActionResult> BulkUpdate([FromBody] BulkUpdateStockDto dto)
-        => Run(await _update.BulkUpdateStockAsync(dto));
+        => Run(await _update.BulkUpdateStockAsync(dto, GetUserId()));
 
     [HttpGet("stock/warehouse/{warehouseCode}")]
     public async Task<IActionResult> GetWarehouseStock(string warehouseCode)
@@ -57,19 +57,19 @@ public class StockController : BaseController
 
     [HttpPost("stock/adjust"), Authorize(Roles = "Admin,Staff")]
     public async Task<IActionResult> Adjust([FromBody] StockAdjustmentDto dto)
-        => Run(await _update.AdjustStockAsync(dto));
+        => Run(await _update.AdjustStockAsync(dto, GetUserId()));
 
     [HttpPost("stock/in"), Authorize(Roles = "Admin,Staff")]
     public async Task<IActionResult> StockIn([FromBody] StockInDto dto)
-        => Run(await _update.RecordStockInAsync(dto));
+        => Run(await _update.RecordStockInAsync(dto, GetUserId()));
 
     [HttpPost("stock/transfer"), Authorize(Roles = "Admin,Staff")]
     public async Task<IActionResult> Transfer([FromBody] StockTransferDto dto)
-        => Run(await _update.TransferStockAsync(dto));
+        => Run(await _update.TransferStockAsync(dto, GetUserId()));
 
     [HttpPost("stock/sell"), Authorize(Roles = "Admin,Staff")]
     public async Task<IActionResult> Sell([FromBody] StockSaleDto dto)
-        => Run(await _update.RecordSaleAsync(dto));
+        => Run(await _update.RecordSaleAsync(dto, GetUserId()));
 
     [HttpGet("stock/movements")]
     public async Task<IActionResult> GetMovements([FromQuery] Guid? radiatorId, [FromQuery] string? warehouseCode,

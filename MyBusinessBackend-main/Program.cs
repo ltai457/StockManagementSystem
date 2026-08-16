@@ -1,11 +1,17 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json;
+using System.Threading.RateLimiting;
+using Npgsql;
 using RadiatorStockAPI.Data;
+using RadiatorStockAPI.Middleware;
 using RadiatorStockAPI.Services.Auth;
 using RadiatorStockAPI.Services.Brands;
 using RadiatorStockAPI.Services.ProductTypes;
@@ -25,13 +31,32 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // Support for environment variables (better for production/containerization)
 if (string.IsNullOrEmpty(connectionString))
 {
-    var host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
-    var database = Environment.GetEnvironmentVariable("DB_NAME") ?? "radiatorstockdb";
-    var username = Environment.GetEnvironmentVariable("DB_USERNAME") ?? "postgres";
-    var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "";
+    var host = Environment.GetEnvironmentVariable("DB_HOST");
+    var database = Environment.GetEnvironmentVariable("DB_NAME");
+    var username = Environment.GetEnvironmentVariable("DB_USERNAME");
+    var password = Environment.GetEnvironmentVariable("DB_PASSWORD");
     var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
-    
-    connectionString = $"Host={host};Database={database};Username={username};Password={password};Port={port};SSL Mode=Require";
+
+    if (!builder.Environment.IsDevelopment()
+        && new[] { host, database, username, password }.Any(string.IsNullOrWhiteSpace))
+    {
+        throw new InvalidOperationException(
+            "Production database configuration is incomplete. Configure ConnectionStrings__DefaultConnection " +
+            "or DB_HOST, DB_NAME, DB_USERNAME, and DB_PASSWORD.");
+    }
+
+    if (!int.TryParse(port, out var databasePort))
+        throw new InvalidOperationException("DB_PORT must be a valid integer.");
+
+    connectionString = new NpgsqlConnectionStringBuilder
+    {
+        Host = host ?? "localhost",
+        Database = database ?? "radiatorstockdb",
+        Username = username ?? "postgres",
+        Password = password ?? string.Empty,
+        Port = databasePort,
+        SslMode = builder.Environment.IsDevelopment() ? SslMode.Disable : SslMode.Require
+    }.ConnectionString;
 }
 
 // Add services to the container
@@ -89,8 +114,18 @@ builder.Services.AddScoped<IAuthHandler, AuthHandler>();
 
 // Add health checks for monitoring
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<RadiatorDbContext>("database")
-    .AddCheck("api", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("API is running"));
+    .AddDbContextCheck<RadiatorDbContext>("database", tags: new[] { "ready" })
+    .AddCheck("api", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), tags: new[] { "live", "ready" });
+
+var allowedOrigins = (Environment.GetEnvironmentVariable("ALLOWED_ORIGINS") ?? string.Empty)
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
+if (!builder.Environment.IsDevelopment() && allowedOrigins.Length == 0)
+{
+    throw new InvalidOperationException("ALLOWED_ORIGINS must contain at least one frontend origin in production.");
+}
 
 // Add CORS with enhanced configuration for network access
 builder.Services.AddCors(options =>
@@ -107,33 +142,44 @@ builder.Services.AddCors(options =>
         else
         {
             // In production, use specific origins
-            var allowedOrigins = new List<string>();
-            
-            // Add production URLs from environment variables
-            var prodOrigins = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS")?.Split(',')
-                ?? Array.Empty<string>();
-            allowedOrigins.AddRange(
-                prodOrigins
-                    .Select(o => o.Trim())
-                    .Where(o => !string.IsNullOrWhiteSpace(o))
-            );
-            
-            policy.WithOrigins(allowedOrigins.ToArray())
+            policy.WithOrigins(allowedOrigins)
                   .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
+                  .AllowAnyHeader();
         }
     });
 });
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+});
+
 // Add authentication
 var jwtSettings = builder.Configuration.GetSection("JWT");
-var secretKey = jwtSettings["Secret"];
+var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET") ?? jwtSettings["Secret"];
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? jwtSettings["Issuer"];
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? jwtSettings["Audience"];
 
-if (string.IsNullOrEmpty(secretKey))
+if (string.IsNullOrWhiteSpace(secretKey) || Encoding.UTF8.GetByteCount(secretKey) < 32)
 {
-    throw new InvalidOperationException("JWT Secret is not configured");
+    throw new InvalidOperationException("JWT secret must be configured and contain at least 32 bytes.");
 }
+
+if (string.IsNullOrWhiteSpace(jwtIssuer) || string.IsNullOrWhiteSpace(jwtAudience))
+    throw new InvalidOperationException("JWT issuer and audience must be configured.");
+
+builder.Configuration["JWT:Secret"] = secretKey;
+builder.Configuration["JWT:Issuer"] = jwtIssuer;
+builder.Configuration["JWT:Audience"] = jwtAudience;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -144,8 +190,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
             ClockSkew = TimeSpan.Zero
         };
@@ -213,6 +259,8 @@ forwardedHeadersOptions.KnownNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
+app.UseMiddleware<ApiExceptionMiddleware>();
+
 var uploadRootPath =
     Environment.GetEnvironmentVariable("UPLOADS_ROOT_PATH")
     ?? builder.Configuration["Uploads:RootPath"]
@@ -240,6 +288,11 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
     });
 }
+else
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
 
 // Security headers
 app.UseSecurityHeaders();
@@ -253,6 +306,7 @@ app.UseStaticFiles(new StaticFileOptions
 
 // Enable CORS before authentication - THIS IS CRITICAL
 app.UseCors("AllowFrontend");
+app.UseRateLimiter();
 
 // Authentication and authorization
 app.UseAuthentication();
@@ -261,86 +315,39 @@ app.UseAuthorization();
 // Map controllers
 app.MapControllers();
 
-// Enhanced health check endpoint with CORS information
-app.MapGet("/health", async (HttpContext httpContext, RadiatorDbContext context, IWebHostEnvironment env) =>
+static Task WriteHealthResponse(HttpContext context, Microsoft.Extensions.Diagnostics.HealthChecks.HealthReport report)
 {
-    var dbHealthy = false;
-    var dbError = "";
-    
-    try
+    context.Response.ContentType = "application/json";
+    return context.Response.WriteAsync(JsonSerializer.Serialize(new
     {
-        // Test database connection
-        await context.Database.CanConnectAsync();
-        dbHealthy = true;
-    }
-    catch (Exception ex)
-    {
-        dbError = ex.Message;
-    }
-    
-    var response = new
-    {
-        status = dbHealthy ? "healthy" : "unhealthy",
-        timestamp = DateTime.UtcNow,
-        environment = env.EnvironmentName,
-        api_version = "v1",
-        database_status = dbHealthy ? "connected" : "disconnected",
-        database_error = dbError,
-        cors_policy = env.IsDevelopment() ? "AllowAnyOrigin (Development)" : "Restricted (Production)",
-        checks = new[]
+        status = report.Status.ToString().ToLowerInvariant(),
+        checks = report.Entries.Select(entry => new
         {
-            new
-            {
-                name = "database",
-                status = dbHealthy ? "healthy" : "unhealthy",
-                description = dbHealthy ? "Database connection successful" : $"Database connection failed: {dbError}"
-            },
-            new
-            {
-                name = "api",
-                status = "healthy",
-                description = "API is running"
-            },
-            new
-            {
-                name = "cors",
-                status = "healthy", 
-                description = env.IsDevelopment() ? "CORS allows any origin in development" : "CORS configured for production"
-            }
-        }
-    };
-    
-    httpContext.Response.ContentType = "application/json";
-    httpContext.Response.StatusCode = dbHealthy ? 200 : 503;
-    
-    // Add CORS headers manually for health check
-    httpContext.Response.Headers["Access-Control-Allow-Origin"] = "*";
-    httpContext.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-    httpContext.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
-    
-    await httpContext.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response, new System.Text.Json.JsonSerializerOptions
-    {
-        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-        WriteIndented = true
+            name = entry.Key,
+            status = entry.Value.Status.ToString().ToLowerInvariant()
+        })
     }));
+}
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = WriteHealthResponse
+}).AllowAnonymous();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live"),
+    ResponseWriter = WriteHealthResponse
 }).AllowAnonymous();
 
 // Add simple ping endpoint for load balancers
-app.MapGet("/ping", (IWebHostEnvironment env) => Results.Ok(new { 
-    status = "ok", 
-    timestamp = DateTime.UtcNow,
-    server = Environment.MachineName,
-    environment = env.EnvironmentName,
-    cors = env.IsDevelopment() ? "open" : "restricted"
-})).AllowAnonymous();
+app.MapGet("/ping", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 
 // Add API info endpoint
 app.MapGet("/api/v1/info", (IWebHostEnvironment env) => Results.Ok(new {
     name = "RadiatorStock API",
     version = "1.0.0",
-    environment = env.EnvironmentName,
-    timestamp = DateTime.UtcNow,
-    cors_policy = env.IsDevelopment() ? "Development (Any Origin)" : "Production (Restricted)",
     endpoints = new {
         health = "/health",
         swagger = env.IsDevelopment() ? "/swagger" : null,
@@ -370,11 +377,21 @@ try
     
     // Apply pending migrations
     var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-    if (pendingMigrations.Any())
+    var runMigrationsOnStartup = env.IsDevelopment()
+        || Environment.GetEnvironmentVariable("RUN_MIGRATIONS_ON_STARTUP")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+        || builder.Configuration.GetValue<bool>("Database:RunMigrationsOnStartup");
+
+    if (pendingMigrations.Any() && runMigrationsOnStartup)
     {
         logger.LogInformation("Applying {Count} pending migrations...", pendingMigrations.Count());
         await context.Database.MigrateAsync();
         logger.LogInformation("✅ Database migrations applied successfully");
+    }
+    else if (pendingMigrations.Any())
+    {
+        throw new InvalidOperationException(
+            $"The database has {pendingMigrations.Count()} pending migration(s). " +
+            "Apply them as a deployment step before starting the production API.");
     }
     else
     {
@@ -382,15 +399,37 @@ try
     }
     
     var seedDefaultUsers =
-        Environment.GetEnvironmentVariable("SEED_DEFAULT_USERS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
-        || builder.Configuration.GetValue<bool>("Seeding:DefaultUsers");
+        env.IsDevelopment()
+        && (Environment.GetEnvironmentVariable("SEED_DEFAULT_USERS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+            || builder.Configuration.GetValue<bool>("Seeding:DefaultUsers"));
 
     var seedDemoRadiators =
-        Environment.GetEnvironmentVariable("SEED_DEMO_RADIATORS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
-        || builder.Configuration.GetValue<bool>("Seeding:DemoRadiators");
+        env.IsDevelopment()
+        && (Environment.GetEnvironmentVariable("SEED_DEMO_RADIATORS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+            || builder.Configuration.GetValue<bool>("Seeding:DemoRadiators"));
 
     // Seed initial data
     await SeedData.Initialize(context, seedDefaultUsers, seedDemoRadiators);
+
+    var bootstrapAdminUsername = Environment.GetEnvironmentVariable("BOOTSTRAP_ADMIN_USERNAME");
+    var bootstrapAdminEmail = Environment.GetEnvironmentVariable("BOOTSTRAP_ADMIN_EMAIL");
+    var bootstrapAdminPassword = Environment.GetEnvironmentVariable("BOOTSTRAP_ADMIN_PASSWORD");
+    var bootstrapValues = new[] { bootstrapAdminUsername, bootstrapAdminEmail, bootstrapAdminPassword };
+
+    if (bootstrapValues.Any(value => !string.IsNullOrWhiteSpace(value)))
+    {
+        if (bootstrapValues.Any(string.IsNullOrWhiteSpace))
+            throw new InvalidOperationException("All BOOTSTRAP_ADMIN_* variables must be provided together.");
+
+        if (bootstrapAdminPassword!.Length < 12)
+            throw new InvalidOperationException("BOOTSTRAP_ADMIN_PASSWORD must contain at least 12 characters.");
+
+        await SeedData.BootstrapAdminAsync(
+            context,
+            bootstrapAdminUsername!,
+            bootstrapAdminEmail!,
+            bootstrapAdminPassword);
+    }
     logger.LogInformation("✅ Database seeding completed successfully");
     
     // Log connection info (without sensitive details)
@@ -430,7 +469,7 @@ catch (Exception ex)
     }
     else
     {
-        Console.WriteLine("⚠️ Production mode: Starting API without database - some features may not work");
+        throw;
     }
 }
 

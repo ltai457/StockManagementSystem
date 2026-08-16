@@ -10,6 +10,7 @@ Current working branch: **`update-to-use-share`**
 - Full-stack radiator inventory system for Chan Mary 333.
 - Frontend: React 19, TypeScript, Vite 7, React Router 7, Material UI 7, Axios.
 - Backend: ASP.NET Core 8, EF Core, PostgreSQL, JWT authentication.
+- Backend production controls now include admin-only registration, rate-limited auth endpoints, hashed/expiring rotating refresh tokens, sanitized health checks, fail-closed production configuration, server-owned stock audit identities, and PostgreSQL optimistic stock concurrency.
 - The frontend UI was migrated completely from Tailwind/custom classes to the shared MUI design system.
 - Tailwind, `@tailwindcss/vite`, `src/App.css`, and all frontend `className` styling were removed.
 - The migration is currently local and must be committed/pushed separately when requested.
@@ -185,6 +186,7 @@ Backend:
 cd MyBusinessBackend-main
 dotnet restore
 dotnet ef database update
+dotnet test ../StockManagementSystem.sln --configuration Release
 dotnet run
 ```
 
@@ -199,7 +201,19 @@ Local defaults:
 - Several migrated `.tsx` feature files still contain `// @ts-nocheck` (63 occurrences at the last count). TypeScript compilation passes, but removing these gradually and adding explicit prop/domain types is the next typing-quality project.
 - There is no comprehensive automated frontend test suite. Lint, typecheck, production build, and a browser/API smoke test are the current release checks.
 - The main frontend bundle should eventually be split with route/feature-level lazy imports.
+- Product image uploads still use filesystem storage. Move them to S3-compatible object storage (DigitalOcean Spaces) before horizontally scaling the API.
+- Authentication rate limiting is currently in-memory per API instance; use a shared gateway/distributed limiter when the API scales to multiple instances.
 - Documentation must not claim Tailwind is installed; the frontend is MUI-only.
+
+## Backend production deployment
+
+- Production requires an explicit database configuration, a JWT secret of at least 32 bytes, and at least one `ALLOWED_ORIGINS` value.
+- Apply EF migrations as a deployment job. Production startup fails if migrations are pending unless `RUN_MIGRATIONS_ON_STARTUP=true` is deliberately enabled.
+- `MyBusinessBackend-main/Migrations/` is version-controlled; never add it back to `.gitignore`.
+- A new empty production database can create its first administrator with all three `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_EMAIL`, and `BOOTSTRAP_ADMIN_PASSWORD` variables. Remove them after first startup.
+- Known default users and demo data are development-only.
+- Refresh tokens are stored as SHA-256 hashes. Existing plaintext refresh tokens from older builds become invalid after this upgrade, so existing users must sign in again once.
+- Stock quantity changes and their audit records commit together. Concurrent writes return HTTP 409 instead of silently overwriting stock.
 
 ## Git safety
 

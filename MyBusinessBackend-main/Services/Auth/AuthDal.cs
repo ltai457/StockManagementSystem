@@ -39,20 +39,27 @@ public class AuthDal : IAuthDal
     public async Task<List<RefreshToken>> GetActiveTokensByUserAsync(Guid userId)
     {
         return await _context.RefreshTokens
-            .Where(rt => rt.UserId == userId && !rt.IsRevoked)
+            .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiryDate > DateTime.UtcNow)
             .ToListAsync();
     }
 
     public async Task CleanupOldTokensAsync(Guid userId, int keepCount = 5)
     {
-        var old = await _context.RefreshTokens
+        var tokens = await _context.RefreshTokens
             .Where(rt => rt.UserId == userId)
             .OrderByDescending(rt => rt.CreatedAt)
-            .Skip(keepCount)
             .ToListAsync();
 
-        if (old.Count > 0)
-            _context.RefreshTokens.RemoveRange(old);
+        var inactiveTokens = tokens
+            .Where(rt => rt.IsRevoked || rt.ExpiryDate <= DateTime.UtcNow);
+
+        var excessActiveTokens = tokens
+            .Where(rt => !rt.IsRevoked && rt.ExpiryDate > DateTime.UtcNow)
+            .OrderByDescending(rt => rt.CreatedAt)
+            .Skip(Math.Max(keepCount - 1, 0))
+            .ToList();
+
+        _context.RefreshTokens.RemoveRange(inactiveTokens.Concat(excessActiveTokens));
     }
 
     public async Task SaveChangesAsync()

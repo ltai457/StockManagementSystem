@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RadiatorStockAPI", "MyBusinessBackend-main\RadiatorStockAPI.csproj", "{7C5C91C7-9304-40A3-F0B4-0DE59AA51C1A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyBusinessBackend.Tests", "MyBusinessBackend.Tests\MyBusinessBackend.Tests.csproj", "{D7D878B8-130A-4CF4-AE75-F1F0C921E018}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{7C5C91C7-9304-40A3-F0B4-0DE59AA51C1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C5C91C7-9304-40A3-F0B4-0DE59AA51C1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C5C91C7-9304-40A3-F0B4-0DE59AA51C1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7D878B8-130A-4CF4-AE75-F1F0C921E018}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7D878B8-130A-4CF4-AE75-F1F0C921E018}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7D878B8-130A-4CF4-AE75-F1F0C921E018}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7D878B8-130A-4CF4-AE75-F1F0C921E018}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

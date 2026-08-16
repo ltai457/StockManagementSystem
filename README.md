@@ -60,7 +60,7 @@ Run:
 
 ```bash
 dotnet restore
-dotnet ef database update   # Creates schema + seeds demo data
+dotnet ef database update   # Creates/updates the local schema
 dotnet run                  # http://localhost:5128
 ```
 
@@ -86,7 +86,7 @@ npm install
 npm run dev    # http://localhost:5173
 ```
 
-### 3. Default Credentials
+### 3. Development Credentials
 
 | Role  | Username | Password   |
 |-------|----------|------------|
@@ -96,7 +96,7 @@ npm run dev    # http://localhost:5173
 ## API Endpoints
 
 ### Auth (`/api/v1/auth`)
-`POST /login` | `POST /register` | `POST /refresh` | `POST /logout` | `POST /change-password` | `GET /me`
+`POST /login` | `POST /register` (Admin) | `POST /refresh` | `POST /logout` | `POST /change-password` | `GET /me`
 
 ### Radiators (`/api/v1/radiators`) -- Auth required
 `GET /` (paginated) | `GET /{id}` | `POST /` | `PUT /{id}` | `DELETE /{id}` (Admin)
@@ -117,7 +117,7 @@ npm run dev    # http://localhost:5173
 
 - **Backend**: Publish to Azure App Service, AWS ECS, DigitalOcean App Platform, or Docker. Set DB connection, JWT secrets, `ALLOWED_ORIGINS`, and a persistent `UPLOADS_ROOT_PATH` via environment variables. Use `SSL Mode=Require` for managed PostgreSQL.
 - **Frontend**: `npm run build` outputs `dist/`. Deploy to Netlify, Vercel, S3+CloudFront, or DigitalOcean Apps. Set `VITE_API_BASE` to the production API URL before building.
-- **Database**: Managed PostgreSQL recommended. Migrations run automatically on API startup.
+- **Database**: Managed PostgreSQL recommended. Apply migrations as a controlled production deployment step; automatic startup migration is development-only by default.
 - **Images**: The API serves uploaded images from `/uploads`. Back that directory with persistent storage or images will disappear on restart/redeploy.
 
 ## Project Documentation

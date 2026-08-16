@@ -7,7 +7,6 @@ namespace RadiatorStockAPI.Data
 {
     public static class SeedData
     {
-        private static readonly string[] LegacyWarehouseCodes = ["WH_AKL", "WH_CHC", "WH_WLG"];
         private static readonly (string Brand, string Model, string Type, string CoreDimension, string Dimension)[] DemoRadiatorTemplates =
         [
             ("Denso", "Corolla", "Passenger Car", "680x408x16", "710x440x40"),
@@ -42,8 +41,6 @@ namespace RadiatorStockAPI.Data
             bool seedDefaultUsers = false,
             bool seedDemoRadiators = false)
         {
-            await EnsureProductTypesTableAsync(context);
-            await CleanupLegacyWarehousesAsync(context);
             if (seedDemoRadiators)
             {
                 await SeedDemoRadiatorsAsync(context);
@@ -85,58 +82,27 @@ namespace RadiatorStockAPI.Data
             }
         }
 
-        private static async Task EnsureProductTypesTableAsync(RadiatorDbContext context)
+        public static async Task BootstrapAdminAsync(
+            RadiatorDbContext context,
+            string username,
+            string email,
+            string password)
         {
-            await context.Database.ExecuteSqlRawAsync(@"
-                CREATE TABLE IF NOT EXISTS product_types (
-                    id uuid PRIMARY KEY,
-                    name varchar(50) NOT NULL UNIQUE,
-                    is_active boolean NOT NULL,
-                    created_at timestamp with time zone NOT NULL,
-                    updated_at timestamp with time zone NOT NULL
-                );");
-        }
-
-        private static async Task CleanupLegacyWarehousesAsync(RadiatorDbContext context)
-        {
-            var legacyWarehouses = await context.Warehouses
-                .Where(w => LegacyWarehouseCodes.Contains(w.Code))
-                .Select(w => new { w.Id, w.Code })
-                .ToListAsync();
-
-            if (!legacyWarehouses.Any())
-            {
+            if (await context.Users.AnyAsync())
                 return;
-            }
 
-            var legacyWarehouseIds = legacyWarehouses.Select(w => w.Id).ToList();
-
-            var stockLevels = await context.StockLevels
-                .Where(sl => legacyWarehouseIds.Contains(sl.WarehouseId))
-                .ToListAsync();
-
-            var stockHistories = await context.StockHistories
-                .Where(sh => legacyWarehouseIds.Contains(sh.WarehouseId))
-                .ToListAsync();
-
-            if (stockHistories.Any())
+            context.Users.Add(new User
             {
-                context.StockHistories.RemoveRange(stockHistories);
-            }
-
-            if (stockLevels.Any())
-            {
-                context.StockLevels.RemoveRange(stockLevels);
-            }
-
-            var warehouses = await context.Warehouses
-                .Where(w => legacyWarehouseIds.Contains(w.Id))
-                .ToListAsync();
-
-            context.Warehouses.RemoveRange(warehouses);
+                Id = Guid.NewGuid(),
+                Username = username.Trim(),
+                Email = email.Trim(),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                Role = UserRole.Admin,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
             await context.SaveChangesAsync();
-
-            Console.WriteLine($"🧹 Removed legacy seeded warehouses: {string.Join(", ", legacyWarehouses.Select(w => w.Code))}");
         }
 
         private static async Task SeedDemoRadiatorsAsync(RadiatorDbContext context)
