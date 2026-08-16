@@ -1,5 +1,7 @@
 # CLAUDE.md -- Project Quick Reference
 
+> **Canonical context:** Read [`PROJECT_MEMORY.md`](PROJECT_MEMORY.md) first. It reflects the current TypeScript, shared API, and MUI-only frontend. Any conflicting older detail in this file should be treated as stale.
+
 ## What is this project?
 
 A full-stack **radiator stock management system** for **Chan Mary 333**. Tracks radiator inventory across multiple warehouses with role-based access, stock operations, and audit history.
@@ -26,12 +28,13 @@ StockManagementSystem/
 ├─ Frontend-radiator-main/          # React 19 SPA
 │   ├─ src/
 │   │   ├─ api/                     # Axios HTTP layer
-│   │   │   ├─ httpClient.js        # Axios instance with JWT interceptor
-│   │   │   ├─ authService.js       # Auth + session management (~452 lines, most complex service)
-│   │   │   ├─ radiatorService.js   # Radiator CRUD
-│   │   │   ├─ warehouseService.js  # Warehouse CRUD
-│   │   │   ├─ stockService.js      # Stock operations (transfer, adjust, sale, inbound)
-│   │   │   └─ userService.js       # User management
+│   │   │   ├─ httpClient.ts        # Shared Axios instance with JWT interceptor
+│   │   │   ├─ apiHelpers.ts        # Shared result/error and CRUD helpers
+│   │   │   ├─ authService.ts       # Auth + session management
+│   │   │   ├─ radiatorService.ts   # Radiator CRUD
+│   │   │   ├─ warehouseService.ts  # Warehouse CRUD
+│   │   │   ├─ stockService.ts      # Stock operations (transfer, adjust, sale, inbound)
+│   │   │   └─ userService.ts       # User management
 │   │   ├─ components/              # ~51 components organized by feature
 │   │   │   ├─ auth/                # Login
 │   │   │   ├─ dashboard/           # Overview, QuickActions, RecentActivity
@@ -41,7 +44,7 @@ StockManagementSystem/
 │   │   │   ├─ warehouse/           # Warehouse management
 │   │   │   └─ users/               # User admin panel
 │   │   ├─ contexts/
-│   │   │   └─ AuthContext.jsx      # Auth provider (session state, token refresh, activity tracking)
+│   │   │   └─ AuthContext.tsx      # Auth provider (session state, token refresh, activity tracking)
 │   │   ├─ hooks/                   # 8 custom hooks
 │   │   │   ├─ useStockManagement.js  # Main stock logic (~249 lines)
 │   │   │   ├─ useAuth.js
@@ -50,13 +53,13 @@ StockManagementSystem/
 │   │   │   ├─ useFilters.js
 │   │   │   ├─ useModal.js
 │   │   │   └─ useInfiniteScroll.js
-│   │   ├─ pages/
-│   │   │   └─ PointOfSale.jsx      # POS workflow
+│   │   ├─ theme/                   # Shared MUI design system
+│   │   ├─ types/                   # Shared TypeScript domain/API types
 │   │   ├─ utils/                   # Formatting, toast, constants
 │   │   │   └─ stock.js             # LOW_STOCK_THRESHOLD = 6
-│   │   ├─ App.jsx                  # Router with protected routes
-│   │   └─ main.jsx                 # Entry point
-│   ├─ vite.config.js               # Dev server (port 5173), proxy to backend, chunk splitting
+│   │   ├─ App.tsx                  # Router with protected routes
+│   │   └─ main.tsx                 # Entry point and MUI theme provider
+│   ├─ vite.config.ts               # Dev server (port 5173), proxy to backend, chunk splitting
 │   ├─ package.json
 │   └─ .env                         # VITE_API_BASE, VITE_DEBUG
 │
@@ -67,7 +70,7 @@ StockManagementSystem/
 ## Tech Stack
 
 - **Backend**: .NET 8, EF Core 9, PostgreSQL 15+, JWT Bearer auth, BCrypt, DotNetEnv, Swagger
-- **Frontend**: React 19, Vite 7, Tailwind CSS 4, React Router 7, Axios, MUI 7, Lucide/Heroicons
+- **Frontend**: React 19, TypeScript, Vite 7, React Router 7, Axios, MUI 7, Lucide/Heroicons
 - **DB naming**: snake_case (via EFCore.NamingConventions)
 
 ## Database Entities
@@ -139,7 +142,7 @@ VITE_DEBUG=true|false
 1. Create component(s) in `src/components/{feature}/`
 2. Add API service methods in `src/api/{feature}Service.js`
 3. Create custom hook if state logic is complex (`src/hooks/`)
-4. Add route in `src/App.jsx`
+4. Add route in `src/App.tsx`
 
 ### Database schema change
 1. Modify entity model in `Models/`
@@ -153,7 +156,7 @@ Stock operations go through `StockController` → `StockService` → creates `St
 ## Important Notes
 
 - Migrations run automatically on API startup (`context.Database.Migrate()` in `Program.cs`)
-- The frontend Vite dev server proxies `/api` requests to the backend (configured in `vite.config.js`)
+- The frontend Vite dev server proxies `/api` requests to the backend (configured in `vite.config.ts`)
 - CORS is open in Development, restricted to `ALLOWED_ORIGINS` in Production
 - Security headers are set in middleware (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
 - No test suite exists yet -- use Swagger UI and `RadiatorStockAPI.http` for manual testing

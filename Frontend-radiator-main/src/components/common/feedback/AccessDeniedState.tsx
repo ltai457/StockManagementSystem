@@ -1,16 +1,20 @@
-// @ts-nocheck
-import React from "react";
+import { Box, Stack, Typography } from "@mui/material";
 import { Shield } from "lucide-react";
 
-const AccessDeniedState = ({
+interface AccessDeniedStateProps {
+  title?: string;
+  message?: string;
+}
+
+export default function AccessDeniedState({
   title = "Access Denied",
   message = "You don't have permission to access this section.",
-}) => (
-  <div className="text-center py-12">
-    <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-    <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-    <p className="text-gray-600">{message}</p>
-  </div>
-);
-
-export default AccessDeniedState;
+}: AccessDeniedStateProps) {
+  return (
+    <Stack alignItems="center" py={6} spacing={1.5} textAlign="center">
+      <Box color="text.disabled" display="flex"><Shield size={64} /></Box>
+      <Typography variant="h4">{title}</Typography>
+      <Typography color="text.secondary">{message}</Typography>
+    </Stack>
+  );
+}

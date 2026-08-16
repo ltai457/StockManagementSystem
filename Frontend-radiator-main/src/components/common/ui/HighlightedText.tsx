@@ -1,39 +1,33 @@
-// @ts-nocheck
-import React from "react";
+import { Box } from "@mui/material";
 
-const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+interface HighlightedTextProps {
+  text?: string | number | null;
+  query?: string;
+}
 
-const HighlightedText = ({ text, query, className }) => {
-  const content = text ?? "";
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+export default function HighlightedText({ text, query }: HighlightedTextProps) {
+  const content = String(text ?? "");
   const searchTerm = query?.trim();
 
-  if (!searchTerm) {
-    return <span className={className}>{content}</span>;
-  }
+  if (!searchTerm) return <Box component="span">{content}</Box>;
 
-  const parts = String(content).split(new RegExp(`(${escapeRegExp(searchTerm)})`, "ig"));
+  const parts = content.split(new RegExp(`(${escapeRegExp(searchTerm)})`, "ig"));
 
   return (
-    <span className={className}>
+    <Box component="span">
       {parts.map((part, index) =>
         part.toLowerCase() === searchTerm.toLowerCase() ? (
-          <mark
+          <Box
+            component="mark"
             key={`${part}-${index}`}
-            style={{
-              backgroundColor: "#FEF08A",
-              color: "inherit",
-              padding: "0 2px",
-              borderRadius: "2px",
-            }}
+            sx={{ bgcolor: "warning.light", borderRadius: 0.5, color: "inherit", px: 0.25 }}
           >
             {part}
-          </mark>
-        ) : (
-          <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
-        )
+          </Box>
+        ) : part
       )}
-    </span>
+    </Box>
   );
-};
-
-export default HighlightedText;
+}

@@ -16,6 +16,7 @@ import UserTable from './UserTable';
 import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
 import { isAdminRole, isAdminUser } from '../../utils/roles';
+import { Alert, Stack } from '@mui/material';
 
 const UserManagement = () => {
   const { user: currentUser } = useAuth();
@@ -92,7 +93,7 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Stack spacing={3}>
       <PageHeader
         title="User Management"
         subtitle="Manage system users and their roles"
@@ -109,9 +110,7 @@ const UserManagement = () => {
       <UserFilters filters={filters} onFilterChange={setFilters} />
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-          {error}
-        </div>
+        <Alert severity="error">{error}</Alert>
       )}
 
       {filteredUsers.length === 0 ? (
@@ -144,7 +143,7 @@ const UserManagement = () => {
         onSuccess={handleEditUser}
         user={editModal.data}
       />
-    </div>
+    </Stack>
   );
 };
 

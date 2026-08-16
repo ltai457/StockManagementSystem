@@ -4,7 +4,7 @@ Full-stack radiator inventory and warehouse management system for **Chan Mary 33
 
 ```
 StockManagementSystem/
-├─ Frontend-radiator-main/    # React SPA (Vite 7, Tailwind CSS 4)
+├─ Frontend-radiator-main/    # React + TypeScript SPA (Vite 7, MUI 7)
 ├─ MyBusinessBackend-main/    # ASP.NET Core 8 Web API
 ├─ StockManagementSystem.sln  # Visual Studio solution
 └─ *.sql                      # Database migration helper scripts
@@ -24,7 +24,7 @@ StockManagementSystem/
 
 | Layer | Technologies |
 |-------|-------------|
-| Frontend | React 19, Vite 7, Tailwind CSS 4, React Router 7, Axios, MUI 7, Lucide/Heroicons |
+| Frontend | React 19, TypeScript, Vite 7, React Router 7, Axios, MUI 7, Lucide/Heroicons |
 | Backend | ASP.NET Core 8, Entity Framework Core 9, PostgreSQL 15+, JWT Bearer, BCrypt, DotNetEnv |
 | Build | npm, .NET CLI, EF Core migrations, ESLint |
 
@@ -122,6 +122,7 @@ npm run dev    # http://localhost:5173
 
 ## Project Documentation
 
+- [`PROJECT_MEMORY.md`](PROJECT_MEMORY.md) -- Canonical project context and development conventions for future sessions
 - [`Frontend-radiator-main/README.md`](Frontend-radiator-main/README.md) -- Frontend scripts, structure, and troubleshooting
 - [`MyBusinessBackend-main/README.md`](MyBusinessBackend-main/README.md) -- Backend config, full endpoint docs, and ops guidance
 - [`deploy/deploy-droplet.md`](deploy/deploy-droplet.md) -- nginx, `systemd`, and single-droplet deployment steps

@@ -1,256 +1,155 @@
 // @ts-nocheck
-// src/components/dashboard/Dashboard.jsx
-import React, { useState } from 'react';
+import { useState } from "react";
 import {
-  LayoutDashboard, Package,
-  Warehouse, Box, UserCog, LogOut,
-  TrendingUp, ChevronRight, ClipboardList
-} from 'lucide-react';
-import { useAuth } from '../../contexts/auth-context';
-import { useNavigate } from 'react-router-dom';
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  ButtonBase,
+  Chip,
+  Divider,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
+import {
+  Box as BoxIcon,
+  ClipboardList,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  TrendingUp,
+  UserCog,
+  Warehouse,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/auth-context";
+import { isAdminUser } from "../../utils/roles";
+import RadiatorList from "../inventory/RadiatorList";
+import ActivityPage from "../stock/ActivityPage";
+import StockManagement from "../stock/StockManagementPage";
+import UserManagement from "../users/UserManagement";
+import WarehouseManagement from "../warehouse/WarehouseManagement";
+import DashboardOverview from "./DashboardOverview";
 
-// Dashboard content components
-import DashboardOverview from './DashboardOverview';
-import RadiatorList from '../inventory/RadiatorList';
-import WarehouseManagement from '../warehouse/WarehouseManagement';
-import StockManagement from '../stock/StockManagementPage';
-import ActivityPage from '../stock/ActivityPage';
-import UserManagement from '../users/UserManagement';
-import { isAdminUser } from '../../utils/roles';
-
-const TESTING_MODE = false; // Should match AuthContext
+const TESTING_MODE = false;
+const SIDEBAR_WIDTH = 256;
 
 const navConfig = [
-  { id: 'overview', label: 'Overview', shortLabel: 'Home', icon: LayoutDashboard, color: 'blue' },
-  { id: 'inventory', label: 'Inventory', shortLabel: 'Inventory', icon: Package, color: 'orange' },
-  { id: 'stock', label: 'Stock Management', shortLabel: 'Stock', icon: Box, color: 'indigo' },
-  { id: 'activity', label: 'Activity Log', shortLabel: 'Activity', icon: ClipboardList, color: 'green' },
-  { id: 'warehouses', label: 'Warehouses', shortLabel: 'Warehouse', icon: Warehouse, color: 'cyan' },
+  { id: "overview", label: "Overview", shortLabel: "Home", icon: LayoutDashboard },
+  { id: "inventory", label: "Inventory", shortLabel: "Inventory", icon: Package },
+  { id: "stock", label: "Stock Management", shortLabel: "Stock", icon: BoxIcon },
+  { id: "activity", label: "Activity Log", shortLabel: "Activity", icon: ClipboardList },
+  { id: "warehouses", label: "Warehouses", shortLabel: "Warehouse", icon: Warehouse },
 ];
 
-const getColorClasses = (color, isActive) => {
-  const colors = {
-    blue: isActive ? 'bg-blue-50 text-blue-700 border-blue-700' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600',
-    green: isActive ? 'bg-green-50 text-green-700 border-green-700' : 'text-gray-600 hover:bg-green-50 hover:text-green-600',
-    orange: isActive ? 'bg-orange-50 text-orange-700 border-orange-700' : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600',
-    indigo: isActive ? 'bg-indigo-50 text-indigo-700 border-indigo-700' : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600',
-    cyan: isActive ? 'bg-cyan-50 text-cyan-700 border-cyan-700' : 'text-gray-600 hover:bg-cyan-50 hover:text-cyan-600',
-    red: isActive ? 'bg-red-50 text-red-700 border-red-700' : 'text-gray-600 hover:bg-red-50 hover:text-red-600',
-  };
-  return colors[color];
-};
-
-const getBottomNavColor = (color, isActive) => {
-  const colors = {
-    blue: isActive ? 'text-blue-600' : 'text-gray-400',
-    green: isActive ? 'text-green-600' : 'text-gray-400',
-    orange: isActive ? 'text-orange-600' : 'text-gray-400',
-    indigo: isActive ? 'text-indigo-600' : 'text-gray-400',
-    cyan: isActive ? 'text-cyan-600' : 'text-gray-400',
-    red: isActive ? 'text-red-600' : 'text-gray-400',
-  };
-  return colors[color];
-};
-
-const Dashboard = () => {
+export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-
-  // Detect admin (matches your logic)
+  const [activeTab, setActiveTab] = useState("overview");
   const isAdmin = isAdminUser(user);
-
-  // Dynamic nav with admin section
   const navItems = [
     ...navConfig,
-    ...(isAdmin ?
-      [{ id: 'users', label: 'User Management', shortLabel: 'Users', icon: UserCog, color: 'red' }] : []),
+    ...(isAdmin ? [{ id: "users", label: "User Management", shortLabel: "Users", icon: UserCog }] : []),
   ];
 
-  // Handle logout with testing mode
   const handleLogout = () => {
-    if (TESTING_MODE) {
-      if (window.confirm('In testing mode. Do you want to go to the login page?')) {
-        navigate('/login');
-      }
-      return;
-    }
-    logout();
-    navigate('/login');
+    if (TESTING_MODE && !window.confirm("In testing mode. Go to the login page?")) return;
+    if (!TESTING_MODE) logout();
+    navigate("/login");
   };
 
-  // Render actual tab content
   const renderContent = () => {
     switch (activeTab) {
-      case 'overview':
-        return <DashboardOverview onNavigate={setActiveTab} />;
-      case 'inventory':
-        return <RadiatorList onNavigate={setActiveTab} />;
-      case 'warehouses':
-        return <WarehouseManagement />;
-      case 'stock':
-        return <StockManagement />;
-      case 'activity':
-        return <ActivityPage />;
-      case 'users':
-        return <UserManagement />;
-      default:
-        return <DashboardOverview onNavigate={setActiveTab} />;
+      case "inventory": return <RadiatorList onNavigate={setActiveTab} />;
+      case "warehouses": return <WarehouseManagement />;
+      case "stock": return <StockManagement />;
+      case "activity": return <ActivityPage />;
+      case "users": return <UserManagement />;
+      default: return <DashboardOverview onNavigate={setActiveTab} />;
     }
   };
 
-  // User profile initials (fallback if no user)
-  const userInitials = user?.username
-    ? user.username.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-    : 'U';
+  const initials = user?.username
+    ? user.username.split(" ").map((word) => word[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
+  const activeLabel = navItems.find((item) => item.id === activeTab)?.label || "Overview";
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Desktop Sidebar - hidden on mobile */}
-      <aside className={`hidden lg:flex lg:translate-x-0 lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transition-all duration-300 flex-col`}>
-        {/* Logo & Toggle */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-gray-900">Chan Mary 333</span>
-          </div>
-        </div>
+    <Box bgcolor="background.default" display="flex" height="100vh" overflow="hidden">
+      <Paper
+        component="aside"
+        elevation={0}
+        square
+        sx={{ borderRight: 1, borderColor: "divider", display: { xs: "none", lg: "flex" }, flexDirection: "column", width: SIDEBAR_WIDTH }}
+      >
+        <Stack alignItems="center" direction="row" height={64} px={2} spacing={1.25}>
+          <Avatar variant="rounded" sx={{ bgcolor: "primary.main", height: 36, width: 36 }}><TrendingUp size={20} /></Avatar>
+          <Typography fontWeight={800}>Chan Mary 333</Typography>
+        </Stack>
+        <Divider />
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <Stack component="nav" flex={1} spacing={0.5} sx={{ overflowY: "auto", p: 1.5 }}>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const active = activeTab === item.id;
             return (
-              <button
+              <ButtonBase
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
-                  isActive ? 'border-l-4' : 'border-l-4 border-transparent'
-                } ${getColorClasses(item.color, isActive)}`}
+                sx={{ bgcolor: active ? "action.selected" : "transparent", borderLeft: 4, borderColor: active ? "primary.main" : "transparent", borderRadius: 2, color: active ? "primary.main" : "text.secondary", justifyContent: "flex-start", minHeight: 46, px: 1.5, py: 1, textAlign: "left", "&:hover": { bgcolor: "action.hover", color: "primary.main" } }}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                <span className="flex-1 text-left font-medium">{item.label}</span>
-                {isActive && <ChevronRight className="w-4 h-4" />}
-              </button>
+                <Icon size={20} />
+                <Typography flex={1} fontWeight={active ? 700 : 500} ml={1.5} variant="body2">{item.label}</Typography>
+              </ButtonBase>
             );
           })}
-        </nav>
+        </Stack>
 
-        {/* User Profile */}
-        <div className="p-3 border-t border-gray-200">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-9 h-9 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-              {userInitials}
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">{user?.username || 'User'}</p>
-              <p className="text-xs text-gray-500">{isAdmin ? 'Admin' : (user?.role || 'User')}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full mt-2 flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px]"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
+        <Divider />
+        <Box p={1.5}>
+          <Stack alignItems="center" direction="row" p={1} spacing={1.25}>
+            <Avatar>{initials}</Avatar>
+            <Box flex={1} minWidth={0}>
+              <Typography fontWeight={600} noWrap variant="body2">{user?.username || "User"}</Typography>
+              <Typography color="text.secondary" variant="caption">{isAdmin ? "Admin" : (user?.role || "User")}</Typography>
+            </Box>
+          </Stack>
+          <Button color="error" fullWidth onClick={handleLogout} startIcon={<LogOut size={18} />}>Logout</Button>
+        </Box>
+      </Paper>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto w-full pb-16 lg:pb-0">
-        {/* Top Bar */}
-        <header className="min-h-[64px] bg-white border-b border-gray-200 flex items-center justify-between gap-3 px-3 sm:px-4 md:px-6 py-3">
-          {/* Mobile: Logo */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-          </div>
+      <Box component="main" flex={1} minWidth={0} overflow="auto" pb={{ xs: 8, lg: 0 }}>
+        <Paper component="header" elevation={0} square sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", display: "flex", minHeight: 64, px: { xs: 2, md: 3 }, py: 1.25 }}>
+          <Box flex={1} minWidth={0}>
+            <Typography noWrap variant="h2">{activeLabel}</Typography>
+            <Typography color="text.secondary" display={{ xs: "none", sm: "block" }} variant="body2">Manage your radiator inventory and stock</Typography>
+          </Box>
+          <Chip color="success" label="System Online" size="small" />
+          <Button color="error" onClick={handleLogout} sx={{ display: { lg: "none" }, minWidth: 44, ml: 1 }}><LogOut size={20} /></Button>
+        </Paper>
 
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
-              {navItems.find(item => item.id === activeTab)?.label || 'Overview'}
-            </h1>
-            <p className="text-xs md:text-sm text-gray-500 hidden sm:block">Manage your radiator inventory and stock</p>
-          </div>
-
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="px-2 md:px-3 py-1 md:py-1.5 bg-green-100 text-green-700 rounded-full text-xs md:text-sm font-medium">
-              <span className="hidden sm:inline">System </span>Online
-            </div>
-            {/* Mobile: Logout button */}
-            <button
-              onClick={handleLogout}
-              className="lg:hidden p-2 hover:bg-red-50 text-red-500 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        </header>
-
-        {/* Real Content Area */}
-        <div className="p-3 sm:p-4 md:p-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 lg:p-8">
+        <Box p={{ xs: 1.5, sm: 2, md: 3 }}>
+          <Paper elevation={0} sx={{ border: 1, borderColor: "divider", borderRadius: 3, p: { xs: 1.5, sm: 2, md: 3, lg: 4 } }}>
             {renderContent()}
-          </div>
-        </div>
-      </main>
+          </Paper>
+        </Box>
+      </Box>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-area-bottom">
-        <div className="flex items-center justify-around px-1 py-1">
-          {navItems.filter((item) => item.id !== 'users').map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-all duration-200 min-h-[52px] ${
-                  isActive ? 'bg-gray-50' : ''
-                } ${getBottomNavColor(item.color, isActive)}`}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'scale-110' : ''} transition-transform`} />
-                <span className={`text-[10px] mt-0.5 leading-tight ${isActive ? 'font-semibold' : 'font-medium'}`}>
-                  {item.shortLabel}
-                </span>
-                {isActive && (
-                  <div className={`w-1 h-1 rounded-full mt-0.5 ${
-                    item.color === 'blue' ? 'bg-blue-600' :
-                    item.color === 'orange' ? 'bg-orange-600' :
-                    item.color === 'indigo' ? 'bg-indigo-600' :
-                    item.color === 'green' ? 'bg-green-600' :
-                    item.color === 'cyan' ? 'bg-cyan-600' :
-                    'bg-red-600'
-                  }`} />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      <Paper component="nav" elevation={8} square sx={{ bottom: 0, display: { xs: "flex", lg: "none" }, left: 0, position: "fixed", right: 0, zIndex: 1200 }}>
+        {navItems.filter((item) => item.id !== "users").map((item) => {
+          const Icon = item.icon;
+          const active = activeTab === item.id;
+          return (
+            <ButtonBase key={item.id} onClick={() => setActiveTab(item.id)} sx={{ color: active ? "primary.main" : "text.disabled", flex: 1, flexDirection: "column", minHeight: 64, py: 0.75 }}>
+              <Icon size={active ? 22 : 20} />
+              <Typography fontWeight={active ? 700 : 500} mt={0.25} variant="caption">{item.shortLabel}</Typography>
+            </ButtonBase>
+          );
+        })}
+      </Paper>
 
-      {/* Testing Mode Info Box */}
-      {TESTING_MODE && (
-        <div className="fixed bottom-20 lg:bottom-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg shadow-lg max-w-xs z-50">
-          <div className="flex items-start">
-            <svg className="w-5 h-5 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <div>
-              <p className="font-semibold text-sm">Testing Mode Active</p>
-              <p className="text-xs mt-1">Authentication is disabled for testing. Set TESTING_MODE to false in App.jsx and AuthContext.jsx to enable authentication.</p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {TESTING_MODE && <Alert severity="warning" sx={{ bottom: { xs: 76, lg: 16 }, maxWidth: 360, position: "fixed", right: 16, zIndex: 1300 }}>Testing mode is active.</Alert>}
+    </Box>
   );
-};
-
-export default Dashboard;
+}

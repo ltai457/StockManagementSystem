@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import {
   Alert,
+  Box,
+  ButtonBase,
   Chip,
   MenuItem,
   Paper,
@@ -13,6 +15,8 @@ import {
   TableHead,
   TableRow,
   TextField,
+  InputAdornment,
+  Stack,
   Typography,
 } from "@mui/material";
 import { LoadingSpinner } from "../../common/ui/LoadingSpinner";
@@ -127,43 +131,36 @@ export default function RecentActivity({ warehouses = [] }) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-        <span className="text-sm text-gray-500">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>
-      </div>
+    <Stack spacing={2}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Typography variant="h6">Recent Activity</Typography>
+        <Typography variant="body2" color="text.secondary">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</Typography>
+      </Stack>
 
       {/* Type filter chips */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+      <Stack direction="row" spacing={1} overflow="auto" pb={0.5} mx={-0.5} px={0.5}>
         {TYPE_FILTERS.map((t) => (
-          <button
+          <Chip clickable
             key={t.value}
             onClick={() => setTypeFilter(t.value)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-              typeFilter === t.value
-                ? "bg-gray-900 text-white shadow-sm"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            {t.label}
-          </button>
+            label={t.label}
+            color={typeFilter === t.value ? "primary" : "default"}
+            variant={typeFilter === t.value ? "filled" : "outlined"}
+          />
         ))}
-      </div>
+      </Stack>
 
       {/* Search & filters */}
-      <div className="rounded-lg border border-gray-200 bg-white p-3 sm:p-4 shadow-sm space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
+      <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 } }}>
+        <Stack spacing={1.5}>
+          <TextField size="small"
             placeholder="Search product..."
             value={productFilter}
             onChange={(e) => setProductFilter(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[40px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={16} /></InputAdornment> } }}
           />
-        </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+        <Stack direction="row" spacing={{ xs: 1, sm: 1.5 }}>
           <TextField
             select
             size="small"
@@ -193,8 +190,9 @@ export default function RecentActivity({ warehouses = [] }) {
             <MenuItem value="90">Last 90 days</MenuItem>
             <MenuItem value="180">Last 6 months</MenuItem>
           </TextField>
-        </div>
-      </div>
+        </Stack>
+        </Stack>
+      </Paper>
 
       {/* Content */}
       {loading ? (
@@ -204,7 +202,7 @@ export default function RecentActivity({ warehouses = [] }) {
       ) : (
         <>
           {/* Mobile: Collapsible cards */}
-          <div className="md:hidden space-y-2">
+          <Stack spacing={1} sx={{ display: { xs: "flex", md: "none" } }}>
             {filtered.map((m) => {
               const route = getMovementRoute(m);
               const activity = getActivityLabel(m);
@@ -218,10 +216,10 @@ export default function RecentActivity({ warehouses = [] }) {
                 />
               );
             })}
-          </div>
+          </Stack>
 
           {/* Desktop: Table */}
-          <div className="hidden md:block">
+          <Box sx={{ display: { xs: "none", md: "block" } }}>
             <TableContainer component={Paper} sx={{ boxShadow: "none" }}>
               <Table size="small" sx={{ minWidth: 900 }}>
                 <TableHead>
@@ -301,10 +299,10 @@ export default function RecentActivity({ warehouses = [] }) {
                 </TableBody>
               </Table>
             </TableContainer>
-          </div>
+          </Box>
         </>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -313,10 +311,10 @@ function ActivityCard({ movement: m, route, activity, formatDate }) {
   const isIncoming = m.movementType === "INCOMING";
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <button
+    <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+      <ButtonBase
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-3 flex items-center gap-3 text-left"
+        sx={{ width: "100%", p: 1.5, display: "flex", gap: 1.5, textAlign: "left", justifyContent: "flex-start" }}
       >
         <Chip
           size="small"
@@ -325,10 +323,10 @@ function ActivityCard({ movement: m, route, activity, formatDate }) {
           variant="outlined"
           sx={{ height: 24, "& .MuiChip-label": { px: 1, fontSize: 12, fontWeight: 600 } }}
         />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">{m.productName}</p>
-          <p className="text-xs text-gray-500">{formatDate(m.date)}</p>
-        </div>
+        <Box flex={1} minWidth={0}>
+          <Typography variant="body2" fontWeight={500} noWrap>{m.productName}</Typography>
+          <Typography variant="caption" color="text.secondary">{formatDate(m.date)}</Typography>
+        </Box>
         <Chip
           size="small"
           label={activity.label}
@@ -336,38 +334,30 @@ function ActivityCard({ movement: m, route, activity, formatDate }) {
           variant="filled"
           sx={{ height: 22, "& .MuiChip-label": { px: 1, fontSize: 10 } }}
         />
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
-      </button>
+        <Box color="text.secondary" display="flex" sx={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}><ChevronDown size={16} /></Box>
+      </ButtonBase>
 
       {expanded && (
-        <div className="px-3 pb-3 pt-0 border-t border-gray-100">
-          <div className="grid grid-cols-2 gap-2 text-xs pt-2">
-            <div>
-              <span className="text-gray-500">Code</span>
-              <p className="font-medium text-gray-900">{m.brand} - {m.productCode}</p>
-            </div>
-            <div>
-              <span className="text-gray-500">Direction</span>
-              <p className="font-medium text-gray-900">{isIncoming ? "Incoming" : "Outgoing"}</p>
-            </div>
+        <Box px={1.5} pb={1.5} borderTop={1} borderColor="divider">
+          <Box display="grid" gridTemplateColumns="repeat(2, minmax(0, 1fr))" gap={1} pt={1}>
+            <Detail label="Code" value={`${m.brand} - ${m.productCode}`} />
+            <Detail label="Direction" value={isIncoming ? "Incoming" : "Outgoing"} />
             {route.fromWarehouseCode && (
-              <div>
-                <span className="text-gray-500">From</span>
-                <p className="font-medium text-gray-900">{route.fromWarehouseCode}</p>
-              </div>
+              <Detail label="From" value={route.fromWarehouseCode} />
             )}
             {route.toWarehouseCode && (
-              <div>
-                <span className="text-gray-500">To</span>
-                <p className="font-medium text-gray-900">{route.toWarehouseCode}</p>
-              </div>
+              <Detail label="To" value={route.toWarehouseCode} />
             )}
-          </div>
+          </Box>
           {m.notes && (
-            <p className="text-xs text-gray-500 pt-2">{m.notes}</p>
+            <Typography variant="caption" color="text.secondary" pt={1} display="block">{m.notes}</Typography>
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Paper>
   );
+}
+
+function Detail({ label, value }) {
+  return <Box><Typography variant="caption" color="text.secondary">{label}</Typography><Typography variant="caption" fontWeight={600} display="block">{value}</Typography></Box>;
 }

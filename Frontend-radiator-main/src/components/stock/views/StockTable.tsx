@@ -3,9 +3,13 @@ import React, { useState } from "react";
 import { AlertTriangle, CheckCircle, Minus, Plus } from "lucide-react";
 import {
   Chip,
+  Box,
+  Card,
   IconButton,
+  Paper,
   Stack,
   TextField,
+  Typography,
 } from "@mui/material";
 import { LOW_STOCK_THRESHOLD } from "../../../utils/stock";
 import { Modal } from "../../common/ui/Modal";
@@ -25,8 +29,8 @@ export default function StockTable({
 
   return (
     <>
-      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-3">
+      <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
+        <Box display="grid" gridTemplateColumns={{ xs: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }} gap={{ xs: 1.5, md: 2 }}>
         {safeItems.map((r) => {
           const total = getTotalStock(r.stock);
           const out = total === 0;
@@ -34,31 +38,32 @@ export default function StockTable({
           const displayName = `${r.brand || ""} ${r.model || ""}`.trim() || r.code;
 
           return (
-            <div
+            <Card
               key={r.id}
-              className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+              variant="outlined"
+              sx={{ height: "100%", display: "flex", flexDirection: "column", p: 2, borderRadius: 2 }}
             >
-              <div className="min-h-[96px]">
-                <p className="min-h-[44px] line-clamp-2 text-sm font-semibold text-slate-900 md:text-base">
+              <Box minHeight={96}>
+                <Typography minHeight={44} variant="body2" fontWeight={600} sx={{ fontSize: { md: 16 }, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                   {displayName}
-                </p>
-                <div className="mt-1 min-h-[18px]">
-                  <p className="text-xs text-slate-500">{r.code || "-"}</p>
-                </div>
-                <div className="mt-2 min-h-[28px]">
+                </Typography>
+                <Box mt={0.5} minHeight={18}>
+                  <Typography variant="caption" color="text.secondary">{r.code || "-"}</Typography>
+                </Box>
+                <Box mt={1} minHeight={28}>
                   {out ? (
-                    <Status text="Out" className="text-rose-600" icon={AlertTriangle} />
+                    <Status text="Out" color="error" icon={AlertTriangle} />
                   ) : low ? (
-                    <Status text="Low" className="text-amber-600" icon={AlertTriangle} />
+                    <Status text="Low" color="warning" icon={AlertTriangle} />
                   ) : (
-                    <Status text="Good" className="text-emerald-600" icon={CheckCircle} />
+                    <Status text="Good" color="success" icon={CheckCircle} />
                   )}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <div className="mt-4 min-h-[68px]">
+              <Box mt={2} minHeight={68}>
                 {selectedWarehouse === "all" ? (
-                  <div className="min-h-[28px]">
+                  <Box minHeight={28}>
                     <Chip
                       size="small"
                       label={`Total: ${total}`}
@@ -73,14 +78,14 @@ export default function StockTable({
                         "& .MuiChip-label": { fontSize: 11, px: 1.25 },
                       }}
                     />
-                  </div>
+                  </Box>
                 ) : editMode ? (
-                  <div className="rounded-2xl bg-slate-50 px-3 py-2.5">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-medium uppercase tracking-[0.08em] text-slate-500">
+                  <Box borderRadius={2} bgcolor="grey.50" px={1.5} py={1.25}>
+                    <Box mb={1} display="flex" alignItems="center" justifyContent="space-between">
+                      <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10, letterSpacing: ".08em" }}>
                         Edit Quantity
-                      </span>
-                    </div>
+                      </Typography>
+                    </Box>
                     <QuantityEditor
                       value={getDisplayStock(r.id, total)}
                       onDecrement={() =>
@@ -91,9 +96,9 @@ export default function StockTable({
                       }
                       onChange={(value) => onChangeStock(r.id, value)}
                     />
-                  </div>
+                  </Box>
                 ) : (
-                  <div className="min-h-[28px]">
+                  <Box minHeight={28}>
                     <Chip
                       size="small"
                       label={`Total: ${total}`}
@@ -108,20 +113,20 @@ export default function StockTable({
                         "& .MuiChip-label": { fontSize: 11, px: 1.25 },
                       }}
                     />
-                  </div>
+                  </Box>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Card>
           );
         })}
-        </div>
+        </Box>
 
         {safeItems.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No radiators found matching your criteria</p>
-          </div>
+          <Box textAlign="center" py={6}>
+            <Typography color="text.secondary">No radiators found matching your criteria</Typography>
+          </Box>
         )}
-      </div>
+      </Paper>
 
       <StockWarehouseModal
         item={detailItem}
@@ -186,14 +191,9 @@ function Badge({ quantity, getStockStatus }) {
   );
 }
 
-function Status({ text, className, icon: Icon }) {
+function Status({ text, color, icon: Icon }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full border border-current/10 bg-current/5 px-2 py-1 ${className}`}
-    >
-      {Icon && <Icon className="h-3.5 w-3.5" />}
-      <span className="text-[11px] font-semibold uppercase tracking-[0.08em]">{text}</span>
-    </span>
+    <Chip size="small" color={color} variant="outlined" icon={Icon ? <Icon size={14} /> : undefined} label={text} sx={{ height: 26, "& .MuiChip-label": { fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".08em" } }} />
   );
 }
 
@@ -204,23 +204,21 @@ function StockWarehouseModal({ item, warehouses, onClose }) {
 
   return (
     <Modal isOpen={!!item} onClose={onClose} title={displayName} size="md">
-      <div className="space-y-4">
-        <div>
-          <p className="text-sm text-gray-600">Warehouse stock breakdown</p>
-        </div>
+      <Stack spacing={2}>
+        <Typography variant="body2" color="text.secondary">Warehouse stock breakdown</Typography>
 
-        <div className="space-y-2">
+        <Stack spacing={1}>
           {(warehouses || []).map((warehouse) => {
             const quantity = item.stock?.[warehouse.code] || 0;
             return (
-              <div
+              <Stack
                 key={warehouse.id}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-3"
+                direction="row" alignItems="center" justifyContent="space-between" border={1} borderColor="divider" bgcolor="grey.50" borderRadius={1} px={1.5} py={1.5}
               >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{warehouse.name}</p>
-                  <p className="text-xs text-gray-500">{warehouse.code}</p>
-                </div>
+                <Box minWidth={0}>
+                  <Typography variant="body2" fontWeight={600}>{warehouse.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">{warehouse.code}</Typography>
+                </Box>
                 <Chip
                   size="small"
                   label={quantity}
@@ -233,11 +231,11 @@ function StockWarehouseModal({ item, warehouses, onClose }) {
                   }
                   variant="filled"
                 />
-              </div>
+              </Stack>
             );
           })}
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     </Modal>
   );
 }

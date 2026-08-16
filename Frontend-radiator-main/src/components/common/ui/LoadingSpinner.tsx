@@ -1,21 +1,17 @@
-// @ts-nocheck
-// src/components/common/ui/LoadingSpinner.jsx
-import React from "react";
+import { CircularProgress, Stack, Typography } from "@mui/material";
 
-export const LoadingSpinner = ({ size = "md", text }) => {
-  const sizeClasses = {
-    sm: "w-4 h-4 border-2",
-    md: "w-6 h-6 border-2",
-    lg: "w-10 h-10 border-4",
-  };
+interface LoadingSpinnerProps {
+  size?: "sm" | "md" | "lg";
+  text?: string;
+}
 
+const sizes = { sm: 16, md: 24, lg: 40 } as const;
+
+export function LoadingSpinner({ size = "md", text }: LoadingSpinnerProps) {
   return (
-    <div className="flex items-center justify-center gap-2 p-4">
-      <div
-        className={`animate-spin rounded-full border-t-transparent border-blue-600 ${sizeClasses[size]}`}
-        role="status"
-      />
-      {text && <span className="text-gray-600 text-sm">{text}</span>}
-    </div>
+    <Stack alignItems="center" direction="row" justifyContent="center" p={2} spacing={1}>
+      <CircularProgress aria-label={text || "Loading"} size={sizes[size]} />
+      {text && <Typography color="text.secondary" variant="body2">{text}</Typography>}
+    </Stack>
   );
-};
+}

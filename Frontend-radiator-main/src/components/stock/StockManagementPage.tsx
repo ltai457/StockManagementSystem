@@ -11,6 +11,7 @@ import TransferStockModal from "./modals/TransferStockModal";
 import RecordSaleModal from "./modals/RecordSaleModal";
 import PageLoadingState from "../common/feedback/PageLoadingState";
 import PageErrorState from "../common/feedback/PageErrorState";
+import { Avatar, Box, ButtonBase, Stack, Typography } from "@mui/material";
 
 const QUICK_ACTIONS = [
   {
@@ -19,8 +20,7 @@ const QUICK_ACTIONS = [
     description: "Move units between warehouses",
     icon: ArrowRightLeft,
     onOpen: "transfer",
-    className:
-      "border-blue-200 bg-white text-blue-700 hover:border-blue-400 hover:bg-blue-50",
+    color: "info.main",
   },
   {
     key: "stock-in",
@@ -28,8 +28,7 @@ const QUICK_ACTIONS = [
     description: "Add supplier deliveries",
     icon: PackagePlus,
     onOpen: "stockIn",
-    className:
-      "border-green-200 bg-white text-green-700 hover:border-green-400 hover:bg-green-50",
+    color: "success.main",
   },
   {
     key: "sale",
@@ -37,8 +36,7 @@ const QUICK_ACTIONS = [
     description: "Reduce stock for customer orders",
     icon: ShoppingCart,
     onOpen: "sale",
-    className:
-      "border-red-200 bg-white text-red-700 hover:border-red-400 hover:bg-red-50",
+    color: "error.main",
   },
 ];
 
@@ -68,35 +66,33 @@ export default function StockManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <Box minHeight="100vh" bgcolor="background.default" p={{ xs: 1.5, sm: 2, md: 3 }}>
+      <Stack maxWidth="xl" mx="auto" spacing={3}>
         <StockHeader radiators={sm.filteredRadiators} />
 
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {QUICK_ACTIONS.map(({ key, label, description, icon: Icon, onOpen, className }) => (
-            <button
+        <Box display="grid" gridTemplateColumns="repeat(3, minmax(0, 1fr))" gap={{ xs: 1, sm: 1.5 }}>
+          {QUICK_ACTIONS.map(({ key, label, description, icon: Icon, onOpen, color }) => (
+            <ButtonBase
               key={key}
               onClick={() => {
                 if (onOpen === "transfer") setTransferOpen(true);
                 if (onOpen === "stockIn") setStockInOpen(true);
                 if (onOpen === "sale") setSaleOpen(true);
               }}
-              className={`flex min-h-[60px] flex-col items-center justify-center gap-2 rounded-xl border-2 px-2 py-3 text-center shadow-sm transition-all sm:min-h-[64px] sm:flex-row sm:justify-start sm:gap-3 sm:px-4 sm:text-left ${className}`}
+              sx={{ minHeight: { xs: 60, sm: 64 }, flexDirection: { xs: "column", sm: "row" }, justifyContent: { xs: "center", sm: "flex-start" }, gap: { xs: 1, sm: 1.5 }, px: { xs: 1, sm: 2 }, py: 1.5, border: 2, borderColor: "divider", bgcolor: "background.paper", borderRadius: 2, color, textAlign: { xs: "center", sm: "left" }, boxShadow: 1, "&:hover": { bgcolor: "action.hover", borderColor: color } }}
             >
-              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-gray-50">
-                <Icon className="h-5 w-5" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-xs font-semibold leading-tight sm:text-base">
+              <Avatar variant="rounded" sx={{ width: 40, height: 40, flex: "none", bgcolor: "action.hover", color: "inherit" }}><Icon size={20} /></Avatar>
+              <Box minWidth={0}>
+                <Typography display="block" fontWeight={600} sx={{ fontSize: { xs: 12, sm: 16 }, lineHeight: 1.2 }}>
                   {label}
-                </span>
-                <span className="mt-0.5 hidden text-xs text-gray-500 sm:block sm:text-sm">
+                </Typography>
+                <Typography mt={0.5} variant="body2" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
                   {description}
-                </span>
-              </span>
-            </button>
+                </Typography>
+              </Box>
+            </ButtonBase>
           ))}
-        </div>
+        </Box>
 
         {/* Warehouse Overview Cards */}
         <StockOverviewGrid
@@ -122,8 +118,8 @@ export default function StockManagement() {
           selectedWarehouse={sm.selectedWarehouse}
         />
 
-        <div className="mb-1">
-          <p className="text-sm text-gray-600">
+        <Box mb={0.5}>
+          <Typography variant="body2" color="text.secondary">
             {sm.selectedWarehouse === "all"
               ? "Viewing stock across all warehouses"
               : `Viewing stock for ${
@@ -131,10 +127,10 @@ export default function StockManagement() {
                   sm.selectedWarehouse
                 }`}
             {sm.editMode && sm.selectedWarehouse !== "all" && (
-              <span className="ml-2 font-medium text-blue-600">• Edit Mode Active</span>
+              <Typography component="span" ml={1} fontWeight={600} color="primary.main">• Edit Mode Active</Typography>
             )}
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
         {/* Stock Table */}
         <StockTable
@@ -177,7 +173,7 @@ export default function StockManagement() {
           submitting={submitting}
           onSubmit={handleOperation(sm.handleRecordSale)}
         />
-      </div>
-    </div>
+      </Stack>
+    </Box>
   );
 }

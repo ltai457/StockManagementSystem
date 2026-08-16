@@ -1,57 +1,34 @@
 // @ts-nocheck
-import React, { useMemo } from "react";
+import { useMemo } from "react";
+import { Box, Button, List, ListItem, ListItemIcon, ListItemText, Typography } from "@mui/material";
 import { AlertTriangle } from "lucide-react";
 import { LOW_STOCK_THRESHOLD } from "../../utils/stock";
+import { AppCard } from "../common/ui";
 
 export default function LowStockOverview({ radiators = [], onNavigate }) {
-  const lowStockItems = useMemo(() => {
-    return (radiators || [])
-      .filter((r) => {
-        const total = Object.values(r.stock || {}).reduce((sum, qty) => sum + (qty || 0), 0);
-        return total > 0 && total <= LOW_STOCK_THRESHOLD;
-      })
-      .sort((a, b) => {
-        const totalA = Object.values(a.stock || {}).reduce((s, q) => s + (q || 0), 0);
-        const totalB = Object.values(b.stock || {}).reduce((s, q) => s + (q || 0), 0);
-        return totalA - totalB;
-      });
-  }, [radiators]);
+  const lowStockItems = useMemo(() => radiators
+    .map((radiator) => ({ ...radiator, calculatedTotal: Object.values(radiator.stock || {}).reduce((sum, quantity) => sum + (quantity || 0), 0) }))
+    .filter((radiator) => radiator.calculatedTotal > 0 && radiator.calculatedTotal <= LOW_STOCK_THRESHOLD)
+    .sort((a, b) => a.calculatedTotal - b.calculatedTotal), [radiators]);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Low Stock</h3>
-        {lowStockItems.length > 0 && (
-          <button
-            onClick={() => onNavigate?.("stock")}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            View Stock →
-          </button>
-        )}
-      </div>
-
+    <AppCard
+      title="Low Stock"
+      actions={lowStockItems.length ? <Button onClick={() => onNavigate?.("stock")}>View Stock</Button> : undefined}
+    >
       {lowStockItems.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <p className="text-sm">All stock levels are healthy</p>
-        </div>
+        <Box py={4} textAlign="center"><Typography color="text.secondary">All stock levels are healthy</Typography></Box>
       ) : (
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {lowStockItems.map((r) => {
-            const total = Object.values(r.stock || {}).reduce((s, q) => s + (q || 0), 0);
-            return (
-              <div
-                key={r.id}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg bg-yellow-50 border border-yellow-100"
-              >
-                <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-                <span className="text-sm text-gray-900 truncate flex-1">{`${r.brand || ""} ${r.model || ""}`.trim() || r.code}</span>
-                <span className="text-sm font-medium text-yellow-700">{total}</span>
-              </div>
-            );
-          })}
-        </div>
+        <List disablePadding sx={{ maxHeight: 384, overflowY: "auto" }}>
+          {lowStockItems.map((radiator) => (
+            <ListItem key={radiator.id} sx={{ bgcolor: "warning.light", borderRadius: 2, mb: 1 }}>
+              <ListItemIcon sx={{ color: "warning.main", minWidth: 34 }}><AlertTriangle size={18} /></ListItemIcon>
+              <ListItemText primary={`${radiator.brand || ""} ${radiator.model || ""}`.trim() || radiator.code} slotProps={{ primary: { noWrap: true } }} />
+              <Typography color="warning.dark" fontWeight={700}>{radiator.calculatedTotal}</Typography>
+            </ListItem>
+          ))}
+        </List>
       )}
-    </div>
+    </AppCard>
   );
 }

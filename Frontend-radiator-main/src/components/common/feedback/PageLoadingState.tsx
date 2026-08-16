@@ -1,11 +1,14 @@
-// @ts-nocheck
-import React from "react";
+import { Box } from "@mui/material";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 
-const PageLoadingState = ({ text = "Loading..." }) => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50">
-    <LoadingSpinner size="lg" text={text} />
-  </div>
-);
+interface PageLoadingStateProps {
+  text?: string;
+}
 
-export default PageLoadingState;
+export default function PageLoadingState({ text = "Loading..." }: PageLoadingStateProps) {
+  return (
+    <Box alignItems="center" display="flex" justifyContent="center" minHeight="100vh">
+      <LoadingSpinner size="lg" text={text} />
+    </Box>
+  );
+}

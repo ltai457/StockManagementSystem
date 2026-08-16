@@ -1,55 +1,59 @@
-// @ts-nocheck
-// src/components/common/ui/Button.jsx
-import React from 'react';
+import type { ElementType, ReactNode } from "react";
+import {
+  Button as MuiButton,
+  CircularProgress,
+  type ButtonProps as MuiButtonProps,
+} from "@mui/material";
 
-export const Button = ({
+export type AppButtonVariant = "primary" | "secondary" | "danger" | "warning" | "outline" | "ghost";
+export type AppButtonSize = "sm" | "md" | "lg";
+
+export interface ButtonProps extends Omit<MuiButtonProps, "variant" | "size" | "startIcon"> {
+  children?: ReactNode;
+  variant?: AppButtonVariant;
+  size?: AppButtonSize;
+  loading?: boolean;
+  icon?: ElementType;
+}
+
+const variants: Record<AppButtonVariant, Pick<MuiButtonProps, "variant" | "color">> = {
+  primary: { variant: "contained", color: "primary" },
+  secondary: { variant: "contained", color: "secondary" },
+  danger: { variant: "contained", color: "error" },
+  warning: { variant: "contained", color: "warning" },
+  outline: { variant: "outlined", color: "primary" },
+  ghost: { variant: "text", color: "inherit" },
+};
+
+const sizes: Record<AppButtonSize, MuiButtonProps["size"]> = {
+  sm: "small",
+  md: "medium",
+  lg: "large",
+};
+
+export function Button({
   children,
-  variant = 'primary',
-  size = 'md',
+  variant = "primary",
+  size = "md",
   disabled = false,
   loading = false,
   icon: Icon,
-  onClick,
-  type = 'button',
-  className = '',
   ...props
-}) => {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
-
-  const variants = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
-    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-700 focus:ring-gray-500',
-    danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
-    outline: 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 focus:ring-blue-500',
-    ghost: 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 focus:ring-gray-500'
-  };
-
-  // Minimum 44x44px touch target for mobile usability
-  const sizes = {
-    sm: 'px-3 py-2 text-sm min-h-[44px]',
-    md: 'px-4 py-2.5 text-sm min-h-[44px]',
-    lg: 'px-6 py-3 text-base min-h-[44px]'
-  };
-
-  const classes = `${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`;
+}: ButtonProps) {
+  const appearance = variants[variant];
 
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled || loading}
-      className={`${classes} ${(disabled || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+    <MuiButton
       {...props}
+      {...appearance}
+      size={sizes[size]}
+      disabled={disabled || loading}
+      startIcon={
+        loading ? <CircularProgress color="inherit" size={16} /> : Icon ? <Icon size={16} /> : undefined
+      }
+      sx={{ minWidth: children ? undefined : 44, ...props.sx }}
     >
-      {loading ? (
-        <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ) : Icon ? (
-        <Icon className={`w-4 h-4 ${children ? 'mr-2' : ''}`} />
-      ) : null}
       {children}
-    </button>
+    </MuiButton>
   );
-};
-
+}

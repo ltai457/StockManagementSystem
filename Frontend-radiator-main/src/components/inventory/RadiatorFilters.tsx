@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { SearchInput } from '../common/ui/SearchInput';
 import { Button } from '../common/ui/Button';
+import { MenuItem, Paper, Stack, TextField } from '@mui/material';
 
 const RadiatorFilters = ({
   filters,
@@ -35,50 +36,48 @@ const RadiatorFilters = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="flex-1">
+    <Paper variant="outlined" sx={{ p: 2 }}>
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2}>
+          <Stack flex={1}>
             <SearchInput
               value={searchInput}
               onChange={handleSearchChange}
               onClear={handleSearchClear}
               placeholder="Search radiators..."
             />
-          </div>
+          </Stack>
 
-          <div className="grid grid-cols-2 gap-2 lg:flex">
-            <select
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <TextField select size="small" label="Brand"
               value={filters.brand || 'all'}
               onChange={(e) => onFilterChange('brand', e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+              sx={{ minWidth: 150 }}
             >
-              <option value="all">All Brands</option>
+              <MenuItem value="all">All Brands</MenuItem>
               {brands.map(brand => (
-                <option key={brand} value={brand}>{brand}</option>
+                <MenuItem key={brand} value={brand}>{brand}</MenuItem>
               ))}
-            </select>
+            </TextField>
 
-            <select
+            <TextField select size="small" label="Type"
               value={filters.type || 'all'}
               onChange={(e) => onFilterChange('type', e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+              sx={{ minWidth: 150 }}
             >
-              <option value="all">All Types</option>
+              <MenuItem value="all">All Types</MenuItem>
               {types.map(type => (
-                <option key={type} value={type}>{type}</option>
+                <MenuItem key={type} value={type}>{type}</MenuItem>
               ))}
-            </select>
+            </TextField>
 
             {hasActiveFilters ? (
-              <Button variant="outline" onClick={onClearFilters} className="col-span-2 w-full lg:w-auto">
+              <Button variant="outline" onClick={onClearFilters}>
                 Clear Filters
               </Button>
             ) : null}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Stack>
+        </Stack>
+    </Paper>
   );
 };
 

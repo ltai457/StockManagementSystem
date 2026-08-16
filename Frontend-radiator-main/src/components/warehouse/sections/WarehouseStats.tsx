@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React from "react";
 import { Warehouse } from "lucide-react";
+import { Avatar, Box, Card, Stack, Typography } from "@mui/material";
 
 export default function WarehouseStats({ stats }) {
   const cards = [
@@ -8,28 +9,19 @@ export default function WarehouseStats({ stats }) {
       label: "Total Warehouses",
       value: stats.total,
       Icon: Warehouse,
-      color: "bg-blue-100 text-blue-600",
-      bgColor: "bg-blue-50",
+      color: "primary.main",
     },
     
    
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={2}>
       {cards.map((card) => (
-        <div key={card.label} className={`${card.bgColor} rounded-lg p-6`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">{card.label}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
-            </div>
-            <div className={`p-3 rounded-lg ${card.color}`}>
-              <card.Icon className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
+        <Card key={card.label} variant="outlined" sx={{ p: 3, bgcolor: "action.hover" }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between"><Box><Typography variant="body2" color="text.secondary">{card.label}</Typography><Typography variant="h4" mt={0.5}>{card.value}</Typography></Box><Avatar variant="rounded" sx={{ bgcolor: "background.paper", color: card.color }}><card.Icon size={24} /></Avatar></Stack>
+        </Card>
       ))}
-    </div>
+    </Box>
   );
 }

@@ -1,48 +1,24 @@
 // @ts-nocheck
-import React from 'react';
-import { Search, Package, Warehouse } from 'lucide-react';
-import { Button } from '../common/ui/Button';
+import { Stack } from "@mui/material";
+import { Package, Search, Warehouse } from "lucide-react";
+import { AppCard, Button } from "../common/ui";
 
-const QuickActions = ({ onNavigate }) => {
+export default function QuickActions({ onNavigate }) {
   const actions = [
-    {
-      label: 'Manage Stock',
-      icon: Package,
-      color: 'indigo',
-      onClick: () => onNavigate('stock')
-    },
-    {
-      label: 'Search Inventory',
-      icon: Search,
-      color: 'purple',
-      onClick: () => onNavigate('inventory')
-    },
-    {
-      label: 'Manage Warehouses',
-      icon: Warehouse,
-      color: 'cyan',
-      onClick: () => onNavigate('warehouses')
-    }
+    { label: "Manage Stock", icon: Package, tab: "stock" },
+    { label: "Search Inventory", icon: Search, tab: "inventory" },
+    { label: "Manage Warehouses", icon: Warehouse, tab: "warehouses" },
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-      <div className="space-y-3">
-        {actions.map((action, index) => (
-          <Button
-            key={index}
-            variant="ghost"
-            className="w-full justify-start text-left"
-            onClick={action.onClick}
-            icon={action.icon}
-          >
+    <AppCard title="Quick Actions">
+      <Stack spacing={1}>
+        {actions.map((action) => (
+          <Button key={action.tab} variant="ghost" onClick={() => onNavigate(action.tab)} icon={action.icon} sx={{ justifyContent: "flex-start" }}>
             {action.label}
           </Button>
         ))}
-      </div>
-    </div>
+      </Stack>
+    </AppCard>
   );
-};
-
-export default QuickActions;
+}

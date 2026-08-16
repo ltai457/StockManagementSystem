@@ -2,6 +2,7 @@
 import React from "react";
 import { Package, Warehouse } from "lucide-react";
 import { LOW_STOCK_THRESHOLD } from "../../../utils/stock";
+import { Avatar, Box, Card, Stack, Typography } from "@mui/material";
 
 export default function StockOverviewGrid({
   warehouses,
@@ -17,15 +18,14 @@ export default function StockOverviewGrid({
 
   return (
     <>
-      <div className="md:hidden">
-        <div className="-mx-3 overflow-x-auto px-3 pb-1">
-          <div className="flex gap-3">
+      <Box sx={{ display: { xs: "block", md: "none" }, mx: -1.5, overflowX: "auto", px: 1.5, pb: 0.5 }}>
+          <Stack direction="row" spacing={1.5}>
             <OverviewCard
               compact
               active={selectedWarehouse === "all"}
               onClick={() => setSelectedWarehouse("all")}
-              icon={<Package className="h-5 w-5 text-purple-600" />}
-              badgeBg="bg-purple-100"
+              icon={<Package size={20} />}
+              color="secondary.main"
               title="All Warehouses"
               subtitle="Combined view"
               stats={[{ label: "Stock", value: totalAcrossAll }]}
@@ -50,8 +50,8 @@ export default function StockOverviewGrid({
                   key={w.id}
                   active={selectedWarehouse === w.code}
                   onClick={() => setSelectedWarehouse(w.code)}
-                  icon={<Warehouse className="h-5 w-5 text-blue-600" />}
-                  badgeBg="bg-blue-100"
+                  icon={<Warehouse size={20} />}
+                  color="primary.main"
                   title={w.name}
                   subtitle={w.code}
                   location={w.location}
@@ -61,28 +61,27 @@ export default function StockOverviewGrid({
                       label: "Low",
                       value: lowStockItems,
                       emphasize: lowStockItems > 0,
-                      emphasizeClass: "text-yellow-600",
+                      color: "warning.main",
                     },
                     {
                       label: "Out",
                       value: outOfStockItems,
                       emphasize: outOfStockItems > 0,
-                      emphasizeClass: "text-red-600",
+                      color: "error.main",
                     },
                   ]}
                 />
               );
             })}
-          </div>
-        </div>
-      </div>
+          </Stack>
+      </Box>
 
-      <div className="hidden gap-4 md:grid md:grid-cols-4">
+      <Box sx={{ display: { xs: "none", md: "grid" }, gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 2 }}>
         <OverviewCard
           active={selectedWarehouse === "all"}
           onClick={() => setSelectedWarehouse("all")}
-          icon={<Package className="h-6 w-6 text-purple-600" />}
-          badgeBg="bg-purple-100"
+          icon={<Package size={24} />}
+          color="secondary.main"
           title="All Warehouses"
           subtitle="Combined View"
           stats={[{ label: "Total Stock", value: totalAcrossAll }]}
@@ -106,8 +105,8 @@ export default function StockOverviewGrid({
               key={w.id}
               active={selectedWarehouse === w.code}
               onClick={() => setSelectedWarehouse(w.code)}
-              icon={<Warehouse className="h-6 w-6 text-blue-600" />}
-              badgeBg="bg-blue-100"
+              icon={<Warehouse size={24} />}
+              color="primary.main"
               title={w.name}
               subtitle={w.code}
               location={w.location}
@@ -117,19 +116,19 @@ export default function StockOverviewGrid({
                   label: "Low Stock",
                   value: lowStockItems,
                   emphasize: lowStockItems > 0,
-                  emphasizeClass: "text-yellow-600",
+                  color: "warning.main",
                 },
                 {
                   label: "Out of Stock",
                   value: outOfStockItems,
                   emphasize: outOfStockItems > 0,
-                  emphasizeClass: "text-red-600",
+                  color: "error.main",
                 },
               ]}
             />
           );
         })}
-      </div>
+      </Box>
     </>
   );
 }
@@ -138,7 +137,7 @@ function OverviewCard({
   active,
   onClick,
   icon,
-  badgeBg,
+  color,
   title,
   subtitle,
   location,
@@ -146,58 +145,41 @@ function OverviewCard({
   compact = false,
 }) {
   return (
-    <div
+    <Card
       onClick={onClick}
-      className={`cursor-pointer border bg-white transition-all ${
-        compact
-          ? `min-w-[220px] rounded-lg p-3 shadow ${
-              active
-                ? "border-blue-500 bg-blue-50"
-                : "border-transparent"
-            }`
-          : `rounded-lg p-5 shadow hover:shadow-lg ${
-              active ? "border-blue-500 bg-blue-50" : "border-transparent"
-            }`
-      }`}
+      variant="outlined"
+      sx={{ cursor: "pointer", minWidth: compact ? 220 : 0, p: compact ? 1.5 : 2.5, borderColor: active ? "primary.main" : "divider", bgcolor: active ? "action.selected" : "background.paper", boxShadow: compact ? 1 : 2, transition: "box-shadow .2s", "&:hover": { boxShadow: 4 } }}
     >
-      <div className={`flex items-center gap-3 ${compact ? "mb-2" : "mb-3"}`}>
-        <div
-          className={`${compact ? "h-10 w-10 rounded-lg" : "h-12 w-12 rounded-lg"} ${badgeBg} flex items-center justify-center`}
-        >
+      <Stack direction="row" alignItems="center" spacing={1.5} mb={compact ? 1 : 1.5}>
+        <Avatar variant="rounded" sx={{ width: compact ? 40 : 48, height: compact ? 40 : 48, bgcolor: "action.hover", color }}>
           {icon}
-        </div>
-        <div className="min-w-0">
-          <h3
-            className={`${compact ? "text-sm" : "text-lg"} truncate font-semibold text-gray-900`}
-          >
+        </Avatar>
+        <Box minWidth={0}>
+          <Typography variant={compact ? "body2" : "h6"} fontWeight={600} noWrap>
             {title}
-          </h3>
+          </Typography>
           {subtitle && (
-            <p className={`${compact ? "text-xs" : "text-sm"} text-gray-500`}>{subtitle}</p>
+            <Typography variant={compact ? "caption" : "body2"} color="text.secondary">{subtitle}</Typography>
           )}
-        </div>
-      </div>
+        </Box>
+      </Stack>
 
-      <div className={compact ? "space-y-1.5" : "space-y-2"}>
-        {stats.map(({ label, value, emphasize, emphasizeClass }) => (
-          <div key={label} className="flex justify-between items-center">
-            <span className={`${compact ? "text-xs" : "text-sm"} text-gray-600`}>{label}</span>
-            <span
-              className={`${compact ? "text-xs" : "text-sm"} font-semibold ${
-                emphasize ? emphasizeClass : "text-gray-900"
-              }`}
-            >
+      <Stack spacing={compact ? 0.75 : 1}>
+        {stats.map(({ label, value, emphasize, color: statColor }) => (
+          <Stack key={label} direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant={compact ? "caption" : "body2"} color="text.secondary">{label}</Typography>
+            <Typography variant={compact ? "caption" : "body2"} fontWeight={600} color={emphasize ? statColor : "text.primary"}>
               {value}
-            </span>
-          </div>
+            </Typography>
+          </Stack>
         ))}
-      </div>
+      </Stack>
 
       {location && (
-        <div className={`${compact ? "mt-2 pt-2" : "mt-3 pt-3"} border-t border-gray-200`}>
-          <p className="line-clamp-1 text-xs text-gray-500">{location}</p>
-        </div>
+        <Box mt={compact ? 1 : 1.5} pt={compact ? 1 : 1.5} borderTop={1} borderColor="divider">
+          <Typography variant="caption" color="text.secondary" noWrap display="block">{location}</Typography>
+        </Box>
       )}
-    </div>
+    </Card>
   );
 }

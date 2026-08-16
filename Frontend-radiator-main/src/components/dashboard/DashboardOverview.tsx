@@ -1,203 +1,68 @@
 // @ts-nocheck
-import React, { useState, useEffect } from 'react';
-import { Package, PackageX, Warehouse, Box } from 'lucide-react';
-import { PageHeader } from '../common/layout/PageHeader';
-import { StatsGrid } from '../common/layout/StatsGrid';
-import { LoadingSpinner } from '../common/ui/LoadingSpinner';
-import PageErrorState from '../common/feedback/PageErrorState';
+import { useEffect, useState } from "react";
+import { Box, Stack } from "@mui/material";
+import { Box as BoxIcon, Package, PackageX, Warehouse } from "lucide-react";
+import stockService from "../../api/stockService";
+import { LOW_STOCK_THRESHOLD } from "../../utils/stock";
+import PageErrorState from "../common/feedback/PageErrorState";
+import { PageHeader } from "../common/layout/PageHeader";
+import { StatsGrid } from "../common/layout/StatsGrid";
+import { LoadingSpinner } from "../common/ui/LoadingSpinner";
+import LowStockOverview from "./LowStockOverview";
+import QuickActions from "./QuickActions";
 
-import QuickActions from './QuickActions';
-import LowStockOverview from './LowStockOverview';
-import stockService from '../../api/stockService';
-import { LOW_STOCK_THRESHOLD } from '../../utils/stock';
-
-const DashboardOverview = ({ onNavigate }) => {
-  const [dashboardData, setDashboardData] = useState({
-    radiators: [],
-    stockSummary: null,
-    loading: true,
-    error: null
-  });
+export default function DashboardOverview({ onNavigate }) {
+  const [dashboardData, setDashboardData] = useState({ radiators: [], stockSummary: null, loading: true, error: null });
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const load = async () => {
       try {
-        const [radiatorsResult, stockSummaryResult] = await Promise.all([
+        const [radiators, summary] = await Promise.all([
           stockService.getAllRadiatorsWithStock(),
-          stockService.getStockSummary()
+          stockService.getStockSummary(),
         ]);
-
-        setDashboardData({
-          radiators: radiatorsResult.success ? radiatorsResult.data : [],
-          stockSummary: stockSummaryResult.success ? stockSummaryResult.data : null,
-          loading: false,
-          error: null
-        });
+        setDashboardData({ radiators: radiators.success ? radiators.data : [], stockSummary: summary.success ? summary.data : null, loading: false, error: null });
       } catch {
-        setDashboardData(prev => ({
-          ...prev,
-          loading: false,
-          error: 'Failed to load dashboard data'
-        }));
+        setDashboardData((current) => ({ ...current, loading: false, error: "Failed to load dashboard data" }));
       }
     };
-
-    fetchDashboardData();
+    void load();
   }, []);
 
   const calculateStats = () => {
-    const { radiators, stockSummary } = dashboardData;
-
-    const totalRadiators = radiators.length;
-    const totalWarehouses = stockSummary?.warehouseSummaries?.length ?? 0;
-
-    const extractWarehouseStocks = (radiator) => {
-      const candidates = [
-        radiator?.stock,
-        radiator?.stockLevels,
-        radiator?.stockByWarehouse,
-        radiator?.warehouseStock,
-        radiator?.warehouses,
-        radiator?.inventory
-      ];
-
-      for (const candidate of candidates) {
-        if (!candidate) continue;
-
-        if (Array.isArray(candidate)) {
-          const entries = candidate
-            .map((item) => {
-              if (item == null) return null;
-              if (typeof item === 'number') return item;
-              if (typeof item === 'string') return Number(item);
-              if (typeof item === 'object') {
-                const quantity =
-                  item.quantity ?? item.qty ?? item.stock ?? item.available ?? item.onHand ?? item.level;
-                if (quantity == null) return null;
-                return Number(quantity);
-              }
-              return null;
-            })
-            .filter((qty) => qty != null && Number.isFinite(qty));
-          if (entries.length) return entries;
-        } else if (typeof candidate === 'object') {
-          const entries = Object.values(candidate)
-            .map((value) => {
-              if (value == null) return null;
-              if (typeof value === 'number') return value;
-              if (typeof value === 'string') return Number(value);
-              if (typeof value === 'object') {
-                const quantity =
-                  value.quantity ?? value.qty ?? value.stock ?? value.available ?? value.onHand ?? value.level;
-                if (quantity == null) return null;
-                return Number(quantity);
-              }
-              return null;
-            })
-            .filter((qty) => qty != null && Number.isFinite(qty));
-          if (entries.length) return entries;
-        }
-      }
-
-      return [];
-    };
-
-    const stockEvaluations = radiators.map((radiator) => {
-      const stocks = extractWarehouseStocks(radiator).map((qty) =>
-        Number.isFinite(qty) ? qty : 0
-      );
-
-      if (!stocks.length) {
-        return { isOutOfStock: true, isLowStock: false };
-      }
-
-      const anyPositive = stocks.some((qty) => qty > 0);
-      const totalStock = stocks.reduce((sum, qty) => sum + qty, 0);
-      const anyLowWarehouse = stocks.some(
-        (qty) => qty > 0 && qty <= LOW_STOCK_THRESHOLD
-      );
-
+    const stocksFor = (radiator) => Object.values(radiator?.stock || {}).map(Number).filter(Number.isFinite);
+    const evaluations = dashboardData.radiators.map((radiator) => {
+      const stocks = stocksFor(radiator);
+      const total = stocks.reduce((sum, quantity) => sum + quantity, 0);
+      const positive = stocks.some((quantity) => quantity > 0);
       return {
-        isOutOfStock: !anyPositive,
-        isLowStock:
-          anyLowWarehouse ||
-          (anyPositive && totalStock > 0 && totalStock <= LOW_STOCK_THRESHOLD)
+        out: !positive,
+        low: positive && (total <= LOW_STOCK_THRESHOLD || stocks.some((quantity) => quantity > 0 && quantity <= LOW_STOCK_THRESHOLD)),
       };
     });
 
-    const lowStockItems = stockEvaluations.filter(
-      (e) => e.isLowStock && !e.isOutOfStock
-    ).length;
-
-    const outOfStockItems = stockEvaluations.filter(
-      (e) => e.isOutOfStock
-    ).length;
-
     return [
-      {
-        title: 'Total Radiators',
-        value: totalRadiators.toString(),
-        color: 'blue',
-        icon: Box
-      },
-      {
-        title: 'Warehouses',
-        value: totalWarehouses.toString(),
-        color: 'indigo',
-        icon: Warehouse
-      },
-      {
-        title: 'Low Stock Radiators',
-        value: lowStockItems.toString(),
-        color: 'orange',
-        icon: Package
-      },
-      {
-        title: 'Out of Stock',
-        value: outOfStockItems.toString(),
-        color: 'red',
-        icon: PackageX
-      }
+      { title: "Total Radiators", value: String(dashboardData.radiators.length), color: "blue", icon: BoxIcon },
+      { title: "Warehouses", value: String(dashboardData.stockSummary?.warehouseSummaries?.length ?? 0), color: "indigo", icon: Warehouse },
+      { title: "Low Stock Radiators", value: String(evaluations.filter((item) => item.low && !item.out).length), color: "orange", icon: Package },
+      { title: "Out of Stock", value: String(evaluations.filter((item) => item.out).length), color: "red", icon: PackageX },
     ];
   };
 
-  if (dashboardData.loading) {
-    return <LoadingSpinner size="lg" text="Loading dashboard..." />;
-  }
+  if (dashboardData.loading) return <LoadingSpinner size="lg" text="Loading dashboard..." />;
 
   if (dashboardData.error) {
-    return (
-      <div className="space-y-8">
-        <PageHeader
-          title="Chan Mary 333"
-          subtitle="Your complete radiator inventory management system"
-        />
-        <PageErrorState message={dashboardData.error} />
-      </div>
-    );
+    return <Stack spacing={4}><PageHeader title="Chan Mary 333" subtitle="Your complete radiator inventory management system" /><PageErrorState message={dashboardData.error} /></Stack>;
   }
 
-  const stats = calculateStats();
-
   return (
-    <div className="space-y-8">
+    <Stack spacing={4}>
       <PageHeader title="Chan Mary 333" />
-
-      <StatsGrid stats={stats} columns={4} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <QuickActions onNavigate={onNavigate} />
-        </div>
-        <div className="lg:col-span-2">
-          <LowStockOverview
-            radiators={dashboardData.radiators}
-            onNavigate={onNavigate}
-          />
-        </div>
-      </div>
-    </div>
+      <StatsGrid stats={calculateStats()} columns={4} />
+      <Box display="grid" gap={3} gridTemplateColumns={{ xs: "1fr", lg: "minmax(240px, 1fr) minmax(0, 2fr)" }}>
+        <QuickActions onNavigate={onNavigate} />
+        <LowStockOverview radiators={dashboardData.radiators} onNavigate={onNavigate} />
+      </Box>
+    </Stack>
   );
-};
-
-export default DashboardOverview;
+}
