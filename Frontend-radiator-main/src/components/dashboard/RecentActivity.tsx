@@ -1,5 +1,8 @@
 // @ts-nocheck
 import React from 'react';
+import { Avatar, Box, Stack, Typography } from '@mui/material';
+import { CallReceived, CallMade, InfoOutlined } from '@mui/icons-material';
+import { AppCard } from '../common/ui';
 
 const RecentActivity = ({ stockMovements = [] }) => {
   const getMovementQuantity = (movement) => {
@@ -100,32 +103,13 @@ const RecentActivity = ({ stockMovements = [] }) => {
   const activities = generateActivities();
 
   const getActivityIcon = (type) => {
-    switch (type) {
-      case 'incoming':
-        return (
-          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h11M9 21V3m7 4l4 4-4 4" />
-            </svg>
-          </div>
-        );
-      case 'outgoing':
-        return (
-          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 14H10m6-11v18m-7-4l-4-4 4-4" />
-            </svg>
-          </div>
-        );
-      default:
-        return (
-          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        );
-    }
+    const incoming = type === 'incoming';
+    const outgoing = type === 'outgoing';
+    return (
+      <Avatar sx={{ width: 32, height: 32, bgcolor: incoming ? 'success.light' : outgoing ? 'error.light' : 'grey.200', color: incoming ? 'success.dark' : outgoing ? 'error.dark' : 'text.secondary' }}>
+        {incoming ? <CallReceived fontSize="small" /> : outgoing ? <CallMade fontSize="small" /> : <InfoOutlined fontSize="small" />}
+      </Avatar>
+    );
   };
 
   const formatTimeAgo = (time) => {
@@ -143,30 +127,29 @@ const RecentActivity = ({ stockMovements = [] }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-      <div className="space-y-4">
+    <AppCard title="Recent Activity">
+      <Stack spacing={2}>
         {activities.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>No recent activity</p>
-            <p className="text-sm">Activity will appear here as you use the system</p>
-          </div>
+          <Box py={4} textAlign="center">
+            <Typography color="text.secondary">No recent activity</Typography>
+            <Typography variant="body2" color="text.secondary">Activity will appear here as you use the system</Typography>
+          </Box>
         ) : (
           activities.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3">
+            <Stack key={activity.id} direction="row" alignItems="flex-start" spacing={1.5}>
               {getActivityIcon(activity.type)}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">{activity.message}</p>
-                <p className="text-sm text-gray-500">{activity.details}</p>
-              </div>
-              <div className="text-xs text-gray-400 whitespace-nowrap">
+              <Box flex={1} minWidth={0}>
+                <Typography variant="body2" fontWeight={600}>{activity.message}</Typography>
+                <Typography variant="body2" color="text.secondary">{activity.details}</Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary" whiteSpace="nowrap">
                 {formatTimeAgo(activity.time)}
-              </div>
-            </div>
+              </Typography>
+            </Stack>
           ))
         )}
-      </div>
-    </div>
+      </Stack>
+    </AppCard>
   );
 };
 

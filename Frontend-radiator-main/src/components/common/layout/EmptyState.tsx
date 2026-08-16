@@ -1,25 +1,30 @@
-// @ts-nocheck
-import React from 'react';
-import { Button } from '../ui/Button';
+import type { ElementType, ReactNode } from "react";
+import { Box, Stack, Typography } from "@mui/material";
+import { Button } from "../ui/Button";
 
-export const EmptyState = ({ 
+interface EmptyStateProps {
+  icon?: ElementType;
+  title: ReactNode;
+  description?: ReactNode;
+  action?: boolean;
+  actionLabel?: ReactNode;
+  onAction?: () => void;
+}
+
+export function EmptyState({
   icon: Icon,
   title,
   description,
   action,
   actionLabel,
-  onAction 
-}) => {
+  onAction,
+}: EmptyStateProps) {
   return (
-    <div className="text-center py-12">
-      {Icon && <Icon className="w-16 h-16 text-gray-300 mx-auto mb-4" />}
-      <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-500 mb-4">{description}</p>
-      {action && onAction && (
-        <Button onClick={onAction}>
-          {actionLabel}
-        </Button>
-      )}
-    </div>
+    <Stack alignItems="center" py={6} spacing={1.5} textAlign="center">
+      {Icon && <Box color="text.disabled" display="flex"><Icon size={64} /></Box>}
+      <Typography variant="h4">{title}</Typography>
+      {description && <Typography color="text.secondary">{description}</Typography>}
+      {action && onAction && <Button onClick={onAction}>{actionLabel}</Button>}
+    </Stack>
   );
-};
+}

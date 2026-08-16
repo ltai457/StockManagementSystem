@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import RecentActivity from "./sections/RecentActivity";
 import warehouseService from "../../api/warehouseService";
 import PageLoadingState from "../common/feedback/PageLoadingState";
+import { Box } from "@mui/material";
 
 export default function ActivityPage() {
   const [warehouses, setWarehouses] = useState([]);
@@ -29,10 +30,10 @@ export default function ActivityPage() {
   }
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
+    <Box minHeight="100vh" bgcolor="background.default" p={{ xs: 2, md: 3 }}>
+      <Box maxWidth="xl" mx="auto">
         <RecentActivity warehouses={warehouses} />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

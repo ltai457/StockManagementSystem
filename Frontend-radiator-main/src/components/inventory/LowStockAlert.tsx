@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useMemo, useState } from "react";
 import { AlertTriangle, Bell, X } from "lucide-react";
+import { Badge, Box, IconButton, List, ListItem, ListItemText, Popover, Stack, Typography } from "@mui/material";
 import { LOW_STOCK_THRESHOLD } from "../../utils/stock";
 import { Button } from "../common/ui/Button";
 
@@ -13,7 +14,7 @@ const getLowStockProducts = (radiators = []) =>
     .filter((radiator) => radiator.totalStock > 0 && radiator.totalStock <= LOW_STOCK_THRESHOLD);
 
 const LowStockAlert = ({ radiators = [] }) => {
-  const [open, setOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const lowStockProducts = useMemo(() => getLowStockProducts(radiators), [radiators]);
   const visibleProducts = showAll ? lowStockProducts : lowStockProducts.slice(0, 5);
@@ -23,95 +24,62 @@ const LowStockAlert = ({ radiators = [] }) => {
   }
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => {
-          setOpen((prev) => {
-            const next = !prev;
-            if (!next) setShowAll(false);
-            return next;
-          });
-        }}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-yellow-300 bg-yellow-50 text-yellow-700 transition hover:bg-yellow-100"
+    <>
+      <IconButton
+        onClick={(event) => setAnchorEl(event.currentTarget)}
         aria-label="Low stock notifications"
+        sx={{ border: 1, borderColor: "warning.light", bgcolor: "warning.50", color: "warning.dark", "&:hover": { bgcolor: "warning.light" } }}
       >
-        <Bell className="h-5 w-5" />
-        <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-yellow-600 px-1.5 py-0.5 text-center text-xs font-semibold text-white">
-          {lowStockProducts.length}
-        </span>
-      </button>
+        <Badge badgeContent={lowStockProducts.length} color="warning"><Bell size={20} /></Badge>
+      </IconButton>
 
-      {open && (
-        <>
-          {/* Mobile: backdrop */}
-          <div
-            className="fixed inset-0 z-10 sm:hidden"
-            onClick={() => {
-              setOpen(false);
-              setShowAll(false);
-            }}
-          />
-          <div className="fixed left-2 right-2 top-auto z-20 mt-3 sm:absolute sm:left-auto sm:right-0 sm:w-80 rounded-xl border border-yellow-200 bg-white shadow-lg">
-            <div className="flex items-center justify-between border-b border-yellow-100 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-700" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Low stock alerts</p>
-                  <p className="text-xs text-gray-600">
+      <Popover
+        open={Boolean(anchorEl)}
+        anchorEl={anchorEl}
+        onClose={() => { setAnchorEl(null); setShowAll(false); }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        slotProps={{ paper: { sx: { mt: 1, width: { xs: "calc(100vw - 32px)", sm: 340 }, maxWidth: 340 } } }}
+      >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" px={2} py={1.5} borderBottom={1} borderColor="divider">
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Box color="warning.dark" display="flex"><AlertTriangle size={18} /></Box>
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>Low stock alerts</Typography>
+                  <Typography variant="caption" color="text.secondary">
                     {lowStockProducts.length} product{lowStockProducts.length !== 1 ? "s" : ""} below {LOW_STOCK_THRESHOLD}
-                  </p>
-                </div>
-              </div>
+                  </Typography>
+                </Box>
+              </Stack>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setOpen(false);
-                  setShowAll(false);
-                }}
-                icon={X}
-                className="min-h-0 p-1"
-              />
-            </div>
+              <IconButton size="small" onClick={() => { setAnchorEl(null); setShowAll(false); }} aria-label="Close alerts"><X size={18} /></IconButton>
+            </Stack>
 
-            <div className="max-h-72 overflow-y-auto px-4 py-3">
-              <div className="space-y-2">
+            <Box maxHeight={320} overflow="auto" px={1} py={1}>
+              <List disablePadding>
                 {visibleProducts.map((product) => (
-                  <div
+                  <ListItem
                     key={product.id}
-                    className="rounded-lg border border-yellow-100 bg-yellow-50 px-3 py-2"
+                    sx={{ mb: 1, borderRadius: 1, border: 1, borderColor: "warning.light", bgcolor: "warning.50" }}
                   >
-                    <p className="text-sm font-medium text-gray-900">{product.model}</p>
-                    <p className="text-xs text-gray-600">
-                      {product.brand} · {product.code}{product.type ? ` · ${product.type}` : ""}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-yellow-800">
-                      {product.totalStock} units left
-                    </p>
-                  </div>
+                    <ListItemText
+                      primary={product.model}
+                      secondary={<>{product.brand} · {product.code}{product.type ? ` · ${product.type}` : ""}<Typography component="span" display="block" variant="body2" color="warning.dark" fontWeight={600}>{product.totalStock} units left</Typography></>}
+                    />
+                  </ListItem>
                 ))}
-              </div>
+              </List>
 
               {lowStockProducts.length > 5 && (
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowAll((prev) => !prev)}
-                    className="text-sm font-medium text-yellow-700 hover:text-yellow-800"
-                  >
+                <Button variant="ghost" size="sm" onClick={() => setShowAll((prev) => !prev)}>
                     {showAll
                       ? "Show less"
                       : `View more (${lowStockProducts.length - 5} more)`}
-                  </button>
-                </div>
+                </Button>
               )}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+            </Box>
+      </Popover>
+    </>
   );
 };
 

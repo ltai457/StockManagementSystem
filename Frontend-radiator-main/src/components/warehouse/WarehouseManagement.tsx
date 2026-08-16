@@ -18,6 +18,7 @@ import WarehouseCards from "./views/WarehouseCards";
 import CreateWarehouseModal from "./modals/CreateWarehouseModal";
 import EditWarehouseModal from "./modals/EditWarehouseModal";
 import ConfirmDeleteModal from "../common/modals/ConfirmDeleteModal";
+import { Stack } from "@mui/material";
 import { isAdminUser } from "../../utils/roles";
 
 const WarehouseManagement = () => {
@@ -194,7 +195,7 @@ const WarehouseManagement = () => {
 
   // ---- render
   return (
-    <div className="space-y-6">
+    <Stack spacing={3}>
       <WarehouseHeader
         isAdmin={isAdmin}
         onCreate={createModal.openModal}
@@ -267,7 +268,7 @@ const WarehouseManagement = () => {
         confirmText="Delete Warehouse"
         loading={actionLoading}
       />
-    </div>
+    </Stack>
   );
 };
 

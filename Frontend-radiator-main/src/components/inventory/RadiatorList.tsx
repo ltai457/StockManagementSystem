@@ -1,6 +1,7 @@
 // @ts-nocheck
 // src/components/inventory/RadiatorList.jsx
 import React, { useEffect, useState, useMemo } from "react";
+import { Stack } from "@mui/material";
 import { useAuth } from "../../contexts/auth-context";
 import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
 import { useWarehouses } from "../../hooks/useWarehouses";
@@ -173,7 +174,7 @@ const RadiatorList = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Stack spacing={3}>
       <InventoryHeader
         sortBy={sortBy}
         onSortChange={setSortBy}
@@ -226,7 +227,7 @@ const RadiatorList = () => {
         onClose={adjustStockModal.closeModal}
         onSaved={refetch}
       />
-    </div>
+    </Stack>
   );
 };
 

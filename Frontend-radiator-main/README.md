@@ -14,7 +14,7 @@ Single-page administrative dashboard for tracking radiator inventory, warehouse 
 ## Tech Stack
 
 - React 19, React Router 7, Context API, and custom hooks for stateful flows.
-- Vite 7 build tooling with @tailwindcss/vite and Tailwind CSS 4 for styling.
+- TypeScript, Vite 7 build tooling, and a shared Material UI 7 design system.
 - Axios-based API layer with JWT authentication, refresh-token handling, and typed service helpers.
 - Lucide and Heroicons iconography, clsx utility helpers, and custom UI primitives.
 
@@ -70,8 +70,10 @@ src/
 ├─ hooks/            # Data fetching, filtering, pagination, and modal hooks
 ├─ pages/            # Top-level route screens (PointOfSale, etc.)
 ├─ utils/            # Formatting helpers, toast notifications, constants
-├─ App.jsx           # Router with protected routes, session warning banner
-└─ main.jsx          # React entry that mounts the app
+├─ theme/            # Shared MUI palette, typography, and component overrides
+├─ types/            # Shared TypeScript domain and API types
+├─ App.tsx           # Router with protected routes, session warning banner
+└─ main.tsx          # React entry and shared theme provider
 ```
 
 Notable UI modules include the Dashboard overview tiles, Inventory grid/list views, Sales management tables, Quick Invoice/Receipt modals, Warehouse stock transfers, and HealthCheck widget.

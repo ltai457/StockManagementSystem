@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React from "react";
 import { SearchInput } from "../../common/ui/SearchInput";
+import { Box, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 
 export default function WarehouseToolbar({
   searchTerm,
@@ -10,49 +11,25 @@ export default function WarehouseToolbar({
   resultCount,
 }) {
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex-1 max-w-md w-full">
+    <Paper variant="outlined" sx={{ p: 2 }}>
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={2} alignItems={{ lg: "center" }} justifyContent="space-between">
+        <Box flex={1} maxWidth={448} width="100%">
           <SearchInput
             value={searchTerm}
             onChange={onSearch}
             onClear={() => onSearch("")}
             placeholder="Search warehouses by name, code, location..."
           />
-        </div>
+        </Box>
 
-        <div className="hidden sm:flex w-auto flex-row items-center gap-2">
-          <span className="text-sm text-gray-600">View:</span>
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => onViewChange("table")}
-              className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                viewMode === "table"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Table
-            </button>
-            <button
-              onClick={() => onViewChange("cards")}
-              className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                viewMode === "cards"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Cards
-            </button>
-          </div>
-        </div>
-      </div>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ display: { xs: "none", sm: "flex" } }}><Typography variant="body2" color="text.secondary">View:</Typography><ToggleButtonGroup exclusive size="small" value={viewMode} onChange={(_, value) => value && onViewChange(value)}><ToggleButton value="table">Table</ToggleButton><ToggleButton value="cards">Cards</ToggleButton></ToggleButtonGroup></Stack>
+      </Stack>
 
       {typeof resultCount === "number" && (
-        <div className="mt-3 text-sm text-gray-600">
+        <Typography mt={1.5} variant="body2" color="text.secondary">
           Found {resultCount} result{resultCount !== 1 ? "s" : ""}
-        </div>
+        </Typography>
       )}
-    </div>
+    </Paper>
   );
 }

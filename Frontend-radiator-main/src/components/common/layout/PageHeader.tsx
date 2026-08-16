@@ -1,28 +1,39 @@
-// @ts-nocheck
-import React from 'react';
+import type { ElementType, ReactNode } from "react";
+import { Box, Stack, Typography } from "@mui/material";
 
-export const PageHeader = ({ 
-  title, 
-  subtitle,
-  icon: Icon,
-  actions,
-  children 
-}) => {
+export interface PageHeaderProps {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  icon?: ElementType;
+  actions?: ReactNode;
+  children?: ReactNode;
+}
+
+export function PageHeader({ title, subtitle, icon: Icon, actions, children }: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex min-w-0 items-start gap-2">
-        {Icon && <Icon className="mt-0.5 h-6 w-6 flex-none text-blue-600" />}
-        <div className="min-w-0">
-          <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">{title}</h2>
-          {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
-        </div>
-      </div>
+    <Stack
+      direction={{ xs: "column", lg: "row" }}
+      alignItems={{ xs: "stretch", lg: "center" }}
+      justifyContent="space-between"
+      spacing={2}
+    >
+      <Stack direction="row" alignItems="flex-start" spacing={1.25} minWidth={0}>
+        {Icon && (
+          <Box color="primary.main" display="flex" pt={0.25}>
+            <Icon size={24} />
+          </Box>
+        )}
+        <Box minWidth={0}>
+          <Typography component="h1" variant="h2">{title}</Typography>
+          {subtitle && <Typography color="text.secondary" mt={0.5}>{subtitle}</Typography>}
+        </Box>
+      </Stack>
       {actions && (
-        <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} flexWrap="wrap">
           {actions}
-        </div>
+        </Stack>
       )}
       {children}
-    </div>
+    </Stack>
   );
-};
+}

@@ -2,6 +2,7 @@
 // src/components/auth/ProtectedRoute.jsx
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { Box, CircularProgress, Stack, Typography } from '@mui/material';
 import { useAuth } from '../../contexts/auth-context';
 
 const ProtectedRoute = ({ children }) => {
@@ -9,12 +10,12 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
-      </div>
+      <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center' }}>
+        <Stack alignItems="center" spacing={1.5}>
+          <CircularProgress size={32} />
+          <Typography color="text.secondary">Loading...</Typography>
+        </Stack>
+      </Box>
     );
   }
 

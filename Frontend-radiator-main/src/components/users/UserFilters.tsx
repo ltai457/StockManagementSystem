@@ -2,11 +2,11 @@
 // src/components/users/UserFilters.jsx
 import React from 'react';
 import { SearchInput } from '../common/ui/SearchInput';
+import { MenuItem, Paper, TextField } from '@mui/material';
 
 const UserFilters = ({ filters, onFilterChange }) => {
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <Paper variant="outlined" sx={{ p: 2, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
         <div>
           <SearchInput
             value={filters.search}
@@ -17,30 +17,23 @@ const UserFilters = ({ filters, onFilterChange }) => {
         </div>
 
         <div>
-          <select
+          <TextField select size="small" label="Role" fullWidth
             value={filters.role}
             onChange={(e) => onFilterChange({ ...filters, role: e.target.value })}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
           >
-            <option value="all">All Roles</option>
-            <option value="admin">Administrators</option>
-            <option value="staff">Staff</option>
-          </select>
+            <MenuItem value="all">All Roles</MenuItem><MenuItem value="admin">Administrators</MenuItem><MenuItem value="staff">Staff</MenuItem>
+          </TextField>
         </div>
 
         <div>
-          <select
+          <TextField select size="small" label="Status" fullWidth
             value={filters.status}
             onChange={(e) => onFilterChange({ ...filters, status: e.target.value })}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
           >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+            <MenuItem value="all">All Status</MenuItem><MenuItem value="active">Active</MenuItem><MenuItem value="inactive">Inactive</MenuItem>
+          </TextField>
         </div>
-      </div>
-    </div>
+    </Paper>
   );
 };
 

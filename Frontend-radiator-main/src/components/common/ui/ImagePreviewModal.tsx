@@ -1,30 +1,28 @@
-// @ts-nocheck
-import React from "react";
+import CloseIcon from "@mui/icons-material/Close";
+import { Box, Dialog, IconButton } from "@mui/material";
 
-export default function ImagePreviewModal({ isOpen, src, alt, onClose }) {
-  if (!isOpen || !src) return null;
+interface ImagePreviewModalProps {
+  isOpen: boolean;
+  src?: string | null;
+  alt?: string;
+  onClose: () => void;
+}
 
+export default function ImagePreviewModal({ isOpen, src, alt, onClose }: ImagePreviewModalProps) {
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-      onClick={onClose}
+    <Dialog
+      open={isOpen && Boolean(src)}
+      onClose={onClose}
+      maxWidth={false}
+      slotProps={{
+        backdrop: { sx: { bgcolor: "rgba(15, 23, 42, 0.82)", backdropFilter: "blur(4px)" } },
+        paper: { sx: { bgcolor: "transparent", boxShadow: "none", m: 2, maxHeight: "90vh", maxWidth: "95vw", overflow: "visible" } },
+      }}
     >
-      <button
-        onClick={onClose}
-        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70"
-        aria-label="Close image preview"
-      >
-        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
-      <img
-        src={src}
-        alt={alt || "Preview"}
-        className="max-h-[85vh] max-w-full rounded-lg object-contain shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      />
-    </div>
+      <IconButton aria-label="Close image preview" onClick={onClose} sx={{ bgcolor: "rgba(0,0,0,.55)", color: "white", position: "absolute", right: 0, top: -52, "&:hover": { bgcolor: "rgba(0,0,0,.75)" } }}>
+        <CloseIcon />
+      </IconButton>
+      {src && <Box component="img" src={src} alt={alt || "Preview"} sx={{ borderRadius: 2, maxHeight: "85vh", maxWidth: "100%", objectFit: "contain" }} />}
+    </Dialog>
   );
 }

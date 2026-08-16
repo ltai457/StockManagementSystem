@@ -1,11 +1,12 @@
 // @ts-nocheck
 import React, { useState } from "react";
 import { Edit, Package, Trash2 } from "lucide-react";
-import { IconButton, Tooltip } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import { Modal } from "../common/ui/Modal";
 import ImagePreviewModal from "../common/ui/ImagePreviewModal";
 import { resolveImageUrl } from "../../utils/image";
 import HighlightedText from "../common/ui/HighlightedText";
+import { Button } from "../common/ui/Button";
 
 const getTotalStock = (stock) =>
   Object.values(stock || {}).reduce((total, qty) => total + (qty || 0), 0);
@@ -30,26 +31,28 @@ export default function MobileRadiatorDetailModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg">
-      <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
-          <div
-            className={`overflow-hidden rounded-lg border border-gray-200 bg-gray-100${imageSrc ? " cursor-pointer" : ""}`}
+      <Stack spacing={2}>
+        <Box display="grid" gridTemplateColumns={{ md: "220px minmax(0, 1fr)" }} gap={2} alignItems="start">
+          <Box
+            sx={{ overflow: "hidden", borderRadius: 1, border: 1, borderColor: "divider", bgcolor: "grey.100", cursor: imageSrc ? "pointer" : "default" }}
             onClick={() => imageSrc && setImagePreviewOpen(true)}
           >
             {imageSrc ? (
-              <img
+              <Box component="img"
                 src={imageSrc}
                 alt={title}
-                className="h-52 w-full object-contain md:h-56"
+                sx={{ height: { xs: 208, md: 224 }, width: "100%", objectFit: "contain" }}
               />
             ) : (
-              <div className="flex h-52 items-center justify-center text-sm font-medium text-gray-500 md:h-56">
+              <Box height={{ xs: 208, md: 224 }} display="grid" sx={{ placeItems: "center" }}>
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 No image
-              </div>
+                </Typography>
+              </Box>
             )}
-          </div>
+          </Box>
 
-          <div className="grid grid-cols-2 gap-3">
+          <Box display="grid" gridTemplateColumns="repeat(2, minmax(0, 1fr))" gap={1.5}>
             <DetailBlock label="Brand" value={radiator.brand || "-"} searchTerm={searchTerm} />
             <DetailBlock label="Model" value={radiator.model || "-"} searchTerm={searchTerm} />
             <DetailBlock label="Code" value={radiator.code || "-"} searchTerm={searchTerm} />
@@ -61,49 +64,40 @@ export default function MobileRadiatorDetailModal({
               value={radiator.coreDimension || "-"}
               searchTerm={searchTerm}
             />
-          </div>
-        </div>
+          </Box>
+        </Box>
 
-        <div>
-          <p className="mb-1 text-sm font-medium text-gray-900">Notes</p>
-          <div className="min-h-24 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-            <p className="text-sm text-gray-600">
+        <Box>
+          <Typography mb={0.5} variant="body2" fontWeight={600}>Notes</Typography>
+          <Box minHeight={96} border={1} borderColor="divider" bgcolor="grey.50" borderRadius={1} px={1.5} py={1}>
+            <Typography variant="body2" color="text.secondary">
               <HighlightedText text={radiator.notes || "-"} query={searchTerm} />
-            </p>
-          </div>
-        </div>
+            </Typography>
+          </Box>
+        </Box>
 
-        <div className="flex flex-col gap-2 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
-          <button
-            type="button"
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="flex-end" spacing={1} pt={1.5} borderTop={1} borderColor="divider">
+          <Button variant="secondary" icon={Package}
             onClick={() => onEditStock?.(radiator)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 sm:w-auto"
           >
-            <Package size={16} />
             Edit Stock
-          </button>
+          </Button>
           {isAdmin ? (
             <>
-              <button
-                type="button"
+              <Button variant="warning" icon={Edit}
                 onClick={() => onEdit?.(radiator)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition hover:bg-amber-100 sm:w-auto"
               >
-                <Edit size={16} />
                 Edit
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button variant="danger" icon={Trash2}
                 onClick={() => onDelete?.(radiator)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100 sm:w-auto"
               >
-                <Trash2 size={16} />
                 Delete
-              </button>
+              </Button>
             </>
           ) : null}
-        </div>
-      </div>
+        </Stack>
+      </Stack>
 
       <ImagePreviewModal
         isOpen={imagePreviewOpen}
@@ -117,11 +111,11 @@ export default function MobileRadiatorDetailModal({
 
 function DetailBlock({ label, value, searchTerm }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-gray-500">{label}</p>
-      <p className="mt-1 text-sm font-medium text-gray-900">
+    <Box border={1} borderColor="divider" bgcolor="grey.50" borderRadius={1} px={1.5} py={1}>
+      <Typography variant="overline" color="text.secondary" sx={{ fontSize: 11, letterSpacing: ".08em", lineHeight: 1.4 }}>{label}</Typography>
+      <Typography mt={0.5} variant="body2" fontWeight={600}>
         <HighlightedText text={value} query={searchTerm} />
-      </p>
-    </div>
+      </Typography>
+    </Box>
   );
 }

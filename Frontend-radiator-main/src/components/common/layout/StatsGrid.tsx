@@ -1,70 +1,81 @@
-// @ts-nocheck
-// src/components/common/layout/StatsGrid.jsx
-// REPLACE YOUR EXISTING FILE
-import React from 'react';
+import type { ElementType, ReactNode } from "react";
+import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
 
-export const StatsGrid = ({ stats, columns = 4 }) => {
-  const gridCols = {
-    2: 'grid-cols-2',
-    3: 'grid-cols-2 md:grid-cols-3',
-    4: 'grid-cols-2 md:grid-cols-4',
-    5: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
-  };
-  
-  return (
-    <div className={`grid ${gridCols[columns]} gap-4 mb-6`}>
-      {stats.map((stat, index) => (
-        <StatCard key={index} {...stat} />
-      ))}
-    </div>
-  );
+type StatColor = "blue" | "green" | "yellow" | "red" | "purple" | "orange" | "indigo";
+
+export interface StatItem {
+  title: ReactNode;
+  value: ReactNode;
+  change?: number;
+  icon?: ElementType;
+  color?: StatColor;
+}
+
+export interface StatsGridProps {
+  stats: StatItem[];
+  columns?: 2 | 3 | 4 | 5;
+}
+
+const accentColors: Record<StatColor, { foreground: string; background: string }> = {
+  blue: { foreground: "#2563eb", background: "#dbeafe" },
+  green: { foreground: "#16a34a", background: "#dcfce7" },
+  yellow: { foreground: "#ca8a04", background: "#fef9c3" },
+  red: { foreground: "#dc2626", background: "#fee2e2" },
+  purple: { foreground: "#9333ea", background: "#f3e8ff" },
+  orange: { foreground: "#ea580c", background: "#ffedd5" },
+  indigo: { foreground: "#4f46e5", background: "#e0e7ff" },
 };
 
-const StatCard = ({ title, value, change, icon: Icon, color = 'blue' }) => {
-  const colors = {
-    blue: 'text-blue-600',
-    green: 'text-green-600',
-    yellow: 'text-yellow-600',
-    red: 'text-red-600',
-    purple: 'text-purple-600',
-    orange: 'text-orange-600',
-    indigo: 'text-indigo-600' // ADDED THIS
-  };
+function StatCard({ title, value, change, icon: Icon, color = "blue" }: StatItem) {
+  const accent = accentColors[color];
 
-  const bgColors = {
-    blue: 'bg-blue-100',
-    green: 'bg-green-100',
-    yellow: 'bg-yellow-100',
-    red: 'bg-red-100',
-    purple: 'bg-purple-100',
-    orange: 'bg-orange-100',
-    indigo: 'bg-indigo-100' // ADDED THIS
-  };
-  
-  // Get color with fallback to blue if undefined
-  const textColor = colors[color] || colors.blue;
-  const bgColor = bgColors[color] || bgColors.blue;
-  
   return (
-    <div className="bg-white rounded-lg shadow p-3 sm:p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className={`text-xl sm:text-2xl font-bold ${textColor}`}>
-            {value}
-          </div>
-          <div className="text-xs sm:text-sm text-gray-600">{title}</div>
-          {change !== undefined && (
-            <div className={`text-xs ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {change > 0 ? '+' : ''}{change}%
-            </div>
+    <Card>
+      <CardContent>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+          <Box minWidth={0}>
+            <Typography variant="h3" color={accent.foreground}>{value}</Typography>
+            <Typography variant="body2" color="text.secondary">{title}</Typography>
+            {change !== undefined && (
+              <Typography variant="caption" color={change >= 0 ? "success.main" : "error.main"}>
+                {change > 0 ? "+" : ""}{change}%
+              </Typography>
+            )}
+          </Box>
+          {Icon && (
+            <Box
+              alignItems="center"
+              bgcolor={accent.background}
+              borderRadius={2.5}
+              color={accent.foreground}
+              display="flex"
+              flex="0 0 auto"
+              height={44}
+              justifyContent="center"
+              width={44}
+            >
+              <Icon size={22} />
+            </Box>
           )}
-        </div>
-        {Icon && (
-          <div className={`w-8 h-8 sm:w-10 sm:h-10 ${bgColor} rounded-lg flex items-center justify-center`}>
-            <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${textColor}`} />
-          </div>
-        )}
-      </div>
-    </div>
+        </Stack>
+      </CardContent>
+    </Card>
   );
-};
+}
+
+export function StatsGrid({ stats, columns = 4 }: StatsGridProps) {
+  return (
+    <Box
+      display="grid"
+      gap={2}
+      gridTemplateColumns={{
+        xs: "repeat(2, minmax(0, 1fr))",
+        md: `repeat(${Math.min(columns, 3)}, minmax(0, 1fr))`,
+        lg: `repeat(${columns}, minmax(0, 1fr))`,
+      }}
+      mb={3}
+    >
+      {stats.map((stat, index) => <StatCard key={index} {...stat} />)}
+    </Box>
+  );
+}

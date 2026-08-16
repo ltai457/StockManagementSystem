@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React from "react";
 import { Package } from "lucide-react";
+import { Alert, Box, Typography } from "@mui/material";
 import { EmptyState } from "../common/layout/EmptyState";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
 import RadiatorCards from "./RadiatorCards";
@@ -41,9 +42,7 @@ const InventoryContent = ({
     />
 
     {error && (
-      <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-        {error}
-      </div>
+      <Alert severity="error">{error}</Alert>
     )}
 
     {sortedRadiators.length === 0 && !loading ? (
@@ -62,15 +61,15 @@ const InventoryContent = ({
     ) : (
       <>
         {/* Force cards view on mobile */}
-        <div className="sm:hidden">
+        <Box sx={{ display: { xs: "block", sm: "none" } }}>
           <RadiatorCards
             radiators={sortedRadiators}
             searchTerm={searchTerm}
             onViewDetails={detailModal.openModal}
           />
-        </div>
+        </Box>
         {/* Desktop: respect viewMode toggle */}
-        <div className="hidden sm:block">
+        <Box sx={{ display: { xs: "none", sm: "block" } }}>
           {viewMode === "cards" ? (
             <RadiatorCards
               radiators={sortedRadiators}
@@ -89,25 +88,22 @@ const InventoryContent = ({
               isAdmin={isAdmin}
             />
           )}
-        </div>
+        </Box>
 
         {hasMore && (
-          <div
-            ref={observerRef}
-            className="flex justify-center py-8"
-          >
+          <Box ref={observerRef} display="flex" justifyContent="center" py={4}>
             {loading ? (
               <LoadingSpinner size="md" text="Loading more products..." />
             ) : (
-              <div className="h-10" />
+              <Box height={40} />
             )}
-          </div>
+          </Box>
         )}
 
         {!hasMore && sortedRadiators.length > 0 && (
-          <div className="text-center py-6 text-gray-500 text-sm">
+          <Typography color="text.secondary" variant="body2" textAlign="center" py={3}>
             All products loaded ({sortedRadiators.length} total)
-          </div>
+          </Typography>
         )}
       </>
     )}

@@ -1,10 +1,11 @@
 // @ts-nocheck
 import React, { useState } from "react";
-import { Chip } from "@mui/material";
+import { Box, Card, CardContent, Chip, Stack, Typography } from "@mui/material";
 import { LOW_STOCK_THRESHOLD } from "../../utils/stock";
 import { resolveImageUrl } from "../../utils/image";
 import ImagePreviewModal from "../common/ui/ImagePreviewModal";
 import HighlightedText from "../common/ui/HighlightedText";
+import { Button } from "../common/ui/Button";
 
 const getTotalStock = (stock) =>
   Object.values(stock || {}).reduce((total, qty) => total + (qty || 0), 0);
@@ -24,42 +25,45 @@ const RadiatorCards = ({
 
   return (
     <>
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
+    <Box display="grid" gridTemplateColumns={{ xs: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }} gap={{ xs: 1.5, md: 2.5 }}>
       {radiators.map((radiator) => {
         const totalStock = getTotalStock(radiator.stock);
         const title = `${radiator.brand || ""} ${radiator.model || ""}`.trim() || radiator.code;
         const imageSrc = resolveImageUrl(radiator.imageUrl);
 
         return (
-          <div
+          <Card
             key={radiator.id}
-            className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md md:rounded-2xl"
+            variant="outlined"
+            sx={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", transition: "transform .2s, box-shadow .2s", "&:hover": { transform: "translateY(-2px)", boxShadow: 3 } }}
           >
-            <div
-              className={`aspect-square overflow-hidden bg-gray-100 md:aspect-[4/3]${imageSrc ? " cursor-pointer" : ""}`}
+            <Box
+              sx={{ aspectRatio: { xs: "1", md: "4 / 3" }, overflow: "hidden", bgcolor: "grey.100", cursor: imageSrc ? "pointer" : "default" }}
               onClick={() => imageSrc && setPreviewImage({ src: imageSrc, alt: title })}
             >
               {imageSrc ? (
-                <img
+                <Box component="img"
                   src={imageSrc}
                   alt={title}
-                  className="h-full w-full object-contain"
+                  sx={{ width: "100%", height: "100%", objectFit: "contain" }}
                 />
               ) : (
-                <div className="flex h-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-sm font-medium text-gray-500">
+                <Box height="100%" display="grid" sx={{ placeItems: "center", background: "linear-gradient(135deg, #f5f5f5, #e0e0e0)" }}>
+                  <Typography variant="body2" color="text.secondary" fontWeight={500}>
                   No image
-                </div>
+                  </Typography>
+                </Box>
               )}
-            </div>
+            </Box>
 
-            <div className="flex flex-1 flex-col space-y-3 p-3 md:space-y-4 md:p-4">
-              <div className="min-h-[44px] md:min-h-[48px]">
-                <h3 className="line-clamp-2 text-sm font-medium leading-5 text-gray-900 md:text-[15px]">
+            <CardContent sx={{ display: "flex", flex: 1, flexDirection: "column", gap: { xs: 1.5, md: 2 }, p: { xs: 1.5, md: 2 }, "&:last-child": { pb: { xs: 1.5, md: 2 } } }}>
+              <Box minHeight={{ xs: 44, md: 48 }}>
+                <Typography variant="body2" fontWeight={600} sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                   <HighlightedText text={title} query={searchTerm} />
-                </h3>
-              </div>
+                </Typography>
+              </Box>
 
-              <div className="flex min-h-[32px] flex-wrap gap-2">
+              <Stack minHeight={32} direction="row" flexWrap="wrap" gap={1}>
                 <Chip
                   size="small"
                   label={<HighlightedText text={radiator.code || "-"} query={searchTerm} />}
@@ -73,35 +77,31 @@ const RadiatorCards = ({
                   variant="filled"
                   sx={{ "& .MuiChip-label": { px: 1, fontSize: { xs: 11, md: 13 } } }}
                 />
-              </div>
+              </Stack>
 
-              <div className="grid min-h-[88px] grid-cols-1 gap-2">
+              <Stack minHeight={88} spacing={1}>
                 <SpecPill label="Dimension" value={radiator.dimension || "-"} searchTerm={searchTerm} />
                 <SpecPill label="Core" value={radiator.coreDimension || "-"} searchTerm={searchTerm} />
-              </div>
+              </Stack>
 
               {radiator.notes ? (
-                <p className="hidden line-clamp-2 text-sm text-gray-600 md:block">
+                <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", md: "-webkit-box" }, WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                   <HighlightedText text={radiator.notes} query={searchTerm} />
-                </p>
+                </Typography>
               ) : null}
 
-              <div className="mt-auto border-t border-gray-100 pt-3">
-                <div className="mb-3">
-                  <button
-                    type="button"
+              <Box mt="auto" pt={1.5} borderTop={1} borderColor="divider">
+                  <Button variant="outline"
                     onClick={() => onViewDetails?.(radiator)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                   >
                     View Details
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+                  </Button>
+              </Box>
+            </CardContent>
+          </Card>
         );
       })}
-    </div>
+    </Box>
 
     <ImagePreviewModal
       isOpen={!!previewImage}
@@ -115,12 +115,12 @@ const RadiatorCards = ({
 
 function SpecPill({ label, value, searchTerm }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5">
-      <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-gray-500">{label}</p>
-      <p className="truncate text-xs font-medium text-gray-900">
+    <Box border={1} borderColor="divider" bgcolor="grey.50" borderRadius={1} px={1} py={0.75}>
+      <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10, letterSpacing: ".08em", lineHeight: 1.4 }}>{label}</Typography>
+      <Typography variant="caption" fontWeight={600} display="block" noWrap>
         <HighlightedText text={value} query={searchTerm} />
-      </p>
-    </div>
+      </Typography>
+    </Box>
   );
 }
 

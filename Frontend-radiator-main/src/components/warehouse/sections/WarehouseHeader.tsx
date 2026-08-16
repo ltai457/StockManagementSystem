@@ -15,19 +15,13 @@ export default function WarehouseHeader({ isAdmin, onCreate, onExport }) {
             onClick={onExport}
             variant="outline"
             size="sm"
-            className="w-full sm:w-auto"
+            icon={BarChart3}
           >
-            <span className="inline-flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Export
-            </span>
+            Export
           </Button>
           {isAdmin && (
-            <Button onClick={onCreate} className="w-full sm:w-auto">
-              <span className="inline-flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add Warehouse
-              </span>
+            <Button onClick={onCreate} icon={Plus}>
+              Add Warehouse
             </Button>
           )}
         </>
