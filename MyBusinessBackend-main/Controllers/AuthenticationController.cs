@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RadiatorStockAPI.DTOs.Auth;
 using RadiatorStockAPI.DTOs.Common;
 using RadiatorStockAPI.Services.Auth;
@@ -12,15 +13,15 @@ public class AuthController : BaseController
     private readonly IAuthHandler _handler;
     public AuthController(IAuthHandler handler) => _handler = handler;
 
-    [HttpPost("login")]
+    [HttpPost("login"), EnableRateLimiting("auth")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
         => Run(await _handler.LoginAsync(dto));
 
-    [HttpPost("register")]
+    [HttpPost("register"), Authorize(Roles = "Admin"), EnableRateLimiting("auth")]
     public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto)
         => Run(await _handler.RegisterAsync(dto));
 
-    [HttpPost("refresh")]
+    [HttpPost("refresh"), EnableRateLimiting("auth")]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto)
         => Run(await _handler.RefreshTokenAsync(dto.RefreshToken));
 

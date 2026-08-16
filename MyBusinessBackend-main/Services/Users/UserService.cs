@@ -17,6 +17,9 @@ public class UserService : IUserService
 
     public async Task<User?> CreateAsync(string username, string email, string password, UserRole role, string? firstName = null, string? lastName = null)
     {
+        if (!Enum.IsDefined(role))
+            return null;
+
         if (await _dal.UsernameExistsAsync(username) || await _dal.EmailExistsAsync(email))
             return null;
 
@@ -40,6 +43,9 @@ public class UserService : IUserService
 
     public async Task<User?> UpdateAsync(Guid id, string username, string email, UserRole role, bool isActive, string? firstName = null, string? lastName = null)
     {
+        if (!Enum.IsDefined(role))
+            return null;
+
         var user = await _dal.GetByIdAsync(id);
         if (user is null) return null;
 

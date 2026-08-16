@@ -15,7 +15,10 @@ public class CreateUserDto
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Password is required")]
-    [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters")]
+    [StringLength(100, MinimumLength = 12, ErrorMessage = "Password must be at least 12 characters")]
+    [RegularExpression(
+        @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$",
+        ErrorMessage = "Password must contain lowercase, uppercase, a digit, and a special character")]
     public string Password { get; set; } = string.Empty;
 
     [StringLength(100, ErrorMessage = "First name cannot exceed 100 characters")]
@@ -25,5 +28,6 @@ public class CreateUserDto
     public string? LastName { get; set; }
 
     [Required(ErrorMessage = "Role is required")]
+    [EnumDataType(typeof(UserRole), ErrorMessage = "Role must be Admin or Staff")]
     public UserRole Role { get; set; }
 }

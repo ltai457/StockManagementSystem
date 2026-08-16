@@ -42,8 +42,7 @@ packages/
 project.lock.json
 project.fragment.lock.json
 
-# Entity Framework
-Migrations/
+# Entity Framework migrations are source code and must remain version-controlled.
 
 # ==============================================
 # Node.js / React Frontend

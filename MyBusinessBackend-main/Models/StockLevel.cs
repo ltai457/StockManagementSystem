@@ -14,6 +14,10 @@ namespace RadiatorStockAPI.Models
         
         [Range(0, int.MaxValue)]
         public int Quantity { get; set; } = 0;
+
+        // PostgreSQL xmin optimistic concurrency token. Concurrent stock writes
+        // are rejected instead of silently overwriting each other.
+        public uint Version { get; set; }
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

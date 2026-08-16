@@ -76,6 +76,7 @@ namespace RadiatorStockAPI.Data
             {
                 entity.HasKey(s => s.Id);
                 entity.HasIndex(s => new { s.RadiatorId, s.WarehouseId }).IsUnique();
+                entity.Property(s => s.Version).IsRowVersion();
 
                 entity.HasOne(s => s.Radiator)
                     .WithMany(r => r.StockLevels)

@@ -42,7 +42,7 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during login: {Username}", username);
-            return null;
+            throw;
         }
     }
 
@@ -61,7 +61,7 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during registration: {Username}", username);
-            return null;
+            throw;
         }
     }
 
@@ -69,8 +69,8 @@ public class AuthService : IAuthService
     {
         try
         {
-            var tokenEntity = await _dal.GetRefreshTokenWithUserAsync(refreshToken);
-            if (tokenEntity is null || tokenEntity.IsRevoked || !tokenEntity.User.IsActive)
+            var tokenEntity = await _dal.GetRefreshTokenWithUserAsync(HashRefreshToken(refreshToken));
+            if (tokenEntity is null || !tokenEntity.IsActive || !tokenEntity.User.IsActive)
                 return null;
             tokenEntity.IsRevoked = true;
             var (accessToken, newRefreshToken, expiresAt) = await CreateTokenPairAsync(tokenEntity.User);
@@ -79,7 +79,7 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during token refresh");
-            return null;
+            throw;
         }
     }
 
@@ -87,7 +87,7 @@ public class AuthService : IAuthService
     {
         try
         {
-            var token = await _dal.GetRefreshTokenAsync(refreshToken);
+            var token = await _dal.GetRefreshTokenAsync(HashRefreshToken(refreshToken));
             if (token is null) return false;
             token.IsRevoked = true;
             await _dal.SaveChangesAsync();
@@ -96,7 +96,7 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error revoking token");
-            return false;
+            throw;
         }
     }
 
@@ -117,7 +117,7 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error changing password: {UserId}", userId);
-            return false;
+            throw;
         }
     }
 
@@ -144,8 +144,10 @@ public class AuthService : IAuthService
         var refreshToken = GenerateRefreshToken();
         await _dal.AddRefreshTokenAsync(new RefreshToken
         {
-            Id = Guid.NewGuid(), Token = refreshToken, UserId = user.Id,
-            CreatedAt = DateTime.UtcNow, IsRevoked = false
+            Id = Guid.NewGuid(), Token = HashRefreshToken(refreshToken), UserId = user.Id,
+            CreatedAt = DateTime.UtcNow,
+            ExpiryDate = DateTime.UtcNow.AddDays(GetRefreshTokenExpirationDays()),
+            IsRevoked = false
         });
         await _dal.SaveChangesAsync();
         return (accessToken, refreshToken, DateTime.UtcNow.AddMinutes(GetExpirationMinutes()));
@@ -184,5 +186,12 @@ public class AuthService : IAuthService
         return Convert.ToBase64String(bytes);
     }
 
+    private static string HashRefreshToken(string token)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToHexString(hash);
+    }
+
     private int GetExpirationMinutes() => _configuration.GetValue<int>("JWT:AccessTokenExpirationMinutes", 15);
+    private int GetRefreshTokenExpirationDays() => _configuration.GetValue<int>("JWT:RefreshTokenExpirationDays", 7);
 }

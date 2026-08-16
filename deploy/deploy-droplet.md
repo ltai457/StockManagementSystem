@@ -62,7 +62,7 @@ ssh root@157.245.206.102 '
 '
 ```
 
-Then tail the logs to confirm a clean boot (and that any new EF migrations applied):
+Then tail the logs to confirm a clean boot. This single-instance guide may use `RUN_MIGRATIONS_ON_STARTUP=true`; multi-instance production must apply migrations in one separate deployment job:
 
 ```bash
 ssh root@157.245.206.102 'journalctl -u radiator-api -n 80 --no-pager'
@@ -184,6 +184,8 @@ ssh root@<droplet-ip> '
 
 Generate the JWT secret with: `openssl rand -base64 48`
 
+For this single-instance Droplet guide, set `RUN_MIGRATIONS_ON_STARTUP=true`. Do not use that setting when multiple API replicas can start concurrently; apply migrations once as a release step instead. For an empty database, also set all three `BOOTSTRAP_ADMIN_*` values for the first startup and remove them immediately afterward.
+
 ### 7. systemd unit
 
 ```bash
@@ -197,7 +199,7 @@ ssh root@<droplet-ip> '
 '
 ```
 
-Migrations run automatically on first boot — watch `journalctl -u radiator-api -f` for `✅ Database seeding completed successfully`.
+With `RUN_MIGRATIONS_ON_STARTUP=true`, migrations run on first boot. Watch `journalctl -u radiator-api -f` for a successful migration and startup, then remove the `BOOTSTRAP_ADMIN_*` variables if they were used.
 
 ### 8. nginx site
 
