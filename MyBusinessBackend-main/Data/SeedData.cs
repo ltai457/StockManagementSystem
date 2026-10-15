@@ -82,29 +82,6 @@ namespace RadiatorStockAPI.Data
             }
         }
 
-        public static async Task BootstrapAdminAsync(
-            RadiatorDbContext context,
-            string username,
-            string email,
-            string password)
-        {
-            if (await context.Users.AnyAsync())
-                return;
-
-            context.Users.Add(new User
-            {
-                Id = Guid.NewGuid(),
-                Username = username.Trim(),
-                Email = email.Trim(),
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-                Role = UserRole.Admin,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            });
-            await context.SaveChangesAsync();
-        }
-
         private static async Task SeedDemoRadiatorsAsync(RadiatorDbContext context)
         {
             const string demoPrefix = "DEMO-";

@@ -121,7 +121,7 @@ npm run lint                 # ESLint
 DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD
 JWT_SECRET, JWT_ISSUER, JWT_AUDIENCE
 ALLOWED_ORIGINS (comma-separated)
-AWS__Region, AWS__S3__BucketName, AWS__AccessKeyId, AWS__SecretAccessKey (optional, for image uploads)
+UPLOADS_ROOT_PATH, UPLOADS_REQUEST_PATH (optional, for local image storage)
 ```
 
 ### Frontend (.env)
@@ -155,9 +155,8 @@ Stock operations go through `StockController` → `StockService` → creates `St
 
 ## Important Notes
 
-- Development may run migrations automatically. Production expects migrations as a release step and fails startup when migrations are pending.
+- Development may run migrations automatically. Other environments require `dotnet ef database update` before startup when migrations are pending.
 - The frontend Vite dev server proxies `/api` requests to the backend (configured in `vite.config.ts`)
 - CORS is open in Development, restricted to `ALLOWED_ORIGINS` in Production
 - Security headers are set in middleware (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
 - Backend production-control regression tests live in `MyBusinessBackend.Tests` and run through `dotnet test StockManagementSystem.sln`.
-- The `DigitalOcean` branch contains deployment-specific configuration for DigitalOcean App Platform

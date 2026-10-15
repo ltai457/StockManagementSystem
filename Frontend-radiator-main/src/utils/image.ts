@@ -1,11 +1,7 @@
 // @ts-nocheck
 // Resolves a stored radiator image_url into a URL the browser can load.
-//
-// Background: the API used to persist absolute URLs built from Request.Scheme/Host,
-// which broke behind the DigitalOcean reverse proxy (mixed-content / wrong host).
-// New uploads are stored as relative paths like "/uploads/radiators/abc.jpg".
-// This helper prepends the API origin for relative paths and passes absolute
-// URLs (and data: URLs) through unchanged so legacy rows still render.
+// Upload paths are relative to the API origin; existing absolute and data URLs
+// pass through unchanged.
 
 import { API_ORIGIN } from "../config/api";
 

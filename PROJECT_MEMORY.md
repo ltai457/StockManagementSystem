@@ -2,18 +2,18 @@
 
 This is the canonical quick-start context for future development sessions. Read this file before exploring the codebase, then inspect only the files relevant to the current task.
 
-Last verified: **2026-08-16**  
-Current working branch: **`update-to-use-share`**
+Last updated: **2026-10-15**
+Current working branch: **`Bulk-import-from-SpreadSheet`**
 
 ## Current state
 
 - Full-stack radiator inventory system for Chan Mary 333.
 - Frontend: React 19, TypeScript, Vite 7, React Router 7, Material UI 7, Axios.
 - Backend: ASP.NET Core 8, EF Core, PostgreSQL, JWT authentication.
-- Backend production controls now include admin-only registration, rate-limited auth endpoints, hashed/expiring rotating refresh tokens, sanitized health checks, fail-closed production configuration, server-owned stock audit identities, and PostgreSQL optimistic stock concurrency.
+- Backend controls include admin-only registration, rate-limited auth endpoints, hashed/expiring rotating refresh tokens, sanitized health checks, fail-closed production configuration, server-owned stock audit identities, and PostgreSQL optimistic stock concurrency.
+- Deployment tooling and product import features have been removed. Product creation/editing and individual image uploads remain available.
 - The frontend UI was migrated completely from Tailwind/custom classes to the shared MUI design system.
 - Tailwind, `@tailwindcss/vite`, `src/App.css`, and all frontend `className` styling were removed.
-- The migration is currently local and must be committed/pushed separately when requested.
 
 Last verification commands all passed:
 
@@ -23,6 +23,8 @@ npm run lint
 npm run typecheck
 npm run build
 git diff --check
+cd ..
+dotnet test StockManagementSystem.sln --configuration Release
 ```
 
 The production build currently reports only a non-blocking warning that the main JavaScript chunk is larger than 500 kB.
@@ -33,7 +35,6 @@ The production build currently reports only a non-blocking warning that the main
 StockManagementSystem/
 ├── Frontend-radiator-main/       React/Vite application
 ├── MyBusinessBackend-main/       ASP.NET Core API
-├── deploy/                       Deployment documentation
 ├── StockManagementSystem.sln     .NET solution
 └── PROJECT_MEMORY.md             This file
 ```
@@ -126,7 +127,6 @@ Frontend environment variables:
 
 ```env
 VITE_API_BASE=http://localhost:5128/api/v1
-VITE_NGROK_URL=https://example.ngrok-free.app  # optional fallback
 VITE_DEBUG=false
 ```
 
@@ -149,14 +149,6 @@ Optional fields:
 - `notes`
 - `initialStock` — object keyed by warehouse code with numeric quantities
 
-For spreadsheet import, use the stable headers:
-
-```text
-brand, code, model, type, coreDimension, dimension, imageUrl, notes
-```
-
-Warehouse starting quantities need one agreed convention before implementing import, preferably columns such as `stock_AKL`, `stock_CHC`, etc., converted into `initialStock`.
-
 ## Important behavior
 
 - User roles: Administrator = `1`, Staff = `2`.
@@ -164,7 +156,7 @@ Warehouse starting quantities need one agreed convention before implementing imp
 - Low-stock threshold is `10`, defined in `src/utils/stock.ts`.
 - Stock changes must go through stock API operations so the backend records audit history.
 - Supported operations include stock in, sale, transfer, and manual adjustment.
-- Product images depend on persistent backend/S3 storage; ephemeral droplet storage is not a safe backup.
+- Product images are stored locally in `MyBusinessBackend-main/wwwroot/uploads/radiators/`. Keep uploaded images when cleaning generated files.
 - Frontend images are resolved relative to the configured API origin when needed.
 
 ## Development commands
@@ -201,18 +193,16 @@ Local defaults:
 - Several migrated `.tsx` feature files still contain `// @ts-nocheck` (63 occurrences at the last count). TypeScript compilation passes, but removing these gradually and adding explicit prop/domain types is the next typing-quality project.
 - There is no comprehensive automated frontend test suite. Lint, typecheck, production build, and a browser/API smoke test are the current release checks.
 - The main frontend bundle should eventually be split with route/feature-level lazy imports.
-- Product image uploads still use filesystem storage. Move them to S3-compatible object storage (DigitalOcean Spaces) before horizontally scaling the API.
 - Authentication rate limiting is currently in-memory per API instance; use a shared gateway/distributed limiter when the API scales to multiple instances.
 - Documentation must not claim Tailwind is installed; the frontend is MUI-only.
 
-## Backend production deployment
+## Backend configuration and data integrity
 
-- Production requires an explicit database configuration, a JWT secret of at least 32 bytes, and at least one `ALLOWED_ORIGINS` value.
-- Apply EF migrations as a deployment job. Production startup fails if migrations are pending unless `RUN_MIGRATIONS_ON_STARTUP=true` is deliberately enabled.
+- Database settings, a JWT secret of at least 32 bytes, and CORS restrictions remain application configuration.
+- Development applies pending EF migrations on startup. Other environments require `dotnet ef database update` first.
 - `MyBusinessBackend-main/Migrations/` is version-controlled; never add it back to `.gitignore`.
-- A new empty production database can create its first administrator with all three `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_EMAIL`, and `BOOTSTRAP_ADMIN_PASSWORD` variables. Remove them after first startup.
 - Known default users and demo data are development-only.
-- Refresh tokens are stored as SHA-256 hashes. Existing plaintext refresh tokens from older builds become invalid after this upgrade, so existing users must sign in again once.
+- Refresh tokens are stored as SHA-256 hashes.
 - Stock quantity changes and their audit records commit together. Concurrent writes return HTTP 409 instead of silently overwriting stock.
 
 ## Git safety

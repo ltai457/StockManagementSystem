@@ -12,23 +12,20 @@ public class RadiatorsController : BaseController
     private readonly IGetRadiatorHandler _get;
     private readonly ICreateRadiatorHandler _create;
     private readonly IUpdateRadiatorHandler _update;
-    private readonly IWebHostEnvironment _environment;
-    private readonly IConfiguration _configuration;
+    private readonly IProductImageStore _imageStore;
     private readonly ILogger<RadiatorsController> _logger;
 
     public RadiatorsController(
         IGetRadiatorHandler get,
         ICreateRadiatorHandler create,
         IUpdateRadiatorHandler update,
-        IWebHostEnvironment environment,
-        IConfiguration configuration,
+        IProductImageStore imageStore,
         ILogger<RadiatorsController> logger)
     {
         _get = get;
         _create = create;
         _update = update;
-        _environment = environment;
-        _configuration = configuration;
+        _imageStore = imageStore;
         _logger = logger;
     }
 
@@ -57,52 +54,18 @@ public class RadiatorsController : BaseController
 
     [HttpPost("upload-image"), Authorize(Roles = "Admin,Staff")]
     [RequestSizeLimit(10_000_000)]
-    public async Task<IActionResult> UploadImage(IFormFile file)
+    public async Task<IActionResult> UploadImage(IFormFile file, CancellationToken cancellationToken)
     {
-        if (file == null || file.Length == 0)
-        {
+        if (file is null)
             return Run(Result<ImageUploadResponseDto>.Fail("Image file is required."));
-        }
-
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
-        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (!allowedExtensions.Contains(extension))
-        {
-            return Run(Result<ImageUploadResponseDto>.Fail("Only jpg, jpeg, png, webp, and gif files are allowed."));
-        }
-
-        var uploadRootPath =
-            Environment.GetEnvironmentVariable("UPLOADS_ROOT_PATH")
-            ?? _configuration["Uploads:RootPath"]
-            ?? Path.Combine(_environment.ContentRootPath, "wwwroot", "uploads");
-
-        var uploadRequestPath =
-            Environment.GetEnvironmentVariable("UPLOADS_REQUEST_PATH")
-            ?? _configuration["Uploads:RequestPath"]
-            ?? "/uploads";
-
-        var uploadsDirectory = Path.Combine(uploadRootPath, "radiators");
-        Directory.CreateDirectory(uploadsDirectory);
-
-        var fileName = $"{Guid.NewGuid():N}{extension}";
-        var filePath = Path.Combine(uploadsDirectory, fileName);
-
-        await using (var stream = System.IO.File.Create(filePath))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        var normalizedRequestPath = uploadRequestPath.StartsWith('/')
-            ? uploadRequestPath
-            : $"/{uploadRequestPath}";
-
-        // Store a relative path so the value survives domain/scheme/proxy changes.
-        // The frontend prepends the API origin at render time.
-        var imageUrl = $"{normalizedRequestPath}/radiators/{fileName}";
+        var error = await _imageStore.ValidateAsync(file, cancellationToken);
+        if (error is not null)
+            return Run(Result<ImageUploadResponseDto>.Fail(error));
+        var image = await _imageStore.SaveAsync(file, cancellationToken);
         return Run(Result<ImageUploadResponseDto>.Ok(new ImageUploadResponseDto
         {
-            ImageUrl = imageUrl,
-            FileName = fileName
+            ImageUrl = image.ImageUrl,
+            FileName = image.FileName
         }));
     }
 

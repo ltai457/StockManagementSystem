@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
@@ -25,10 +24,9 @@ using RadiatorStockAPI.Services.Warehouses;
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 
-// Build connection string with support for environment variables and RDS
+// Read the database connection from configuration or local environment variables.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Support for environment variables (better for production/containerization)
 if (string.IsNullOrEmpty(connectionString))
 {
     var host = Environment.GetEnvironmentVariable("DB_HOST");
@@ -79,6 +77,7 @@ builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IRadiatorService, RadiatorService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProductImageStore, ProductImageStore>();
 
 // Register Handler layer — Radiators
 builder.Services.AddScoped<IGetRadiatorHandler, GetRadiatorHandler>();
@@ -246,35 +245,10 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Honor X-Forwarded-* headers from the reverse proxy (nginx / DO load balancer)
-// so Request.Scheme/Host reflect the public URL instead of the internal http hop.
-// Must run before any middleware that reads scheme/host (UseStaticFiles, controllers, etc.).
-var forwardedHeadersOptions = new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor
-                     | ForwardedHeaders.XForwardedProto
-                     | ForwardedHeaders.XForwardedHost
-};
-forwardedHeadersOptions.KnownNetworks.Clear();
-forwardedHeadersOptions.KnownProxies.Clear();
-app.UseForwardedHeaders(forwardedHeadersOptions);
-
 app.UseMiddleware<ApiExceptionMiddleware>();
 
-var uploadRootPath =
-    Environment.GetEnvironmentVariable("UPLOADS_ROOT_PATH")
-    ?? builder.Configuration["Uploads:RootPath"]
-    ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");
-
-var uploadRequestPath =
-    Environment.GetEnvironmentVariable("UPLOADS_REQUEST_PATH")
-    ?? builder.Configuration["Uploads:RequestPath"]
-    ?? "/uploads";
-
-if (!Path.IsPathRooted(uploadRootPath))
-{
-    uploadRootPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, uploadRootPath));
-}
+var uploadRootPath = ProductImageStore.RootPath(app.Environment, builder.Configuration);
+var uploadRequestPath = ProductImageStore.RequestPath(builder.Configuration);
 
 Directory.CreateDirectory(Path.Combine(uploadRootPath, "radiators"));
 
@@ -341,7 +315,7 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
     ResponseWriter = WriteHealthResponse
 }).AllowAnonymous();
 
-// Add simple ping endpoint for load balancers
+// Simple API connectivity check.
 app.MapGet("/ping", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 
 // Add API info endpoint
@@ -377,11 +351,7 @@ try
     
     // Apply pending migrations
     var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-    var runMigrationsOnStartup = env.IsDevelopment()
-        || Environment.GetEnvironmentVariable("RUN_MIGRATIONS_ON_STARTUP")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
-        || builder.Configuration.GetValue<bool>("Database:RunMigrationsOnStartup");
-
-    if (pendingMigrations.Any() && runMigrationsOnStartup)
+    if (pendingMigrations.Any() && env.IsDevelopment())
     {
         logger.LogInformation("Applying {Count} pending migrations...", pendingMigrations.Count());
         await context.Database.MigrateAsync();
@@ -391,7 +361,7 @@ try
     {
         throw new InvalidOperationException(
             $"The database has {pendingMigrations.Count()} pending migration(s). " +
-            "Apply them as a deployment step before starting the production API.");
+            "Run dotnet ef database update before starting the API.");
     }
     else
     {
@@ -411,25 +381,6 @@ try
     // Seed initial data
     await SeedData.Initialize(context, seedDefaultUsers, seedDemoRadiators);
 
-    var bootstrapAdminUsername = Environment.GetEnvironmentVariable("BOOTSTRAP_ADMIN_USERNAME");
-    var bootstrapAdminEmail = Environment.GetEnvironmentVariable("BOOTSTRAP_ADMIN_EMAIL");
-    var bootstrapAdminPassword = Environment.GetEnvironmentVariable("BOOTSTRAP_ADMIN_PASSWORD");
-    var bootstrapValues = new[] { bootstrapAdminUsername, bootstrapAdminEmail, bootstrapAdminPassword };
-
-    if (bootstrapValues.Any(value => !string.IsNullOrWhiteSpace(value)))
-    {
-        if (bootstrapValues.Any(string.IsNullOrWhiteSpace))
-            throw new InvalidOperationException("All BOOTSTRAP_ADMIN_* variables must be provided together.");
-
-        if (bootstrapAdminPassword!.Length < 12)
-            throw new InvalidOperationException("BOOTSTRAP_ADMIN_PASSWORD must contain at least 12 characters.");
-
-        await SeedData.BootstrapAdminAsync(
-            context,
-            bootstrapAdminUsername!,
-            bootstrapAdminEmail!,
-            bootstrapAdminPassword);
-    }
     logger.LogInformation("✅ Database seeding completed successfully");
     
     // Log connection info (without sensitive details)
@@ -460,7 +411,6 @@ catch (Exception ex)
     logger?.LogCritical(ex, "❌ Failed to initialize database");
     Console.WriteLine($"❌ Database initialization failed: {ex.Message}");
     
-    // In production, you might want to exit gracefully instead of throwing
     if (app.Environment.IsDevelopment())
     {
         Console.WriteLine("⚠️ Development mode: API will start anyway for debugging");

@@ -1,5 +1,4 @@
 // @ts-nocheck
-// src/components/inventory/RadiatorList.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import { Stack } from "@mui/material";
 import { useAuth } from "../../contexts/auth-context";

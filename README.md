@@ -15,7 +15,7 @@ StockManagementSystem/
 - **Role-based dashboards** -- Admins get user management; staff see inventory, stock, warehouses, and sales.
 - **Stock tracking** -- Per-warehouse quantities, low-stock alerts (threshold: 10), movement history with full audit trail.
 - **Stock operations** -- Inbound, outbound (sale), manual adjust, bulk update, and warehouse-to-warehouse transfers.
-- **Radiator catalogue** -- CRUD with brand, code, pricing tiers (retail/trade/cost), discount rules, and optional S3 image uploads.
+- **Radiator catalogue** -- CRUD with brand, code, pricing tiers (retail/trade/cost), discount rules, and optional image uploads.
 - **Warehouse management** -- Multi-warehouse support with address, contact info, and per-warehouse stock views.
 - **Authentication** -- JWT access tokens (15 min) + refresh tokens (7 days), BCrypt password hashing, session warnings, auto-refresh.
 - **Operational endpoints** -- `/health` (DB connectivity check), `/ping`, `/api/v1/info`, Swagger UI in development.
@@ -33,7 +33,7 @@ StockManagementSystem/
 ### Prerequisites
 
 - .NET 8 SDK
-- Node.js 18+ / npm 9+
+- Node.js 20.19+ or 22.12+ / npm 9+
 - PostgreSQL 15+
 
 ### 1. Backend
@@ -50,7 +50,7 @@ DB_PORT=5432
 DB_NAME=radiatorstockdb
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
-JWT_SECRET=ReplaceWith32CharSecret
+JWT_SECRET=ReplaceWithALocalSecretOfAtLeast32Bytes
 JWT_ISSUER=RadiatorStockAPI
 JWT_AUDIENCE=RadiatorStockAPI-Users
 ALLOWED_ORIGINS=http://localhost:5173
@@ -113,17 +113,9 @@ npm run dev    # http://localhost:5173
 ### Ops (No auth)
 `GET /health` | `GET /ping` | `GET /api/v1/info`
 
-## Deployment
-
-- **Backend**: Publish to Azure App Service, AWS ECS, DigitalOcean App Platform, or Docker. Set DB connection, JWT secrets, `ALLOWED_ORIGINS`, and a persistent `UPLOADS_ROOT_PATH` via environment variables. Use `SSL Mode=Require` for managed PostgreSQL.
-- **Frontend**: `npm run build` outputs `dist/`. Deploy to Netlify, Vercel, S3+CloudFront, or DigitalOcean Apps. Set `VITE_API_BASE` to the production API URL before building.
-- **Database**: Managed PostgreSQL recommended. Apply migrations as a controlled production deployment step; automatic startup migration is development-only by default.
-- **Images**: The API serves uploaded images from `/uploads`. Back that directory with persistent storage or images will disappear on restart/redeploy.
-
 ## Project Documentation
 
 - [`PROJECT_MEMORY.md`](PROJECT_MEMORY.md) -- Canonical project context and development conventions for future sessions
 - [`Frontend-radiator-main/README.md`](Frontend-radiator-main/README.md) -- Frontend scripts, structure, and troubleshooting
 - [`MyBusinessBackend-main/README.md`](MyBusinessBackend-main/README.md) -- Backend config, full endpoint docs, and ops guidance
-- [`deploy/deploy-droplet.md`](deploy/deploy-droplet.md) -- nginx, `systemd`, and single-droplet deployment steps
 - [`CLAUDE.md`](CLAUDE.md) -- AI assistant quick-reference for codebase navigation

@@ -5,10 +5,6 @@ export const getApiBaseUrl = () => {
     return import.meta.env.VITE_API_BASE;
   }
 
-  if (import.meta.env.VITE_NGROK_URL) {
-    return `${import.meta.env.VITE_NGROK_URL}/api/v1`;
-  }
-
   return LOCAL_API_BASE;
 };
 
